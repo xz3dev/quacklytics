@@ -3,6 +3,7 @@ package migrations
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"go.uber.org/atomic"
@@ -33,8 +34,8 @@ func MigrateDBIfNeeded(db *sql.DB) {
 	log.Printf("Found %d migrations", len(files))
 
 	err = m.Up()
-	if err != nil {
-		log.Println(err)
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatal(err)
 	}
 
 }
