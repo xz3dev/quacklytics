@@ -7,36 +7,88 @@ import (
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
 	"log"
+	"sync"
 	"time"
 )
 
+const (
+	batchSize    = 100
+	batchTimeout = 30 * time.Second
+)
+
+var (
+	eventQueue   = make(chan *model.EventInput, 1000)
+	batchProcess sync.Once
+)
+
+func init() {
+	go processEventQueue()
+}
+
 func ProcessEvent(event *model.EventInput) {
+	eventQueue <- event
+}
+
+func processEventQueue() {
+	batch := make([]*model.EventInput, 0, batchSize)
+	timer := time.NewTimer(batchTimeout)
+
+	for {
+		select {
+		case event := <-eventQueue:
+			batch = append(batch, event)
+			if len(batch) >= batchSize {
+				log.Println("Batch size limit reached, processing batch")
+				processBatch(batch)
+				batch = batch[:0] // Reset batch
+				timer.Reset(batchTimeout)
+			}
+
+		case <-timer.C:
+			log.Println("Batch timeout reached, processing batch")
+			if len(batch) > 0 {
+				processBatch(batch)
+				batch = batch[:0]
+			}
+			timer.Reset(batchTimeout)
+		}
+	}
+}
+
+func processBatch(events []*model.EventInput) {
+	startTime := time.Now() // Start timing
 	appender := database.Appender("events")
 	defer appender.Close()
-	eventId := generateEventId()
 
-	propertiesJson, err := json.Marshal(event.Properties)
-	if err != nil {
+	for _, event := range events {
+		eventId := generateEventId()
+
+		propertiesJson, err := json.Marshal(event.Properties)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		err = appender.AppendRow(
+			eventId,
+			event.Timestamp,
+			event.EventType,
+			event.UserId,
+			propertiesJson,
+		)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+	}
+
+	if err := appender.Close(); err != nil {
 		log.Println(err)
 		return
 	}
-	err = appender.AppendRow(
-		eventId,
-		time.Now(),
-		event.EventType,
-		event.UserId,
-		propertiesJson,
-	)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	err = appender.Flush()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Printf("Processing event %s from %s", eventId, event.Timestamp)
+	endTime := time.Now() // End timing
+	duration := endTime.Sub(startTime)
+
+	log.Printf("Processed batch of %d events in %v", len(events), duration)
 }
 
 func generateEventId() duckdb.UUID {
