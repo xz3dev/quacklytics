@@ -11,7 +11,7 @@ import (
 func receiveEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var event model.Event
+	var event model.EventInput
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

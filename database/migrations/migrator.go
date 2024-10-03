@@ -33,6 +33,11 @@ func MigrateDBIfNeeded(db *sql.DB) {
 	m, err := migrate.NewWithInstance("iofs", fs, "data", &driver)
 	log.Printf("Found %d migrations", len(files))
 
+	err = m.Down()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatal(err)
+	}
+
 	err = m.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatal(err)
