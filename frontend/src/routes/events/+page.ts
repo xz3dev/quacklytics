@@ -1,7 +1,8 @@
 import type { PageLoad } from './$types'
 
+export const ssr = false
 
-export const load: PageLoad = ({ params }) => {
+export const load: PageLoad = async ({ params }) => {
     return {
         events: [
             { id: 1, timestamp: new Date(), eventType: 'pageview', userId: '123', properties: { foo: 'bar' } },
@@ -14,6 +15,6 @@ export const load: PageLoad = ({ params }) => {
             { id: 8, timestamp: new Date(), eventType: 'pageview', userId: '123', properties: { foo: 'bar' } },
             { id: 9, timestamp: new Date(), eventType: 'pageview', userId: '123', properties: { foo: 'bar' } },
             { id: 10, timestamp: new Date(), eventType: 'pageview', userId: '123', properties: { foo: 'bar' } },
-        ]
+        ],
     }
 }
