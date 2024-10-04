@@ -9,8 +9,12 @@ import (
 )
 
 func QueryEvents() (*[]model.Event, error) {
-	tx := database.Tx()
+	tx, err := database.ReadOnlyTx()
 	defer tx.Commit()
+	if err != nil {
+		log.Println("Error while creating transaction: ", err)
+		return nil, err
+	}
 	rows, err := tx.Query("select * from events")
 	if err != nil {
 		log.Println(err)
