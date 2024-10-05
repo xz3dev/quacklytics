@@ -45,7 +45,6 @@ func parseEvent(rows *sql.Rows) (*[]model.Event, error) {
 			log.Println(err)
 			return nil, err
 		}
-		log.Printf("Parsed event %s from %s", event.Id, event.UserId)
 		if err := json.Unmarshal(propertiesJson, &event.Properties); err != nil {
 			log.Println(err)
 			return nil, err

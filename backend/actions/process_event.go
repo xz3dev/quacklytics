@@ -3,7 +3,7 @@ package actions
 import (
 	"analytics/database"
 	"analytics/model"
-	"github.com/goccy/go-json"
+	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
 	"log"

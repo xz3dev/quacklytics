@@ -10,11 +10,9 @@ const port = 3000
 
 func Start() {
 	config := DefaultConfig()
-	mux := http.NewServeMux()
-	setupRoutes(mux)
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: setupCORS(config).Handler(mux),
+		Handler: setupMux(config),
 	}
 
 	log.Printf("Starting server on port %d", port)
