@@ -38,13 +38,13 @@ func queryEvents(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Error while unmarshaling events", err)
 		return
 	}
-	w.Write(jsonEvents)
 	w.WriteHeader(http.StatusOK)
+	w.Write(jsonEvents)
 }
 
 func generateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	actions.GenerateRandomEvents(2000, "test_type")
+	actions.GenerateRandomEvents(50, "test_type")
 	w.WriteHeader(http.StatusOK)
 }

@@ -58,21 +58,20 @@ func processEventQueue() {
 func processBatch(events []*model.EventInput) {
 	startTime := time.Now() // Start timing
 	appender := database.Appender("events")
+	defer appender.Flush()
 	defer appender.Close()
 
 	for _, event := range events {
-		eventId := generateEventId()
-
 		propertiesJson, err := json.Marshal(event.Properties)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 		err = appender.AppendRow(
-			eventId,
+			mapUuid(uuid.New()),
 			event.Timestamp,
 			event.EventType,
-			event.UserId,
+			mapUuid(event.UserId),
 			propertiesJson,
 		)
 		if err != nil {
@@ -91,13 +90,8 @@ func processBatch(events []*model.EventInput) {
 	log.Printf("Processed batch of %d events in %v", len(events), duration)
 }
 
-func generateEventId() duckdb.UUID {
-	bytes, err := uuid.New().MarshalText()
-	if err != nil {
-		log.Println(err)
-		return duckdb.UUID{}
-	}
+func mapUuid(id uuid.UUID) duckdb.UUID {
 	var eventId duckdb.UUID
-	copy(eventId[:], bytes)
+	copy(eventId[:], id[:])
 	return eventId
 }

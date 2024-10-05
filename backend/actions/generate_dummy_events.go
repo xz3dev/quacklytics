@@ -2,6 +2,7 @@ package actions
 
 import (
 	"analytics/model"
+	"github.com/google/uuid"
 	"log"
 	"math/rand"
 	"time"
@@ -25,7 +26,7 @@ func GenerateRandomEvents(numEvents int, eventType string) {
 
 		eventInput := &model.EventInput{
 			EventType:  eventType,
-			UserId:     "user_" + string(rand.Intn(1000)), // Example user ID
+			UserId:     uuid.New(), // Example user ID
 			Timestamp:  timestamp,
 			Properties: properties,
 		}

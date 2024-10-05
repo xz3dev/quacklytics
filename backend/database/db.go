@@ -32,8 +32,8 @@ func ReadOnlyTx() (*sql.Tx, error) {
 	return tx, err
 }
 
-func Tx(opts *sql.TxOptions) (*sql.Tx, error) {
-	tx, err := db.BeginTx(context.Background(), opts)
+func Tx() (*sql.Tx, error) {
+	tx, err := db.BeginTx(context.Background(), nil)
 	return tx, err
 }
 
