@@ -18,6 +18,7 @@ func setupRoutes(mux *chi.Mux) {
 	mux.Get("/events", queryEvents)
 	mux.Post("/event", receiveEvent)
 	mux.Post("/dummy", generateDummyEvents)
+	mux.Get("/events/arrow", queryEventAsParquet) // New Route
 }
 
 func setupMiddleware(r *chi.Mux) {
