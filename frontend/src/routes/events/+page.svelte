@@ -8,6 +8,11 @@
 
 <ul>
   {#each data.events as event}
-    <li>{event.id} - {event.timestamp} - {event.eventType} - {event.userId}</li>
+    <li>
+      {event.id} - {event.eventType} - {event.timestamp} - {event.userId}
+      {#each Object.entries(event.properties) as [key, value]}
+         &nbsp;- {key}: {value}
+      {/each}
+    </li>
   {/each}
 </ul>

@@ -26,31 +26,12 @@ func receiveEvent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func queryEvents(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	events, err := actions.QueryEvents()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Error while querying events: ", err)
-		return
-	}
-	jsonEvents, err := json.Marshal(events)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Error while unmarshaling events", err)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonEvents)
-}
-
 func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	requestId := middleware.GetReqID(r.Context())
 	parts := strings.Split(requestId, "/")
 	shortRequestId := parts[len(parts)-1]
 
-	events, err := actions.QueryEvents()
+	events, err := actions.QueryEvents(nil)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Error while querying events: ", err)
