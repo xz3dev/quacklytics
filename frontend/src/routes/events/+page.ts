@@ -18,7 +18,7 @@ export const load: PageLoad = async ({ params }) => {
         {
             field: 'properties',
             operation: 'gte',
-            value: 80,
+            value: 98,
             jsonProperty: 'value'
         },
         {

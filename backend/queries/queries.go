@@ -3,43 +3,8 @@ package queries
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 )
-
-type OperationType string
-
-const (
-	Equals        OperationType = "eq"
-	NotEquals     OperationType = "neq"
-	GreaterThan   OperationType = "gt"
-	LessThan      OperationType = "lt"
-	GreaterEquals OperationType = "gte"
-	LessEquals    OperationType = "lte"
-	In            OperationType = "in"
-	NotIn         OperationType = "nin"
-	Contains      OperationType = "contains"
-)
-
-type FieldType string
-
-const (
-	StringField  FieldType = "string"
-	NumberField  FieldType = "number"
-	BooleanField FieldType = "boolean"
-	DateField    FieldType = "date"
-	JSONField    FieldType = "json"
-)
-
-var FieldTypes = map[string]FieldType{
-	"id":         StringField,
-	"timestamp":  DateField,
-	"event_type": StringField,
-	"user_id":    StringField,
-	"properties": JSONField,
-	// Add other fields as necessary
-}
 
 type QueryCondition struct {
 	Field        string
@@ -82,10 +47,6 @@ func ExtractQueryParams(r *http.Request) (*QueryParams, error) {
 }
 
 func createCondition(field string, operation OperationType, value string) (QueryCondition, error) {
-	var parsedValue interface{}
-	var err error
-	var jsonProperty string
-
 	fieldParts := strings.SplitN(field, ".", 2)
 	baseField := fieldParts[0]
 	fieldType, ok := FieldTypes[baseField]
@@ -93,28 +54,19 @@ func createCondition(field string, operation OperationType, value string) (Query
 		return QueryCondition{}, fmt.Errorf("unknown field: %s", baseField)
 	}
 
-	if fieldType == JSONField && len(fieldParts) == 2 {
-		jsonProperty = fieldParts[1]
-		if isNumericOperation(operation) {
-			parsedValue, err = strconv.ParseFloat(value, 64)
-		} else {
-			parsedValue = value
-		}
-	} else {
-		switch fieldType {
-		case NumberField:
-			parsedValue, err = strconv.ParseFloat(value, 64)
-		case BooleanField:
-			parsedValue, err = strconv.ParseBool(value)
-		case DateField:
-			parsedValue, err = time.Parse(time.RFC3339, value)
-		default:
-			parsedValue = value
-		}
+	handler, ok := fieldHandlers[fieldType]
+	if !ok {
+		return QueryCondition{}, fmt.Errorf("no handler for field type: %s", fieldType)
 	}
 
+	parsedValue, err := handler.Parse(value, operation)
 	if err != nil {
 		return QueryCondition{}, err
+	}
+
+	jsonProperty := ""
+	if fieldType == JSONField && len(fieldParts) == 2 {
+		jsonProperty = fieldParts[1]
 	}
 
 	return QueryCondition{
@@ -125,75 +77,44 @@ func createCondition(field string, operation OperationType, value string) (Query
 		JSONProperty: jsonProperty,
 	}, nil
 }
-
 func BuildSQL(params *QueryParams) (string, []interface{}) {
 	query := "select * from events where 1=1"
 	var args []interface{}
 	argCount := 0
 
 	for _, condition := range params.Conditions {
+		handler := fieldHandlers[condition.FieldType]
+		fieldExpr := handler.FormatSQL(condition.Field, condition.JSONProperty, condition.Operation)
+
 		argCount++
-		placeholder := fmt.Sprintf("$%d", argCount)
 
-		var fieldExpr string
-		if condition.FieldType == JSONField {
-			// For numeric operations, cast to DOUBLE
-			if isNumericOperation(condition.Operation) {
-				fieldExpr = fmt.Sprintf("CAST(json_extract(%s, '$.%s') AS DOUBLE)",
-					condition.Field, condition.JSONProperty)
-			} else {
-				fieldExpr = fmt.Sprintf("json_extract(%s, '$.%s')",
-					condition.Field, condition.JSONProperty)
-			}
-		} else {
-			fieldExpr = condition.Field
-		}
-
-		switch condition.Operation {
-		case Equals:
-			query += fmt.Sprintf(" AND %s = %s", fieldExpr, placeholder)
-		case NotEquals:
-			query += fmt.Sprintf(" AND %s != %s", fieldExpr, placeholder)
-		case GreaterThan:
-			query += fmt.Sprintf(" AND %s > %s", fieldExpr, placeholder)
-		case LessThan:
-			query += fmt.Sprintf(" AND %s < %s", fieldExpr, placeholder)
-		case GreaterEquals:
-			query += fmt.Sprintf(" AND %s >= %s", fieldExpr, placeholder)
-		case LessEquals:
-			query += fmt.Sprintf(" AND %s <= %s", fieldExpr, placeholder)
-		case In:
-			values := strings.Split(condition.Value.(string), ",")
-			placeholders := make([]string, len(values))
-			for i := range values {
-				argCount++
-				placeholders[i] = fmt.Sprintf("$%d", argCount)
-				args = append(args, values[i])
-			}
-			query += fmt.Sprintf(" AND %s IN (%s)", fieldExpr, strings.Join(placeholders, ", "))
-			continue // Skip the args append at the end
-		case NotIn:
-			values := strings.Split(condition.Value.(string), ",")
-			placeholders := make([]string, len(values))
-			for i := range values {
-				argCount++
-				placeholders[i] = fmt.Sprintf("$%d", argCount)
-				args = append(args, values[i])
-			}
-			query += fmt.Sprintf(" AND %s NOT IN (%s)", fieldExpr, strings.Join(placeholders, ", "))
-			continue // Skip the args append at the end
-		case Contains:
-			query += fmt.Sprintf(" AND %s LIKE '%%' || %s || '%%'", fieldExpr, placeholder)
-		default:
+		op, exists := GetOperation(condition.Operation)
+		if !exists {
 			continue // Skip unknown operations
 		}
 
-		args = append(args, condition.Value)
+		placeholder := fmt.Sprintf("$%d", argCount)
+
+		switch op.Type {
+		case In, NotIn:
+			values := strings.Split(condition.Value.(string), ",")
+			placeholders := make([]string, len(values))
+			for i := range values {
+				argCount++
+				placeholders[i] = fmt.Sprintf("$%d", argCount)
+				args = append(args, values[i])
+			}
+			placeholder = fmt.Sprintf("(%s)", strings.Join(placeholders, ", "))
+		case Contains:
+			placeholder = fmt.Sprintf("'%%' || %s || '%%'", placeholder)
+		}
+
+		query += fmt.Sprintf(" AND %s %s %s", fieldExpr, op.SQL, placeholder)
+
+		if op.Type != In && op.Type != NotIn {
+			args = append(args, condition.Value)
+		}
 	}
 
 	return query, args
-}
-
-func isNumericOperation(op OperationType) bool {
-	return op == GreaterThan || op == LessThan || op == GreaterEquals || op == LessEquals
 }
