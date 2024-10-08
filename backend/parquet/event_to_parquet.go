@@ -8,7 +8,6 @@ import (
 	"github.com/apache/arrow/go/v17/arrow/memory"
 	"github.com/apache/arrow/go/v17/parquet"
 	"github.com/apache/arrow/go/v17/parquet/pqarrow"
-	"log"
 	"os"
 )
 
@@ -99,7 +98,5 @@ func ConvertEventsToParquet(events *[]model.Event, filename string) error {
 	if err := writer.Close(); err != nil {
 		return err
 	}
-
-	log.Println("Write Finished")
 	return nil
 }

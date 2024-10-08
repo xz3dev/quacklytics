@@ -4,8 +4,6 @@ import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?ur
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 
-export const ssr = false
-
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
@@ -18,10 +16,16 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
 }
 
 export const createDb = async () => {
-// Select a bundle based on browser checks
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || typeof Worker === 'undefined') {
+        console.warn('DuckDB initialization skipped: not in browser environment')
+        return null
+    }
+    // Select a bundle based on browser checks
     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
-// Instantiate the asynchronus version of DuckDB-wasm
-    const worker = new Worker(bundle.mainWorker!)
+    // Instantiate the asynchronus version of DuckDB-wasm
+    const worker = new Worker(new URL(bundle.mainWorker!, import.meta.url))
+    // const worker = new Worker()
     const logger = new duckdb.ConsoleLogger()
     const db = new duckdb.AsyncDuckDB(logger, worker)
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker)

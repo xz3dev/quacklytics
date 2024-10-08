@@ -27,7 +27,8 @@ func receiveEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
-	requestId := middleware.GetReqID(r.Context())
+	ctx := r.Context()
+	requestId := middleware.GetReqID(ctx)
 	parts := strings.Split(requestId, "/")
 	shortRequestId := parts[len(parts)-1]
 
@@ -53,7 +54,7 @@ func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// Serve the file
-	http.ServeFile(w, r, filename)
+	http.ServeFile(w, r, path+filename)
 }
 
 func generateDummyEvents(w http.ResponseWriter, r *http.Request) {
