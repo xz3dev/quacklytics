@@ -1,4 +1,4 @@
-package parquet
+package actions
 
 import (
 	"analytics/model"
@@ -11,7 +11,9 @@ import (
 	"os"
 )
 
-func convertToArrowRecord(events []model.Event, pool memory.Allocator) arrow.Record {
+func convertToArrowRecord(events []model.Event) arrow.Record {
+	// Create memory allocator
+	pool := memory.NewGoAllocator()
 	numEvents := len(events)
 
 	// Create builders for each field
@@ -54,16 +56,12 @@ func convertToArrowRecord(events []model.Event, pool memory.Allocator) arrow.Rec
 	record := array.NewRecord(schema, []arrow.Array{
 		idArray, eventTypeArray, userIdArray, timestampArray, propertiesArray,
 	}, int64(numEvents))
-
 	return record
 }
 
 func ConvertEventsToParquet(events *[]model.Event, filename string) error {
-	// Create memory allocator
-	pool := memory.NewGoAllocator()
-
 	// Convert events to Arrow record
-	record := convertToArrowRecord(*events, pool)
+	record := convertToArrowRecord(*events)
 	defer record.Release()
 
 	// Create Parquet file

@@ -50,6 +50,7 @@ func setupRoutes(mux *chi.Mux) {
 	mux.Post("/dummy", generateDummyEvents)
 	mux.Get("/events/parquet", queryEventAsParquet)
 	mux.Get("/events/parquet/kw", queryEventsKW)
+	mux.Get("/events/parquet/checksums", getLastTwelveWeeksChecksums)
 }
 
 func setupMiddleware(r *chi.Mux) {

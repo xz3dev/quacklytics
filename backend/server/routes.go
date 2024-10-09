@@ -3,11 +3,12 @@ package server
 import (
 	"analytics/actions"
 	"analytics/model"
-	"analytics/parquet"
 	"analytics/queries"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -67,7 +68,7 @@ func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 
 	path := "_tmp/"
 	filename := shortRequestId + ".parquet"
-	err = parquet.ConvertEventsToParquet(events, path+filename)
+	err = actions.ConvertEventsToParquet(events, path+filename)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Error while converting events to Parquet: ", err)
@@ -153,12 +154,61 @@ func queryEventsKW(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parquet.ConvertEventsToParquet(events, path+filename)
+	actions.ConvertEventsToParquet(events, path+filename)
 
 	w.WriteHeader(http.StatusOK)
 
 	// Serve the file
 	http.ServeFile(w, r, path+filename)
+}
+
+func getLastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	checksums := make(map[string]string)
+	currentDate := time.Now()
+	currentYear, currentWeek := currentDate.ISOWeek()
+
+	for i := 0; i < 12; i++ {
+		week := currentWeek - i
+		year := currentYear
+
+		if week <= 0 {
+			week += 52
+			year--
+		}
+
+		filename := fmt.Sprintf("events_kw%d_%d.parquet", week, year)
+		filepath := fmt.Sprintf("_tmp/%s", filename)
+
+		checksum, err := calculateFileChecksum(filepath)
+		if err != nil {
+			// If file doesn't exist or there's an error, set checksum to empty string
+			checksums[filename] = ""
+		} else {
+			checksums[filename] = checksum
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"checksums": checksums,
+	})
+}
+
+func calculateFileChecksum(filepath string) (string, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 func getWeekStartEnd(year int, week int) (time.Time, time.Time) {

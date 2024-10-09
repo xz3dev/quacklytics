@@ -1,13 +1,19 @@
 <script lang="ts">
     import type { PageData } from './$types'
+    import { ParquetManager } from '$lib/parquet-manager'
 
     export let data: PageData
+    export let manager = new ParquetManager()
 </script>
 
 <h1>Events</h1>
 
+<button
+  on:click={() => manager.downloadLast12Weeks()}
+>Download last 12 weeks</button>
+
 <ul>
-  {#each data.events as event}
+  {#each (data.events ?? []) as event}
     <li>
       {event.id} - {event.eventType} - {event.timestamp} - {event.userId}
       {#each Object.entries(event.properties) as [key, value]}
