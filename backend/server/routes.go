@@ -4,7 +4,7 @@ import (
 	"analytics/actions"
 	"analytics/model"
 	"analytics/queries"
-	"crypto/md5"
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
@@ -203,7 +203,7 @@ func calculateFileChecksum(filepath string) (string, error) {
 	}
 	defer file.Close()
 
-	hash := md5.New()
+	hash := sha1.New()
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}

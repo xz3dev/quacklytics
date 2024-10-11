@@ -1,8 +1,6 @@
 <script lang="ts">
-    import type { PageData } from './$types'
     import { ParquetManager } from '$lib/parquet-manager'
 
-    export let data: PageData
     export let manager = new ParquetManager()
 </script>
 
@@ -12,13 +10,13 @@
   on:click={() => manager.downloadLast12Weeks()}
 >Download last 12 weeks</button>
 
-<ul>
-  {#each (data.events ?? []) as event}
-    <li>
-      {event.id} - {event.eventType} - {event.timestamp} - {event.userId}
-      {#each Object.entries(event.properties) as [key, value]}
-         &nbsp;- {key}: {value}
-      {/each}
-    </li>
-  {/each}
-</ul>
+<!--<ul>-->
+<!--  {#each (data.events ?? []) as event}-->
+<!--    <li>-->
+<!--      {event.id} - {event.eventType} - {event.timestamp} - {event.userId}-->
+<!--      {#each Object.entries(event.properties) as [key, value]}-->
+<!--         &nbsp;- {key}: {value}-->
+<!--      {/each}-->
+<!--    </li>-->
+<!--  {/each}-->
+<!--</ul>-->

@@ -1,136 +1,61 @@
+import { ParquetDownloader } from '$lib/parquet-downloader'
+import { calculateChecksum } from '$lib/checksums'
+import { IndexedDBManager } from '$lib/index-db-manager'
+import { dbManager } from '$lib/duck-db-manager'
+
+
 export class ParquetManager {
-    private dbName = 'ParquetStorage'
-    private storeName = 'parquetFiles'
-    private baseUrl = 'http://localhost:3000/events/parquet/kw'
+    private dbManager: IndexedDBManager
+    private downloader: ParquetDownloader
 
-    constructor() {
-        this.initDB()
+    constructor(
+        private baseUrl: string = 'http://localhost:3000/events/parquet/kw',
+        private checksumUrl: string = 'http://localhost:3000/events/parquet/checksums',
+    ) {
+        this.dbManager = new IndexedDBManager('ParquetStorage', 'parquetFiles')
+        this.downloader = new ParquetDownloader(baseUrl)
+        void this.downloadLast12Weeks()
     }
 
-    private async initDB(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 1)
+    async downloadLast12Weeks(eventType?: string): Promise<void> {
+        const serverChecksums = await this.downloader.getServerChecksums(this.checksumUrl)
+        const localFiles = await this.dbManager.getAllFiles()
+        const localChecksums = await this.getLocalChecksums(localFiles)
 
-            request.onerror = () => reject('Error opening database')
-            request.onsuccess = () => resolve()
+        for (const [filename, serverChecksum] of Object.entries(serverChecksums)) {
+            const localChecksum = localChecksums[filename]
 
-            request.onupgradeneeded = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result
-                db.createObjectStore(this.storeName, { keyPath: 'filename' })
+            if (serverChecksum !== localChecksum) {
+                const [, kw, year] = filename.match(/events_kw(\d+)_(\d+)\.parquet/) || []
+                if (kw && year) {
+                    await this.downloadAndSaveParquetFile(parseInt(kw), parseInt(year), eventType)
+                }
             }
-        })
+        }
+        const localFilesAfterUpdate = await this.dbManager.getAllFiles()
+        await dbManager.importParquetFiles(localFilesAfterUpdate)
     }
 
-    async downloadAndSaveParquetFile(kw: number, year: number, eventType?: string): Promise<void> {
-        const url = `${this.baseUrl}?kw=${kw}&year=${year}` + (eventType ? `&type=${eventType}` : '')
-
+    private async downloadAndSaveParquetFile(kw: number, year: number, eventType?: string): Promise<void> {
         try {
-            const response = await fetch(url)
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-
-            const blob = await response.blob()
+            const blob = await this.downloader.downloadParquetFile(kw, year, eventType)
             const filename = `events_kw${kw}_${year}.parquet`
-
-            await this.saveToIndexedDB(filename, blob)
+            await this.dbManager.saveFile(filename, blob)
             console.log(`Saved ${filename} to IndexedDB`)
         } catch (error) {
             console.error(`Failed to download or save file for week ${kw}, year ${year}: ${error}`)
         }
     }
 
-    private async saveToIndexedDB(filename: string, blob: Blob): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName)
-
-            request.onerror = () => reject('Error opening database')
-
-            request.onsuccess = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result
-                const transaction = db.transaction([this.storeName], 'readwrite')
-                const store = transaction.objectStore(this.storeName)
-
-                const saveRequest = store.put({ filename, blob })
-
-                saveRequest.onerror = () => reject('Error saving to database')
-                saveRequest.onsuccess = () => resolve()
-            }
-        })
+    private async getLocalChecksums(files: Array<{ filename: string; blob: Blob }>): Promise<Record<string, string>> {
+        const checksums: Record<string, string> = {}
+        for (const file of files) {
+            checksums[file.filename] = await calculateChecksum(file.blob)
+        }
+        return checksums
     }
 
     async getParquetFile(filename: string): Promise<Blob | null> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName)
-
-            request.onerror = () => reject('Error opening database')
-
-            request.onsuccess = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result
-                const transaction = db.transaction([this.storeName], 'readonly')
-                const store = transaction.objectStore(this.storeName)
-
-                const getRequest = store.get(filename)
-
-                getRequest.onerror = () => reject('Error retrieving from database')
-                getRequest.onsuccess = () => {
-                    const result = getRequest.result
-                    resolve(result ? result.blob : null)
-                }
-            }
-        })
-    }
-
-    async downloadLast12Weeks(eventType?: string): Promise<void> {
-        const currentDate = new Date()
-        const currentYear = currentDate.getFullYear()
-        const currentWeek = this.getWeekNumber(currentDate)
-
-        for (let i = 0; i < 12; i++) {
-            let week = currentWeek - i
-            let year = currentYear
-
-            if (week <= 0) {
-                week += 52
-                year -= 1
-            }
-
-            const filename = `events_kw${week}_${year}.parquet`;
-            const fileExists = await this.checkFileExists(filename);
-
-            if (i === 0 || !fileExists) {
-                console.log(`Downloading ${filename}...`);
-                await this.downloadAndSaveParquetFile(week, year, eventType);
-            } else {
-                console.log(`Skipping download for ${filename} as it already exists.`);
-            }
-        }
-    }
-
-    private getWeekNumber(date: Date): number {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-        const dayNum = d.getUTCDay() || 7
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-        return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
-    }
-
-    private async checkFileExists(filename: string): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName)
-
-            request.onerror = () => reject('Error opening database')
-
-            request.onsuccess = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result
-                const transaction = db.transaction([this.storeName], 'readonly')
-                const store = transaction.objectStore(this.storeName)
-
-                const getRequest = store.get(filename)
-
-                getRequest.onerror = () => reject('Error checking file existence')
-                getRequest.onsuccess = () => {
-                    resolve(!!getRequest.result)
-                }
-            }
-        })
+        return this.dbManager.getFile(filename)
     }
 }
