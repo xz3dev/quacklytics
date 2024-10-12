@@ -25,7 +25,6 @@ export const createDb = async () => {
     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
     // Instantiate the asynchronus version of DuckDB-wasm
     const worker = new Worker(new URL(bundle.mainWorker!, import.meta.url))
-    // const worker = new Worker()
     const logger = new duckdb.ConsoleLogger()
     const db = new duckdb.AsyncDuckDB(logger, worker)
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker)

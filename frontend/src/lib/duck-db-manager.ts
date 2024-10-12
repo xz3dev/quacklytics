@@ -50,8 +50,6 @@ class DuckDbManager {
                        properties::json              as properties
                 from parquet_scan('${filename}')
             `)
-
-            console.log(`Imported data from ${filename} into events table`)
         }
     }
 
@@ -66,10 +64,10 @@ class DuckDbManager {
 
     mapToEvents(results: RawEventRow[]): AnalyticsEvent[] {
         return results.map((row) => ({
-            id: uuidStringify(row.id),
-            userId: uuidStringify(row.userId),
+            id: row.id,
+            userId: row.user_id,
             timestamp: new Date(Number(row.timestamp)),
-            eventType: row.eventType,
+            eventType: row.event_type,
             properties: JSON.parse(row.properties),
         } satisfies AnalyticsEvent))
     }

@@ -7,9 +7,9 @@ export interface AnalyticsEvent {
 }
 
 export interface RawEventRow {
-    id: Uint8Array;
-    eventType: string;
-    userId: Uint8Array;
+    id: string;
+    event_type: string;
+    user_id: string;
     timestamp: bigint;  // DuckDB returns bigint for timestamp
     properties: string;
 
