@@ -14,7 +14,6 @@
 
   table, th, td {
     border-collapse : collapse;
-    /*border: 1px solid var(--border-primary);*/
   }
 </style>
 <div class="w-full overflow-auto">
