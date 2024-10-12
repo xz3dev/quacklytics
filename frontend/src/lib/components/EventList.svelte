@@ -17,7 +17,7 @@
   }
 </style>
 <div class="w-full overflow-auto">
-  <table class="border border-neutral table-auto">
+  <table class="border border-neutral table-auto w-full">
     <colgroup>
       <col class="w-0" />
       <col class="" />

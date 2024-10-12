@@ -1,8 +1,13 @@
-<nav>
-  <a href="/">home</a>
-  <a href="/events">events</a>
-</nav>
 <script>
     import "../app.css";
+    import Sidebar from './Sidebar.svelte'
 </script>
-<slot />
+
+<div class="flex flex-row h-screen">
+  <div class="items-stretch h-full">
+    <Sidebar />
+  </div>
+  <div class="flex-1 p-6">
+    <slot />
+  </div>
+</div>
