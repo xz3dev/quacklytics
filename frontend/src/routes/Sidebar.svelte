@@ -23,10 +23,6 @@
                     label: 'Insights',
                     href: '/insight',
                 },
-                {
-                    label: 'Parquet Checksum',
-                    href: '/events/parquet/checksums',
-                },
             ],
         },
     ]
@@ -40,7 +36,7 @@
           <li>
             <a
               href={item.href || '#'}
-              class="flex items-center p-2 rounded-lg hover:bg-base-300 transition-colors duration-200 {$page.url.pathname === item.href ? 'bg-primary text-primary-content' : 'text-base-content'}"
+              class="flex items-center p-2 rounded-lg hover:bg-base-300 hover:text-base-content transition-colors duration-200 {$page.url.pathname === item.href ? 'bg-primary text-primary-content' : 'text-base-content'}"
             >
               {#if item.icon}
                 <Icon icon={item.icon} class="w-5 h-5 mr-2" />

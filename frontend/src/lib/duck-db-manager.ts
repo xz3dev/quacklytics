@@ -1,5 +1,5 @@
 import { createDb } from '$lib/duckdb'
-import { buildEventQueryUrl, type QueryCondition } from '$lib/queries'
+import { buildEventQueryUrl, type QueryCondition } from '$lib/backend-queries'
 import { stringify as uuidStringify } from 'uuid'
 import type { AnalyticsEvent, RawEventRow } from '$lib/event'
 import type { DataType } from '@apache-arrow/ts'

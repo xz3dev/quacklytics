@@ -37,7 +37,7 @@
       <tr class="text-sm whitespace-nowrap">
         <td class="border border-neutral">
           <butto
-            on:click="{() => expanded = event.id}"
+            on:click="{() => expanded = expanded != event.id ? event.id : undefined}"
           >
             <Icon icon="material-symbols:expand-all-rounded" height="24px" width="24px"></Icon>
           </butto>
@@ -49,14 +49,18 @@
         </td>
       </tr>
       {#if expanded === event.id}
-        <div>
-          {#each Object.entries(event.properties) as [key, value]}
-            <div class="flex justify-between gap-2">
-              <div>{key}</div>
-              <div>{value}</div>
+        <tr>
+          <td colspan="4" class="border border-neutral">
+            <div>
+              {#each Object.entries(event.properties) as [key, value]}
+                <div class="flex justify-between gap-2">
+                  <div>{key}</div>
+                  <div>{value}</div>
+                </div>
+              {/each}
             </div>
-          {/each}
-        </div>
+          </td>
+        </tr>
       {/if}
     {/each}
     </tbody>
