@@ -16,7 +16,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <div class="flex items-center">
+  <div class="flex items-start">
     <h1 class="text-3xl font-bold flex-1">Events</h1>
     <button
       class="btn btn-primary self-start"

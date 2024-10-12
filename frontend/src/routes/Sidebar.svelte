@@ -20,8 +20,8 @@
                     href: '/events',
                 },
                 {
-                    label: 'Parquet',
-                    href: '/events/parquet',
+                    label: 'Insights',
+                    href: '/insight',
                 },
                 {
                     label: 'Parquet Checksum',
