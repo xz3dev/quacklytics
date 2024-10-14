@@ -1,181 +1,138 @@
-export type Timeframe = 'Hourly' | 'Daily' | 'Weekly' | 'Monthly';
+// Define supported SQL operators
+export type Operator = '=' | '>' | '<' | '>=' | '<=' | '<>' | 'LIKE' | 'IN';
+export type AggregationFunction = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
+export type SortDirection = 'ASC' | 'DESC';
 
-export type AggregationFunction =
-    | 'Count'
-    | 'Sum'
-    | 'Average'
-    | 'Min'
-    | 'Max'
-    | 'CountDistinct';
-
-export interface Aggregation {
-    function: AggregationFunction;
-    field?: string; // Field or property on which the aggregation is performed
+// Interface for a field in a query, with support for JSON properties
+export interface Field {
+    name: string;                // Field name or JSON path
 }
 
-export interface FilterCondition {
-    field: string;
-    operator: '=' | '!=' | '<' | '<=' | '>' | '>=' | 'IN' | 'NOT IN' | 'LIKE';
+// Interface for a filter condition
+export interface Filter {
+    field: Field;
+    operator: Operator;
     value: any;
 }
 
-export interface QueryParameters {
-    eventType?: string;
-    timeframe: Timeframe;
-    aggregations: Aggregation[];
-    filters?: FilterCondition[];
-    groupBy?: string[]; // Fields to group by
-    orderBy?: string; // Field to order by
-    startDate?: string;
-    endDate?: string;
+// Interface for an aggregation function
+export interface Aggregation {
+    function: AggregationFunction;
+    field: Field;
+    alias?: string;
 }
 
-
-export function buildQuery(params: QueryParameters): string {
-    const {
-        timeframe,
-        aggregations,
-        filters,
-        groupBy,
-        orderBy,
-        eventType,
-        startDate,
-        endDate,
-    } = params
-
-
-    const selectClause = buildSelectClause(aggregations, timeframe)
-    const fromClause = `FROM events`
-    const whereClause = buildWhereClause(eventType, startDate, endDate, filters)
-    const groupByClause = buildGroupByClause(groupBy, timeframe)
-    const orderByClause = buildOrderByClause(orderBy)
-
-    const query = `
-    SELECT
-      ${selectClause}
-    ${fromClause}
-    ${whereClause}
-    ${groupByClause}
-    ${orderByClause}
-  `
-    return query.trim()
+// Interface for ordering results
+export interface OrderBy {
+    field: Field;
+    direction: SortDirection;
 }
 
-
-function buildSelectClause(aggregations: Aggregation[], timeframe: Timeframe): string {
-    const timeframeExpression = getTimeframeExpression(timeframe);
-    const aggregationExpressions = aggregations.map(agg => getAggregationExpression(agg));
-
-    return [timeframeExpression, ...aggregationExpressions].join(', ');
+// Main query interface
+export interface Query {
+    select?: Field[];
+    filters?: Filter[];
+    groupBy?: Field[];
+    orderBy?: OrderBy[];
+    aggregations?: Aggregation[];
+    limit?: number;
+    offset?: number;
 }
 
-function getTimeframeExpression(timeframe: Timeframe): string {
-    const timeframeTrunc = {
-        'Hourly': "date_trunc('hour', timestamp) AS time_bucket",
-        'Daily': "date_trunc('day', timestamp) AS time_bucket",
-        'Weekly': "date_trunc('week', timestamp) AS time_bucket",
-        'Monthly': "date_trunc('month', timestamp) AS time_bucket",
-    };
-
-    return timeframeTrunc[timeframe];
-}
-
-function getAggregationExpression(agg: Aggregation): string {
-    const { function: func, field } = agg;
-    const targetField = field ? getFieldExpression(field) : '*';
-
-    const aggregationFunctions = {
-        'Count': `COUNT(${targetField}) AS count`,
-        'Sum': `SUM(${targetField}) AS sum`,
-        'Average': `AVG(${targetField}) AS average`,
-        'Min': `MIN(${targetField}) AS min`,
-        'Max': `MAX(${targetField}) AS max`,
-        'CountDistinct': `COUNT(DISTINCT ${targetField}) AS count_distinct`,
-    };
-
-    if (!aggregationFunctions[func]) {
-        throw new Error(`Unsupported aggregation function: ${func}`);
-    }
-
-    return aggregationFunctions[func];
-}
-
-function getFieldExpression(field: string): string {
-    // Check if the field is in the properties object
-    if (field.startsWith('properties.')) {
-        const propertyKey = field.replace('properties.', '');
-        return `CAST(properties->>'${propertyKey}' AS FLOAT)`;
+// Function to generate the SQL expression for a field
+function getFieldExpression(field: Field, castType?: string): string {
+    let expression = ''
+    const isJsonField = field.name.startsWith('$.')
+    const nameCleaned = field.name.replace(/\$\./g, '')
+    if (isJsonField) {
+        const jsonPath = `$.${nameCleaned}`
+        expression = `CAST(json_extract(properties, '${jsonPath}') AS ${castType ?? 'VARCHAR'})`
     } else {
-        return field;
+        if(castType) {
+            expression = `CAST(${expression} AS ${castType})`
+        } else {
+            expression = field.name
+        }
     }
+
+    return expression
 }
 
-function buildWhereClause(
-    eventType?: string,
-    startDate?: string,
-    endDate?: string,
-    filters?: FilterCondition[],
-): string {
-    const conditions = ['1=1'];
+// Function to build the SQL query and parameters from a Query object
+export function buildQuery(query: Query): { sql: string; params: any[] } {
+    const params: any[] = []
+    let sql = 'SELECT '
+    const selectParts: string[] = []
 
-    if (eventType) {
-        conditions.push(`event_type = '${escapeValue(eventType)}'`);
+    // Construct SELECT clause
+    if (query.aggregations && query.aggregations.length > 0) {
+        for (const agg of query.aggregations) {
+            const castType = agg.function === 'COUNT' ? undefined : 'FLOAT'
+            const fieldExpr = getFieldExpression(agg.field, castType)
+            const aggExpr = `${agg.function}(${fieldExpr})${agg.alias ? ` AS ${agg.alias}` : ''}`
+            selectParts.push(aggExpr)
+        }
     }
 
-    if (startDate) {
-        conditions.push(`timestamp >= '${escapeValue(startDate)}'`);
+    if (query.select && query.select.length > 0) {
+        for (const field of query.select) {
+            const fieldExpr = getFieldExpression(field)
+            selectParts.push(fieldExpr)
+        }
     }
 
-    if (endDate) {
-        conditions.push(`timestamp <= '${escapeValue(endDate)}'`);
+
+    // Add group by as alias to select
+    if (query.groupBy && query.groupBy.length > 0) {
+        const groupByParts = query.groupBy
+            .map((field, index) => `${getFieldExpression(field)} as bucket_${index}`)
+        selectParts.push(...groupByParts)
     }
 
-    if (filters) {
-        filters.forEach(filter => {
-            const { field, operator, value } = filter;
-            const fieldExpression = getFieldExpression(field);
-            const valueExpression = formatValue(value);
-            conditions.push(`${fieldExpression} ${operator} ${valueExpression}`);
-        });
+    if (selectParts.length === 0) {
+        selectParts.push('*')
     }
 
-    return `WHERE ${conditions.join(' AND ')}`;
-}
+    sql += selectParts.join(', ')
+    sql += ' FROM events'
 
-function buildGroupByClause(groupBy?: string[], timeframe?: Timeframe): string {
-    const groupings = ['time_bucket']; // Always group by time bucket
+    // Construct WHERE clause
+    if (query.filters && query.filters.length > 0) {
+        const whereClauses: string[] = []
 
-    if (groupBy) {
-        groupBy.forEach(field => {
-            const fieldExpression = getFieldExpression(field);
-            groupings.push(fieldExpression);
-        });
+        for (const filter of query.filters) {
+            const fieldExpr = getFieldExpression(filter.field)
+            whereClauses.push(`${fieldExpr} ${filter.operator} ?`)
+            params.push(filter.value)
+        }
+
+        sql += ' WHERE ' + whereClauses.join(' AND ')
     }
 
-    return `GROUP BY ${groupings.join(', ')}`;
-}
-
-function buildOrderByClause(orderBy?: string): string {
-    if (orderBy) {
-        const fieldExpression = getFieldExpression(orderBy);
-        return `ORDER BY ${fieldExpression}`;
-    } else {
-        return `ORDER BY time_bucket`;
+    // Construct GROUP BY clause
+    if (query.groupBy && query.groupBy.length > 0) {
+        const groupByParts = query.groupBy
+            .map((field, index) => `bucket_${index}`)
+        sql += ' GROUP BY ' + groupByParts.join(', ')
     }
-}
 
-function formatValue(value: any): string {
-    if (typeof value === 'string') {
-        return `'${escapeValue(value)}'`;
-    } else if (Array.isArray(value)) {
-        const formattedValues = value.map(v => formatValue(v)).join(', ');
-        return `(${formattedValues})`;
-    } else {
-        return value.toString();
+    // Construct ORDER BY clause
+    if (query.orderBy && query.orderBy.length > 0) {
+        const orderByParts = query.orderBy.map((order) => {
+            const fieldExpr = getFieldExpression(order.field)
+            return `${fieldExpr} ${order.direction}`
+        })
+        sql += ' ORDER BY ' + orderByParts.join(', ')
     }
-}
 
-function escapeValue(value: string): string {
-    // Basic escaping to prevent SQL injection
-    return value.replace(/'/g, "''");
+    // Add LIMIT and OFFSET if specified
+    if (query.limit !== undefined) {
+        sql += ' LIMIT ' + query.limit
+    }
+
+    if (query.offset !== undefined) {
+        sql += ' OFFSET ' + query.offset
+    }
+
+    return { sql, params }
 }

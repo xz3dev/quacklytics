@@ -1,12 +1,10 @@
 import { createDb } from '$lib/duckdb'
-import { buildEventQueryUrl, type QueryCondition } from '$lib/backend-queries'
-import { stringify as uuidStringify } from 'uuid'
 import type { AnalyticsEvent, RawEventRow } from '$lib/event'
 import type { DataType } from '@apache-arrow/ts'
 import { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm'
 
 
-class DuckDbManager {
+export class DuckDbManager {
     private db = createDb()
     private conn = this.db.then(db => db?.connect())
 
@@ -55,10 +53,24 @@ class DuckDbManager {
 
     async runQuery<T extends {
         [key: string]: DataType;
-    } = any>(query: string) {
+    } = any>(query: string, params?: any[]) {
         const conn = await this.conn
         if (!conn) return
-        const results = await conn.query<T>(query)
+        const preparedQuery = await conn.prepare<T>(query)
+        const results = await preparedQuery.query(params)
+        console.log(`Returned ${results.toArray().length} rows`)
+        return results.toArray().map(i => i.toJSON())
+    }
+
+    async runEventsQuery<T extends {
+        [key: string]: DataType;
+    } = any>(query: string, params?: any[]) {
+        const conn = await this.conn
+        if (!conn) return
+        console.log(query, ...(params ?? []))
+        const preparedQuery = await conn.prepare<T>(query)
+        const results = await preparedQuery.query()
+        console.log(`Returned ${results.toArray().length} rows`)
         return this.mapToEvents(results.toArray())
     }
 
@@ -72,5 +84,3 @@ class DuckDbManager {
         } satisfies AnalyticsEvent))
     }
 }
-
-export const dbManager = new DuckDbManager()

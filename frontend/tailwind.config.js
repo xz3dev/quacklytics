@@ -1,3 +1,5 @@
+import {addDynamicIconSelectors, addIconSelectors} from '@iconify/tailwind'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./src/**/*.{html,js,svelte,ts}'],
@@ -6,6 +8,10 @@ export default {
   },
   plugins: [
     require('daisyui'),
+    addDynamicIconSelectors(),
+    addIconSelectors({
+      prefixes: ['tabler']
+    }),
   ],
 }
 

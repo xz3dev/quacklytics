@@ -1,5 +1,8 @@
+import { browser } from '$app/environment'
+
 export class IndexedDBManager {
     constructor(private dbName: string, private storeName: string) {
+        if(!browser) return
         void this.initDB()
     }
 
@@ -24,6 +27,7 @@ export class IndexedDBManager {
     }
 
     async saveFile(filename: string, blob: Blob): Promise<void> {
+        if(!browser) return
         const db = await this.openDB()
         const transaction = db.transaction([this.storeName], 'readwrite')
         const store = transaction.objectStore(this.storeName)
@@ -31,6 +35,7 @@ export class IndexedDBManager {
     }
 
     async getFile(filename: string): Promise<Blob | null> {
+        if(!browser) return null
         const db = await this.openDB()
         const transaction = db.transaction([this.storeName], 'readonly')
         const store = transaction.objectStore(this.storeName)
@@ -39,13 +44,15 @@ export class IndexedDBManager {
     }
 
     async getAllFiles(): Promise<Array<{ filename: string; blob: Blob }>> {
+        if(!browser) return []
         const db = await this.openDB()
         const transaction = db.transaction([this.storeName], 'readonly')
         const store = transaction.objectStore(this.storeName)
-        return this.wrapIDBRequest(store.getAll())
+        return (await this.wrapIDBRequest(store.getAll())) ?? []
     }
 
-    private wrapIDBRequest<T>(request: IDBRequest<T>): Promise<T> {
+    private async wrapIDBRequest<T>(request: IDBRequest<T>): Promise<T | null> {
+        if(!browser) return null
         return new Promise((resolve, reject) => {
             request.onsuccess = () => resolve(request.result)
             request.onerror = () => reject(request.error)

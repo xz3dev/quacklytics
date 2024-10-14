@@ -1,29 +1,22 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import Chart from 'chart.js/auto';
-    import { dbManager } from '$lib/duck-db-manager';
-    import { type AggregationOperation, buildInsightQuery, type TimeframeMode } from '$lib/local-queries'
+    import type { AggregationFunction } from '$lib/local-queries'
+    import { buildQuery, type Query, type Field, type Filter, type Aggregation } from '$lib/local-queries';
+    import { dbManager } from '$lib/globals'
 
-    let eventTypes = ['All', 'PageView', 'Click', 'Purchase']; // Add your actual event types
-    let aggregationOperations = [
-        'TotalCount',
-        'UniqueUsers',
-        'CountPerUserAvg',
-        'CountPerUserMin',
-        'CountPerUserMax',
-        'Sum',
-        'Average'
-    ];
+    let eventTypes = ['test_type']; // Add your actual event types
+    let aggregationFunctions: AggregationFunction[] = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'];
     let timeframeModes = ['Daily', 'Weekly', 'Monthly'];
-    let selectedEventType = 'All';
-    let selectedOperation: AggregationOperation = 'TotalCount';
-    let selectedTimeframe: TimeframeMode = 'Daily';
-    let selectedField = '';
+    let selectedEventType = 'test_type';
+    let selectedAggregationFunction = 'COUNT';
+    let selectedTimeframe = 'Daily';
+    let fieldVariable = ''; // Specify which field or property to operate on
     let startDate = '';
     let endDate = '';
     let chartInstance: Chart | null = null;
 
-    $: showFieldInput = ['Sum', 'Average'].includes(selectedOperation);
+    $: showFieldInput = ['SUM', 'AVG', 'MIN', 'MAX'].includes(selectedAggregationFunction);
 
     onMount(() => {
         const ctx = document.getElementById('eventChart') as HTMLCanvasElement;
@@ -41,6 +34,13 @@
             options: {
                 responsive: true,
                 scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 0,
+                            maxTicksLimit: 10 // Adjust this value to control the maximum number of ticks
+                        }
+                    },
                     y: {
                         beginAtZero: true
                     }
@@ -50,24 +50,62 @@
     });
 
     async function fetchData() {
-        const query = buildInsightQuery({
-            eventType: selectedEventType !== 'All' ? selectedEventType : undefined,
-            aggregation: {
-                operation: selectedOperation,
-                field: selectedField
-            },
-            timeframe: selectedTimeframe,
-            startDate,
-            endDate
-        });
+        const aggregationField: Field = {
+            name: fieldVariable,
+        };
 
-        const results = await dbManager.runQuery(query);
+        const aggregations: Aggregation[] = [{
+            function: selectedAggregationFunction as 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX',
+            field: aggregationField,
+            alias: 'result_value'
+        }];
 
+        let filters: Filter[] = [];
+        if (selectedEventType !== 'All') {
+            filters.push({
+                field: { name: 'event_type' },
+                operator: '=',
+                value: selectedEventType
+            });
+        }
+        if (startDate) {
+            filters.push({
+                field: { name: 'timestamp' },
+                operator: '>=',
+                value: startDate
+            });
+        }
+        if (endDate) {
+            filters.push({
+                field: { name: 'timestamp' },
+                operator: '<=',
+                value: endDate
+            });
+        }
+
+        const groupBy: Field[] = [{ name: getGroupByField(selectedTimeframe) }];
+
+        const query: Query = {
+            aggregations,
+            filters,
+            groupBy
+        };
+
+        const { sql, params } = buildQuery(query);
+
+        console.log(sql, ...params)
+        const results = await dbManager.runQuery(sql, ...params);
         if (chartInstance && results) {
-            chartInstance.data.labels = results.map(r => r.timestamp);
-            chartInstance.data.datasets[0].data = results.map(r => r.value);
+            chartInstance.data.labels = results.map(r => r.bucket_0);
+            chartInstance.data.datasets[0].data = results.map(r => Number(r.result_value));
             chartInstance.update();
         }
+    }
+
+    function getGroupByField(timeframe: string): string {
+        if (timeframe === 'Daily') return "date_trunc('day', timestamp)";
+        if (timeframe === 'Weekly') return "date_trunc('week', timestamp)";
+        return "date_trunc('month', timestamp)";
     }
 </script>
 
@@ -87,22 +125,22 @@
         </div>
 
         <div class="form-control w-full">
-            <label class="label" for="operation">
-                <span class="label-text">Aggregation Operation</span>
+            <label class="label" for="aggregationFunction">
+                <span class="label-text">Aggregation Function</span>
             </label>
-            <select bind:value={selectedOperation} id="operation" class="select select-bordered w-full">
-                {#each aggregationOperations as operation}
-                    <option value={operation}>{operation}</option>
+            <select bind:value={selectedAggregationFunction} id="aggregationFunction" class="select select-bordered w-full">
+                {#each aggregationFunctions as func}
+                    <option value={func}>{func}</option>
                 {/each}
             </select>
         </div>
 
         {#if showFieldInput}
             <div class="form-control w-full">
-                <label class="label" for="field">
-                    <span class="label-text">Field</span>
+                <label class="label" for="fieldVariable">
+                    <span class="label-text">Field / Property</span>
                 </label>
-                <input bind:value={selectedField} type="text" id="field" placeholder="Enter field name" class="input input-bordered w-full" />
+                <input bind:value={fieldVariable} type="text" id="fieldVariable" placeholder="Enter field name" class="input input-bordered w-full" />
             </div>
         {/if}
 
@@ -132,7 +170,7 @@
         </div>
     </div>
 
-    <button class="btn btn-primary mb-4" on:click={fetchData}>Apply Filters</button>
+    <button class="btn btn-neutral mb-4" on:click={fetchData}>Apply Filters</button>
 
     <div class="w-full h-[400px]">
         <canvas id="eventChart"></canvas>

@@ -1,9 +1,8 @@
 <script lang="ts">
     import { ParquetManager } from '$lib/parquet-manager'
-    import { dbManager } from '$lib/duck-db-manager'
     import type { AnalyticsEvent } from '$lib/event'
-    import EventDisplay from '$lib/components/EventDisplay.svelte'
     import EventList from '$lib/components/EventList.svelte'
+    import { dbManager } from '$lib/globals'
 
     export let manager = new ParquetManager()
     let searchTerm = 'select * from events order by timestamp desc limit 10;'
@@ -11,7 +10,7 @@
     let events: AnalyticsEvent[] = []
 
     const runQuery = async () => {
-        events = await dbManager.runQuery(searchTerm) ?? []
+        events = await dbManager.runEventsQuery(searchTerm, []) ?? []
     }
 </script>
 

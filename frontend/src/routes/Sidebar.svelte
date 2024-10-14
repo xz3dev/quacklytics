@@ -16,10 +16,12 @@
         {
             items: [
                 {
+                    icon: 'icon-[tabler--list]',
                     label: 'Events',
                     href: '/events',
                 },
                 {
+                    icon: 'icon-[tabler--filter-filled]',
                     label: 'Insights',
                     href: '/insight',
                 },
@@ -36,10 +38,10 @@
           <li>
             <a
               href={item.href || '#'}
-              class="flex items-center p-2 rounded-lg hover:bg-base-300 hover:text-base-content transition-colors duration-200 {$page.url.pathname === item.href ? 'bg-primary text-primary-content' : 'text-base-content'}"
+              class="btn btn-lg w-full flex items-center justify-start {$page.url.pathname === item.href ? 'btn-primary' : ''}"
             >
               {#if item.icon}
-                <Icon icon={item.icon} class="w-5 h-5 mr-2" />
+                <span class="{item.icon} h-5 w-5"></span>
               {/if}
               <span>{item.label}</span>
             </a>

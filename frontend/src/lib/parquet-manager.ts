@@ -1,7 +1,7 @@
 import { ParquetDownloader } from '$lib/parquet-downloader'
 import { calculateChecksum } from '$lib/checksums'
 import { IndexedDBManager } from '$lib/index-db-manager'
-import { dbManager } from '$lib/duck-db-manager'
+import { dbManager } from '$lib/globals'
 
 
 export class ParquetManager {
@@ -22,16 +22,21 @@ export class ParquetManager {
         const localFiles = await this.dbManager.getAllFiles()
         const localChecksums = await this.getLocalChecksums(localFiles)
 
+        const promises: Promise<any>[] = []
         for (const [filename, serverChecksum] of Object.entries(serverChecksums)) {
             const localChecksum = localChecksums[filename]
 
             if (serverChecksum !== localChecksum) {
                 const [, kw, year] = filename.match(/events_kw(\d+)_(\d+)\.parquet/) || []
                 if (kw && year) {
-                    await this.downloadAndSaveParquetFile(parseInt(kw), parseInt(year), eventType)
+                    promises.push(new Promise(async (resolve, reject) => {
+                        await this.downloadAndSaveParquetFile(parseInt(kw), parseInt(year), eventType)
+                        resolve(null)
+                    }))
                 }
             }
         }
+        await Promise.all(promises)
         const localFilesAfterUpdate = await this.dbManager.getAllFiles()
         await dbManager.importParquetFiles(localFilesAfterUpdate)
     }

@@ -87,7 +87,7 @@ func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 func generateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	actions.GenerateRandomEvents(50, "test_type")
+	actions.GenerateRandomEvents(500000, "test_type")
 	w.WriteHeader(http.StatusOK)
 }
 
