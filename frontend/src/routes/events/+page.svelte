@@ -2,9 +2,8 @@
     import { ParquetManager } from '$lib/parquet-manager'
     import type { AnalyticsEvent } from '$lib/event'
     import EventList from '$lib/components/EventList.svelte'
-    import { dbManager } from '$lib/globals'
+    import { dbManager, pqManager } from '$lib/globals'
 
-    export let manager = new ParquetManager()
     let searchTerm = 'select * from events order by timestamp desc limit 10;'
 
     let events: AnalyticsEvent[] = []
@@ -19,7 +18,7 @@
     <h1 class="text-3xl font-bold flex-1">Events</h1>
     <button
       class="btn btn-primary self-start"
-      on:click={() => manager.downloadLast12Weeks()}
+      on:click={() => pqManager.downloadLast12Weeks()}
     >
       Download last 12 weeks
     </button>

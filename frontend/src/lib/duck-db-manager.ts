@@ -33,13 +33,15 @@ export class DuckDbManager {
         }
 
         await this.setupTable(conn)
+        
+        const queries = []
 
         for (const { filename, blob } of files) {
             const arrayBuffer = await blob.arrayBuffer()
             await db.registerFileBuffer(filename, new Uint8Array(arrayBuffer))
 
             // Import data from the Parquet file into the events table
-            await conn.query(`
+            const query = conn.query(`
                 insert or ignore into events
                 select lpad(to_hex(id::bit::hugeint), 32, '0')     as id,
                        timestamp::timestamp          as timestamp,
@@ -48,7 +50,9 @@ export class DuckDbManager {
                        properties::json              as properties
                 from parquet_scan('${filename}')
             `)
+            queries.push(query)
         }
+        await Promise.all(queries)
     }
 
     async runQuery<T extends {

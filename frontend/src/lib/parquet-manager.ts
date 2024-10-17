@@ -2,9 +2,12 @@ import { ParquetDownloader } from '$lib/parquet-downloader'
 import { calculateChecksum } from '$lib/checksums'
 import { IndexedDBManager } from '$lib/index-db-manager'
 import { dbManager } from '$lib/globals'
+import { writable } from 'svelte/store'
 
+export const isLoadingEvents = writable(true)
 
 export class ParquetManager {
+    loading = true
     private dbManager: IndexedDBManager
     private downloader: ParquetDownloader
 
@@ -12,12 +15,14 @@ export class ParquetManager {
         private baseUrl: string = 'http://localhost:3000/events/parquet/kw',
         private checksumUrl: string = 'http://localhost:3000/events/parquet/checksums',
     ) {
+        console.log(`Initializing ParquetManager...`)
         this.dbManager = new IndexedDBManager('ParquetStorage', 'parquetFiles')
         this.downloader = new ParquetDownloader(baseUrl)
         void this.downloadLast12Weeks()
     }
 
     async downloadLast12Weeks(eventType?: string): Promise<void> {
+        console.log(`Downloading last 12 weeks...`)
         const serverChecksums = await this.downloader.getServerChecksums(this.checksumUrl)
         const localFiles = await this.dbManager.getAllFiles()
         const localChecksums = await this.getLocalChecksums(localFiles)
@@ -39,6 +44,7 @@ export class ParquetManager {
         await Promise.all(promises)
         const localFilesAfterUpdate = await this.dbManager.getAllFiles()
         await dbManager.importParquetFiles(localFilesAfterUpdate)
+        isLoadingEvents.set(false)
     }
 
     private async downloadAndSaveParquetFile(kw: number, year: number, eventType?: string): Promise<void> {

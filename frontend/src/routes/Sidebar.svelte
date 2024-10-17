@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from '$app/stores'
-    import Icon from '@iconify/svelte'
+    import { isLoadingEvents } from '$lib/parquet-manager'
 
     type SidebarItem = {
         label: string;
@@ -30,7 +30,7 @@
     ]
 </script>
 
-<nav class="bg-base-200 w-64 h-full overflow-y-auto">
+<nav class="flex flex-col items-stretch bg-base-200 w-64 h-full overflow-y-auto">
   {#each config as section}
     <div class="p-4">
       <ul class="space-y-2">
@@ -50,5 +50,18 @@
       </ul>
     </div>
     <div class="divider"></div>
+    <div class="flex-1"></div>
+    <div
+      class="flex items-center p-4 gap-2 h-20 font-bold text-sm
+             {$isLoadingEvents ? 'bg-primary text-primary-content' : 'bg-neutral text-neutral-content'}"
+    >
+      {#if $isLoadingEvents}
+        <span class="icon-[tabler--cloud-download] h-8 w-8"></span>
+        Loading data...
+      {:else}
+        <span class="icon-[tabler--square-rounded-check-filled] h-8 w-8"></span>
+        Data loaded
+      {/if}
+    </div>
   {/each}
 </nav>

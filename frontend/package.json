@@ -42,6 +42,7 @@
 		"@apache-arrow/ts": "^17.0.0",
 		"@duckdb/duckdb-wasm": "^1.28.1-dev106.0",
 		"install": "^0.13.0",
+		"moment": "^2.30.1",
 		"npm": "^10.9.0",
 		"svelte-time": "^0.9.0",
 		"uuid": "^10.0.0"

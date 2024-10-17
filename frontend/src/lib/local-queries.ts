@@ -9,7 +9,7 @@ export interface Field {
 }
 
 // Interface for a filter condition
-export interface Filter {
+export interface FieldFilter {
     field: Field;
     operator: Operator;
     value: any;
@@ -31,7 +31,7 @@ export interface OrderBy {
 // Main query interface
 export interface Query {
     select?: Field[];
-    filters?: Filter[];
+    filters?: FieldFilter[];
     groupBy?: Field[];
     orderBy?: OrderBy[];
     aggregations?: Aggregation[];
