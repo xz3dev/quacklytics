@@ -16,8 +16,8 @@
         <slot />
       {/if}
     </div>
-    <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden">
-      Open drawer
+    <label for="my-drawer-2" class="absolute bottom-2 left-2 btn btn-square drawer-button lg:hidden">
+      <span class="icon-[tabler--menu]" style="width: 1.2em; height: 1.2em;"></span>
     </label>
   </div>
   <Sidebar />
