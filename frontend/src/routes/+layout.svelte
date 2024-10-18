@@ -4,15 +4,21 @@
     import {isLoadingEvents} from '$lib/parquet-manager'
 </script>
 
-<div class="flex flex-row h-screen">
-  <div class="items-stretch h-full">
-    <Sidebar />
+<div class="drawer lg:drawer-open">
+  <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
+  <div class="drawer-content flex flex-col items-center justify-center">
+    <div class="w-full h-full p-6">
+      {#if $isLoadingEvents}
+        <div class="flex items-center flex-col content-center h-full">
+          <span class="loading loading-ring loading-lg m-auto"></span>
+        </div>
+      {:else}
+        <slot />
+      {/if}
+    </div>
+    <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden">
+      Open drawer
+    </label>
   </div>
-  <div class="flex-1 p-6">
-    {#if $isLoadingEvents}
-      ...loading
-    {:else}
-      <slot />
-    {/if}
-  </div>
+  <Sidebar />
 </div>

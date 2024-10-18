@@ -2,6 +2,7 @@
     import { onMount } from 'svelte'
     import Chart from 'chart.js/auto'
     import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
+    import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
 
     let chartInstance: Chart | null = null
 
@@ -69,6 +70,8 @@
         }
     })
 </script>
+
+<TrendInsightOptions {insight} />
 
 <div class="w-full h-[400px]">
   <canvas id="eventChart"></canvas>

@@ -7,7 +7,6 @@ import { writable } from 'svelte/store'
 export const isLoadingEvents = writable(true)
 
 export class ParquetManager {
-    loading = true
     private dbManager: IndexedDBManager
     private downloader: ParquetDownloader
 
@@ -70,3 +69,5 @@ export class ParquetManager {
         return this.dbManager.getFile(filename)
     }
 }
+
+export const pqManager = new ParquetManager()

@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { ParquetManager } from '$lib/parquet-manager'
+    import { ParquetManager, pqManager } from '$lib/parquet-manager'
     import type { AnalyticsEvent } from '$lib/event'
     import EventList from '$lib/components/EventList.svelte'
-    import { dbManager, pqManager } from '$lib/globals'
+    import { dbManager } from '$lib/globals'
 
     let searchTerm = 'select * from events order by timestamp desc limit 10;'
 

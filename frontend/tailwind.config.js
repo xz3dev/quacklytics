@@ -13,5 +13,8 @@ export default {
       prefixes: ['tabler']
     }),
   ],
+  daisyui: {
+    themes: ["light", "dark", "bumblebee"],
+  },
 }
 
