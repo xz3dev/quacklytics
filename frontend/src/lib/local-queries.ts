@@ -1,6 +1,9 @@
 // Define supported SQL operators
-export type Operator = '=' | '>' | '<' | '>=' | '<=' | '<>' | 'LIKE' | 'IN';
-export type AggregationFunction = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
+export const operators = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN'] as const
+export type Operator = typeof operators[number];
+
+export const aggregationFunctions = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'] as const
+export type AggregationFunction = typeof aggregationFunctions[number];
 export type SortDirection = 'ASC' | 'DESC';
 
 // Interface for a field in a query, with support for JSON properties

@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
+    import { onMount, setContext } from 'svelte'
     import Chart from 'chart.js/auto'
     import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
+    import { writable } from 'svelte/store'
 
     let chartInstance: Chart | null = null
 
@@ -27,6 +28,8 @@
         },
     ]
 
+    const insightStore = writable(insight)
+    setContext('insight', insightStore)
 
     onMount(async () => {
         const ctx = document.getElementById('eventChart') as HTMLCanvasElement
@@ -58,20 +61,21 @@
             },
         })
 
-        const data = await insight.fetchData()
-        console.log(data)
-        if (chartInstance && data) {
-            const labels = data[0].map(r => r.bucket_0)
-            chartInstance.data.labels = labels
-            for (const [index, series] of data.entries()) {
-                chartInstance.data.datasets[index].data = series.map(r => Number(r.result_value))
+        insightStore.subscribe(async insight => {
+            const data = await insight.fetchData()
+            if (chartInstance && data) {
+                const labels = data[0].map(r => r.bucket_0)
+                chartInstance.data.labels = labels
+                for (const [index, series] of data.entries()) {
+                    chartInstance.data.datasets[index].data = series.map(r => Number(r.result_value))
+                }
+                chartInstance.update()
             }
-            chartInstance.update()
-        }
+        })
     })
 </script>
 
-<TrendInsightOptions {insight} />
+<TrendInsightOptions />
 
 <div class="w-full h-[400px]">
   <canvas id="eventChart"></canvas>
