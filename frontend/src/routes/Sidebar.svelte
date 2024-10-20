@@ -17,12 +17,12 @@
             items: [
                 {
                     icon: 'icon-[tabler--list]',
-                    label: 'Events',
+                    name: 'Events',
                     href: '/events',
                 },
                 {
                     icon: 'icon-[tabler--filter-filled]',
-                    label: 'Insights',
+                    name: 'Insights',
                     href: '/insight',
                 },
             ],

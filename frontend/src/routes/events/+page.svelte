@@ -3,6 +3,7 @@
     import type { AnalyticsEvent } from '$lib/event'
     import EventList from '$lib/components/EventList.svelte'
     import { dbManager } from '$lib/globals'
+    import { Button } from '$lib/components/ui/button'
 
     let searchTerm = 'select * from events order by timestamp desc limit 10;'
 
@@ -16,18 +17,21 @@
 <div class="flex flex-col gap-2">
   <div class="flex items-start">
     <h1 class="text-3xl font-bold flex-1">Events</h1>
-    <button
-      class="btn btn-primary self-start"
+    <Button
       on:click={() => pqManager.downloadLast12Weeks()}
+      variant="outline"
     >
       Download last 12 weeks
-    </button>
+    </Button>
   </div>
 
 
   <div>
     <textarea bind:value={searchTerm} class="w-full min-h-20" />
-    <button class="btn btn-block" on:click={runQuery}>Search</button>
+    <Button 
+      class="w-full"
+      on:click={runQuery}
+    >Search</Button>
   </div>
 
   <EventList {events} />
