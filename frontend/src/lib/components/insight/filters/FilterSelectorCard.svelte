@@ -35,7 +35,7 @@
     function addFilter() {
         if (currentField && currentOperator && currentValue) {
             const newFilter: FieldFilter = { field: currentField, operator: currentOperator?.value, value: currentValue }
-            dispatch('add', newFilter)
+            dispatch('save', newFilter)
             resetFields()
         }
     }

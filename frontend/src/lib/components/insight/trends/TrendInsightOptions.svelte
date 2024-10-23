@@ -50,7 +50,6 @@
     ]
 
     function handleFilterChange(seriesIndex: number, filterIndex: number, newFilter?: FieldFilter) {
-        console.log(seriesIndex, filterIndex, newFilter)
         const newFilters = [...$insight.series[seriesIndex].filters]
         if (newFilter) {
             newFilters[filterIndex] = newFilter
@@ -118,7 +117,7 @@
           {#each series.filters as filter, j}
             <FilterSelector
               filter={filter}
-              on:edit={() => handleFilterChange(i, j, filter)}
+              on:save={(event) => handleFilterChange(i, j, event.detail)}
               on:remove={() => handleFilterChange(i, j, undefined)}
             />
           {/each}

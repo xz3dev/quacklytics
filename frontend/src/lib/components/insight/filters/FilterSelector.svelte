@@ -27,7 +27,11 @@
       </Button>
     </Popover.Trigger>
     <Popover.Content class="w-80 p-0">
-      <FilterSelectorCard initialFilter={filter} />
+      <FilterSelectorCard
+        initialFilter={filter}
+        on:save={(event) => {dispatch('save', event.detail); isOpen = false}}
+        on:discard={() => isOpen = false}
+      />
     </Popover.Content>
   </Popover.Root>
 
@@ -35,7 +39,7 @@
     variant="outline"
     size="sm"
     class="h-8 rounded-l-none pl-2 border-l-0"
-    on:click={() => dispatch('remove')}
+    on:click={() =>{ isOpen = false; return dispatch('remove') }}
   >
     <X class="h-4 w-4" />
   </Button>
