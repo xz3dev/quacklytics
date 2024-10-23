@@ -46,6 +46,7 @@ export interface Query {
 function getFieldExpression(field: Field, castType?: string): string {
     let expression = ''
     const isJsonField = field.name.startsWith('$.')
+    console.log(field.name, isJsonField)
     const nameCleaned = field.name.replace(/\$\./g, '')
     if (isJsonField) {
         const jsonPath = `$.${nameCleaned}`

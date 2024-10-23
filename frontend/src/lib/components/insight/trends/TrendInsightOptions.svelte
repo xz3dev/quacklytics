@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { createEventDispatcher, getContext } from 'svelte';
-    import type { TrendInsight } from '$lib/components/insight/trends/TrendInsight';
+    import { createEventDispatcher, getContext } from 'svelte'
+    import type { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import {
         type AggregationFunction,
         aggregationFunctions,
@@ -8,17 +8,18 @@
         type FieldFilter,
         type Operator,
     } from '$lib/local-queries'
-    import type { Writable } from 'svelte/store';
-    import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-    import * as Card from '$lib/components/ui/card';
-    import * as Popover from '$lib/components/ui/popover';
-    import * as Command from '$lib/components/ui/command';
-    import { Button } from '$lib/components/ui/button';
-    import { Check, ChevronDown, ChevronsUpDown } from 'lucide-svelte'
-    import FilterSelector from '$lib/components/insight/FilterSelector.svelte'
+    import type { Writable } from 'svelte/store'
+    import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
+    import * as Card from '$lib/components/ui/card'
+    import * as Popover from '$lib/components/ui/popover'
+    import * as Command from '$lib/components/ui/command'
+    import { Button } from '$lib/components/ui/button'
+    import { Check, ChevronDown, ChevronsUpDown, Plus } from 'lucide-svelte'
+    import FilterSelector from '$lib/components/insight/filters/FilterSelector.svelte'
+    import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte'
 
-    const insight = getContext<Writable<TrendInsight>>('insight');
-    const dispatcher = createEventDispatcher();
+    const insight = getContext<Writable<TrendInsight>>('insight')
+    const dispatcher = createEventDispatcher()
 
     const setAggregation = (index: number, agg: AggregationFunction, field?: string) => {
         $insight.series[index].aggregations[0] = {
@@ -26,31 +27,41 @@
             alias: 'result_value',
             field: { name: field ?? 'id' },
         }
-    };
+    }
 
     // Add a list of properties that can be aggregated
-    const properties = ['id', 'timestamp', '$properties.value', '$properties.count']; // Add more as needed
+    const properties = ['id', 'timestamp', '$properties.value', '$properties.count'] // Add more as needed
 
-    let selectedProperties: string[] = $insight.series.map(s => s.aggregations[0].field.name);
-    let openPopover: boolean[] = $insight.series.map(() => false);
+    let selectedProperties: string[] = $insight.series.map(s => s.aggregations[0].field.name)
+    let openPopover: boolean[] = $insight.series.map(() => false)
 
     const setProperty = (index: number, property: string) => {
-        selectedProperties[index] = property;
-        setAggregation(index, $insight.series[index].aggregations[0].function, property);
-        openPopover[index] = false;
-    };
+        selectedProperties[index] = property
+        setAggregation(index, $insight.series[index].aggregations[0].function, property)
+        openPopover[index] = false
+    }
 
     const availableFields: Field[] = [
         { name: 'event_type' },
         { name: 'timestamp' },
-        { name: '$properties.prop_0' },
-        { name: '$properties.count' },
+        { name: '$.prop_0' },
+        { name: '$.count' },
         // Add more fields as needed
-    ];
+    ]
 
-    function handleFilterChange(index: number, newFilters: FieldFilter[]) {
-        $insight.series[index].filters = newFilters;
+    function handleFilterChange(seriesIndex: number, filterIndex: number, newFilter?: FieldFilter) {
+        console.log(seriesIndex, filterIndex, newFilter)
+        const newFilters = [...$insight.series[seriesIndex].filters]
+        if (newFilter) {
+            newFilters[filterIndex] = newFilter
+        } else {
+            newFilters.splice(filterIndex, 1)
+        }
+        $insight.series[seriesIndex].filters = newFilters
+        addFilterOpen = false
     }
+
+    let addFilterOpen = false
 </script>
 
 <Card.Root>
@@ -104,12 +115,28 @@
             </Popover.Content>
           </Popover.Root>
 
-          <!-- Filter Selector -->
-          <FilterSelector
-            filters={series.filters}
-            availableFields={availableFields}
-            on:change={(event) => handleFilterChange(i, event.detail)}
-          />
+          {#each series.filters as filter, j}
+            <FilterSelector
+              filter={filter}
+              on:edit={() => handleFilterChange(i, j, filter)}
+              on:remove={() => handleFilterChange(i, j, undefined)}
+            />
+          {/each}
+          <Popover.Root bind:open={addFilterOpen}>
+            <Popover.Trigger asChild let:builder>
+              <Button builders={[builder]} variant="outline" size="sm" class="h-8">
+                <Plus class="h-4 w-4 mr-2" />
+                Add Filter
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="w-80 p-0">
+              <FilterSelectorCard
+                availableFields={availableFields}
+                on:add={(event) => handleFilterChange(i, series.filters.length, event.detail)}
+                on:discard={() => handleFilterChange(i, series.filters.length, undefined)}
+              />
+            </Popover.Content>
+          </Popover.Root>
         </div>
       </div>
     {/each}

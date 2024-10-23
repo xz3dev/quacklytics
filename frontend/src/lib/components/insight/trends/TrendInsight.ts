@@ -30,7 +30,7 @@ export class TrendInsight extends Insight {
             })
             console.log('params', params)
             console.log('sql', sql)
-            results.push(await dbManager.runQuery(sql, ...params))
+            results.push(await dbManager.runQuery(sql, params))
         }
         return results
     }

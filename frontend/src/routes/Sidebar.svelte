@@ -17,12 +17,12 @@
             items: [
                 {
                     icon: 'icon-[tabler--list]',
-                    name: 'Events',
+                    label: 'Events',
                     href: '/events',
                 },
                 {
                     icon: 'icon-[tabler--filter-filled]',
-                    name: 'Insights',
+                    label: 'Insights',
                     href: '/insight',
                 },
             ],
@@ -43,7 +43,7 @@
             {#if item.icon}
               <span class="{item.icon}"></span>
             {/if}
-            {item.label}
+            {item.label} 123•
           </a>
         </li>
       {/each}
