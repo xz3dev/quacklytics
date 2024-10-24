@@ -1,4 +1,4 @@
-package server
+package routes
 
 import (
 	"analytics/actions"
@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func receiveEvent(w http.ResponseWriter, r *http.Request) {
+func AppendEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var event model.EventInput
@@ -32,7 +32,7 @@ func receiveEvent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func queryEvents(w http.ResponseWriter, r *http.Request) {
+func QueryEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	queryParams, err := queries.ExtractQueryParams(r)
@@ -53,7 +53,7 @@ func queryEvents(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(events)
 }
 
-func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
+func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestId := middleware.GetReqID(ctx)
 	parts := strings.Split(requestId, "/")
@@ -84,14 +84,14 @@ func queryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path+filename)
 }
 
-func generateDummyEvents(w http.ResponseWriter, r *http.Request) {
+func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	actions.GenerateRandomEvents(500000, "test_type")
 	w.WriteHeader(http.StatusOK)
 }
 
-func queryEventsKW(w http.ResponseWriter, r *http.Request) {
+func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	kw, _ := strconv.Atoi(r.URL.Query().Get("kw"))
@@ -162,7 +162,7 @@ func queryEventsKW(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path+filename)
 }
 
-func getLastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
+func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	checksums := make(map[string]string)

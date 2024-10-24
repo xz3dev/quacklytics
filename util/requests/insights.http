@@ -1,0 +1,53 @@
+GET {{url}}/insights
+
+###
+POST {{url}}/insights
+Content-Type: application/json
+
+{
+  "name": "New Insight",
+  "description": "This is a new insight",
+  "series": [
+    {
+      "name": "Series 1",
+      "query": {
+        "select": [
+          "column1"
+        ],
+        "from": "table1"
+      }
+    }
+  ]
+}
+
+###
+
+GET {{url}}/insights/1
+
+###
+
+PUT {{url}}/insights/1
+Content-Type: application/json
+
+{
+  "name": "Updated Insight",
+  "description": "This insight has been updated",
+  "series": [
+    {
+      "name": "Updated Series",
+      "query": {
+        "select": [
+          "column2"
+        ],
+        "from": "table2"
+      }
+    }
+  ]
+}
+
+###
+
+DELETE {{url}}/insights/1
+
+###
+

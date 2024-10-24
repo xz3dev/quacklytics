@@ -1,6 +1,7 @@
 package server
 
 import (
+	"analytics/server/routes"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,19 +41,25 @@ func setupMux(c Config) *chi.Mux {
 	mux := chi.NewMux()
 	setupCORS(mux, c)
 	setupMiddleware(mux)
-	setupRoutes(mux)
+	setupEventRoutes(mux)
+	setupAnalyticsRoutes(mux)
 	return mux
 }
 
-func setupRoutes(mux *chi.Mux) {
-	mux.Get("/events", queryEvents)
-	mux.Post("/event", receiveEvent)
-	mux.Post("/dummy", generateDummyEvents)
-	mux.Get("/events/parquet", queryEventAsParquet)
-	mux.Get("/events/parquet/kw", queryEventsKW)
-	mux.Get("/events/parquet/checksums", getLastTwelveWeeksChecksums)
-	//mux.Get("/dashboards", getDashboards)
-	//mux.Get("/insights", getInsights)
+func setupEventRoutes(mux *chi.Mux) {
+	mux.Get("/events", routes.QueryEvents)
+	mux.Get("/events/parquet", routes.QueryEventAsParquet)
+	mux.Post("/event", routes.AppendEvent)
+	mux.Post("/dummy", routes.GenerateDummyEvents)
+	mux.Get("/events/parquet/kw", routes.QueryEventsKW)
+	mux.Get("/events/parquet/checksums", routes.LastTwelveWeeksChecksums)
+}
+
+func setupAnalyticsRoutes(mux *chi.Mux) {
+	mux.Get("/dashboards", routes.Dashboards)
+	mux.Post("/dashboards", routes.CreateDashboard)
+	//mux.Get("/insights/", ListInsights)
+	routes.SetupInsightRoutes(mux)
 }
 
 func setupMiddleware(r *chi.Mux) {
