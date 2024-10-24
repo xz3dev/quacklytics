@@ -1,14 +1,19 @@
 package main
 
 import (
-	"analytics/database"
-	"analytics/database/migrations"
+	"analytics/database/analyticsdb"
+	"analytics/database/analyticsdb/analyticsmigrations"
+	"analytics/database/applicationdb"
+	"analytics/database/applicationdb/applicationdbmigrations"
 	"analytics/server"
 	_ "github.com/marcboeker/go-duckdb"
 )
 
 func main() {
-	db := database.Init()
-	migrations.MigrateDBIfNeeded(db)
+	analyticsDb := analyticsdb.Init()
+	analyticsmigrations.MigrateDBIfNeeded(analyticsDb)
+
+	applicationDb := applicationdb.Init()
+	applicationdbmigrations.MigrateDBIfNeeded(applicationDb)
 	server.Start()
 }

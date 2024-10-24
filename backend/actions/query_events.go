@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"analytics/database"
+	"analytics/database/analyticsdb"
 	"analytics/model"
 	"analytics/queries"
 	"database/sql"
@@ -14,7 +14,7 @@ func QueryEvents(params *queries.QueryParams) (*[]model.Event, error) {
 		params = &queries.EmptyQueryParams
 	}
 
-	tx, err := database.Tx()
+	tx, err := analyticsdb.Tx()
 	if err != nil {
 		log.Println("Error while creating transaction: ", err)
 		return nil, err

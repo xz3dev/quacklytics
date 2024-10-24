@@ -51,6 +51,8 @@ func setupRoutes(mux *chi.Mux) {
 	mux.Get("/events/parquet", queryEventAsParquet)
 	mux.Get("/events/parquet/kw", queryEventsKW)
 	mux.Get("/events/parquet/checksums", getLastTwelveWeeksChecksums)
+	//mux.Get("/dashboards", getDashboards)
+	//mux.Get("/insights", getInsights)
 }
 
 func setupMiddleware(r *chi.Mux) {

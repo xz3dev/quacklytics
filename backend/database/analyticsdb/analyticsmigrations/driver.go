@@ -1,4 +1,4 @@
-package migrations
+package analyticsmigrations
 
 import (
 	"database/sql"

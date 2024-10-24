@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"analytics/database"
+	"analytics/database/analyticsdb"
 	"analytics/model"
 	"encoding/json"
 	"github.com/google/uuid"
@@ -57,7 +57,7 @@ func processEventQueue() {
 
 func processBatch(events []*model.EventInput) {
 	startTime := time.Now() // Start timing
-	appender := database.Appender("events")
+	appender := analyticsdb.Appender("events")
 	defer appender.Flush()
 	defer appender.Close()
 
