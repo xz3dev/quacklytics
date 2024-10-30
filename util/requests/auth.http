@@ -1,0 +1,29 @@
+
+// $2a$12$WmbECJg6GlgFzWZ68i5M9u/s2TLbYIe9nqSCfrfNOhBlire7GeoLe
+POST {{url}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "xyron1996@gmail.com",
+  "password": "123123",
+  "rm": "true"
+}
+
+
+###
+
+GET {{url}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "xyron1998@gmail.com",
+  "password": "123123"
+}
+
+###
+
+GET {{url}}/auth/me
+
+###
+
+GET {{url}}/me

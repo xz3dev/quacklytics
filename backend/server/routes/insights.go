@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func SetupInsightRoutes(mux *chi.Mux) {
+func SetupInsightRoutes(mux chi.Router) {
 	mux.Get("/insights", listInsights)
 	mux.Post("/insights", createInsight)
 	mux.Get("/insights/{id}", getInsight)
