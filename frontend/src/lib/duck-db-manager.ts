@@ -57,14 +57,19 @@ export class DuckDbManager {
 
     async runQuery<T extends {
         [key: string]: DataType;
-    } = any>(query: string, params?: any[]) {
+    } = any>(query: string, params: any[]) {
         const conn = await this.conn
         if (!conn) return
         const preparedQuery = await conn.prepare<T>(query)
-        const results = await preparedQuery.query(params)
+        const results = await preparedQuery.query(...params)
+        await preparedQuery.close()
         console.log(`Returned ${results.toArray().length} rows`)
         return results.toArray().map(i => i.toJSON())
     }
+    test(...params: any[]) {
+        console.log(params)
+    }
+
 
     async runEventsQuery<T extends {
         [key: string]: DataType;

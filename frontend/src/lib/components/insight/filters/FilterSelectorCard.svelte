@@ -21,6 +21,9 @@
     let openField = false
     let openValue = false
 
+    $: isInitial = (initialFilter && currentField === initialFilter.field && currentOperator?.value === initialFilter.operator && currentValue === initialFilter.value)
+        || !currentField && !currentOperator && !currentValue
+
     onMount(() => {
         if (initialFilter) {
             currentField = initialFilter.field
@@ -34,7 +37,11 @@
 
     function addFilter() {
         if (currentField && currentOperator && currentValue) {
-            const newFilter: FieldFilter = { field: currentField, operator: currentOperator?.value, value: currentValue }
+            const newFilter: FieldFilter = {
+                field: currentField,
+                operator: currentOperator?.value,
+                value: currentValue,
+            }
             dispatch('save', newFilter)
             resetFields()
         }
@@ -140,7 +147,13 @@
     </div>
   </Card.Content>
   <Card.Footer class="flex justify-end space-x-2">
-    <Button variant="outline" on:click={handleDiscard}>Discard</Button>
+    <Button variant="outline" on:click={handleDiscard}>
+      {#if isInitial}
+        Cancel
+      {:else}
+        Discard Changes
+      {/if}
+    </Button>
     <Button on:click={addFilter}>{initialFilter ? 'Update' : 'Create'}</Button>
   </Card.Footer>
 </Card.Root>

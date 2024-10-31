@@ -28,12 +28,14 @@ export const authService = {
         try {
             const response: {
                 location: string
-            } = await http.post(`auth/login`, { email, password })
+            } | undefined = await http.post(`auth/login`, { email, password })
 
             await this.checkAuth()
-            const targetLocation = response.location
+            const targetLocation = response?.location
             console.info(`Navigate to ${targetLocation} after successful login`)
-            await goto(targetLocation)
+            if (targetLocation) {
+                await goto(targetLocation)
+            }
         } catch (error) {
             console.error('Login error:', error)
             throw error
@@ -52,8 +54,10 @@ export const authService = {
 
     async checkAuth() {
         try {
-            const user: User = await http.get(`auth/me`)
-            authStore.login(user);
+            const user: User | undefined = await http.get(`auth/me`)
+            if(user) {
+                authStore.login(user);
+            }
             return user
         } catch (error) {
             console.log(error)
