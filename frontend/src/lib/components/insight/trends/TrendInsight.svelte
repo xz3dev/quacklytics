@@ -4,6 +4,27 @@
     import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
     import { writable } from 'svelte/store'
+    import 'chartjs-adapter-moment';
+
+    import {
+        TimeScale,
+        LinearScale,
+        LineElement,
+        Title,
+        Tooltip,
+        Legend,
+    } from 'chart.js'
+    import InsightMeta from '$lib/components/insight/InsightMeta.svelte'
+
+    Chart.register(
+        TimeScale,
+        LinearScale,
+        LineElement,
+        Title,
+        Tooltip,
+        Legend,
+    )
+
 
     let chartInstance: Chart | null = null
 
@@ -28,6 +49,7 @@
         },
     ]
 
+
     const insightStore = writable(insight)
     setContext('insight', insightStore)
 
@@ -46,8 +68,22 @@
             },
             options: {
                 responsive: true,
+                plugins: {
+                    title: {
+                        text: insight.id,
+                        display: true
+                    }
+                },
                 scales: {
                     x: {
+                        type: 'time',
+                        time: {
+                            tooltipFormat: 'dd T'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        },
                         ticks: {
                             autoSkip: true,
                             maxRotation: 0,
@@ -64,7 +100,8 @@
         insightStore.subscribe(async insight => {
             const data = await insight.fetchData()
             if (chartInstance && data) {
-                const labels = data[0].map(r => r.bucket_0)
+                const labels = data[0].map(r => new Date(r.bucket_0))
+                console.log(labels)
                 chartInstance.data.labels = labels
                 for (const [index, series] of data.entries()) {
                     chartInstance.data.datasets[index].data = series.map(r => Number(r.result_value))
@@ -74,6 +111,8 @@
         })
     })
 </script>
+
+<InsightMeta />
 
 <TrendInsightOptions />
 
