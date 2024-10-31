@@ -15,11 +15,8 @@
     });
 
     $: if (!isLoading && !$authStore) {
-        // console.log($authStore, isLoading)
         goto(fallback);
     }
-
-    $: console.log($authStore)
 </script>
 
 {#if isLoading}
