@@ -17,7 +17,7 @@ func initAuthStores() {
 		MaxAge:   86400 * 30, // 30 days
 		HttpOnly: true,
 		Secure:   false, // Set to true if using HTTPS
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 }
 

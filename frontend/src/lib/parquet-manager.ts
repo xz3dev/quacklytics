@@ -11,18 +11,16 @@ export class ParquetManager {
     private downloader: ParquetDownloader
 
     constructor(
-        private baseUrl: string = 'http://localhost:3000/events/parquet/kw',
-        private checksumUrl: string = 'http://localhost:3000/events/parquet/checksums',
     ) {
         console.log(`Initializing ParquetManager...`)
         this.dbManager = new IndexedDBManager('ParquetStorage', 'parquetFiles')
-        this.downloader = new ParquetDownloader(baseUrl)
+        this.downloader = new ParquetDownloader()
         void this.downloadLast12Weeks()
     }
 
     async downloadLast12Weeks(eventType?: string): Promise<void> {
         console.log(`Downloading last 12 weeks...`)
-        const serverChecksums = await this.downloader.getServerChecksums(this.checksumUrl)
+        const serverChecksums = await this.downloader.getServerChecksums()
         const localFiles = await this.dbManager.getAllFiles()
         const localChecksums = await this.getLocalChecksums(localFiles)
 

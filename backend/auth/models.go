@@ -57,11 +57,11 @@ func (u *UUID) UnmarshalJSON(data []byte) error {
 }
 
 type User struct {
-	ID        UUID           `gorm:"type:varchar(36);primary_key;not null"`
-	Email     string         `gorm:"unique;not null"`
-	Password  string         `gorm:"not null"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
+	ID        UUID           `gorm:"type:varchar(36);primary_key;not null" json:"id"`
+	Email     string         `gorm:"unique;not null" json:"email"`
+	Password  string         `gorm:"not null" json:"-"`
+	CreatedAt time.Time      `json:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt" json:"updatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt"`
 }
 

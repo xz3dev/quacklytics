@@ -47,6 +47,10 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 	defaults.SetCore(&ab.Config, true, false)
 
+	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		w.WriteHeader(http.StatusOK)
+		return false, nil
+	})
 	// Setup mail sender (you'll need to implement this)
 	// ab.Config.Core.Mailer = NewMailer()
 

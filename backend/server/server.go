@@ -33,29 +33,10 @@ func DefaultConfig() Config {
 
 const port = 3000
 
-func test(w http.ResponseWriter, req *http.Request, handled bool) (bool, error) {
-	log.Printf("test")
-	return false, nil
-}
-
 func Start() {
 	config := DefaultConfig()
 	var err error
 	ab, err = auth.SetupAuthboss(appdb.I)
-	ab.Events.After(authboss.EventRegister, test)
-	ab.Events.After(authboss.EventAuth, test)
-	ab.Events.After(authboss.EventAuthHijack, test)
-	ab.Events.After(authboss.EventOAuth2, test)
-	ab.Events.After(authboss.EventAuthFail, test)
-	ab.Events.After(authboss.EventOAuth2Fail, test)
-	ab.Events.After(authboss.EventRecoverStart, test)
-	ab.Events.After(authboss.EventRecoverEnd, test)
-	ab.Events.After(authboss.EventGetUser, test)
-	ab.Events.After(authboss.EventGetUserSession, test)
-	ab.Events.After(authboss.EventPasswordReset, test)
-	ab.Events.After(authboss.EventLogout, test)
-	ab.Events.After(authboss.EventTwoFactorAdded, test)
-	ab.Events.After(authboss.EventTwoFactorRemoved, test)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,8 +107,8 @@ func setupCORS(mux *chi.Mux, c Config) {
 			c.Url,
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "Set-Cookie"},
+		ExposedHeaders:   []string{"Set-Cookie"},
 		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))

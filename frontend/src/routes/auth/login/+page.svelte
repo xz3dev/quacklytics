@@ -35,10 +35,7 @@
         if (validateForm()) {
             isSubmitting = true
             try {
-                // Simulate API call
                 await authService.login(email, password)
-                // Here you would typically make an API call to your backend
-                alert('Login successful!')
             } catch (error) {
                 console.error('Login failed', error)
                 alert('Login failed. Please try again.')
