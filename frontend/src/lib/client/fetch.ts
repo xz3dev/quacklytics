@@ -7,7 +7,7 @@ const get = async <T>(url: string) =>
 
 const post = async <T>(url: string, body?: any) =>
     request<T>('POST', url, {
-        body: JSON.stringify(body),
+        body: body ? JSON.stringify(body) : null,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -22,11 +22,17 @@ const request = async <T>(method: HttpMethod, url: string, init: RequestInit) =>
         method,
     })
 
-    const result = await response.json() as T
-    return result
+
+    try {
+        const result = await response.json() as T
+        return result
+    } catch (e) {
+        console.error(`Cannot unmarshal response: ${e}`)
+    }
+    return undefined
 }
 
 export const http = {
     get,
-    post
+    post,
 }

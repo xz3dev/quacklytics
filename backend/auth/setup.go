@@ -17,7 +17,7 @@ import (
 	_ "github.com/volatiletech/authboss/v3/remember"
 	//_ "github.com/volatiletech/authboss/v3/confirm"
 	//_ "github.com/volatiletech/authboss/v3/lock"
-	//_ "github.com/volatiletech/authboss/v3/logout"
+	_ "github.com/volatiletech/authboss/v3/logout"
 	//_ "github.com/volatiletech/authboss/v3/recover"
 	//_ "github.com/volatiletech/authboss/v3/register"
 )
@@ -48,6 +48,10 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	defaults.SetCore(&ab.Config, true, false)
 
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		w.WriteHeader(http.StatusOK)
+		return false, nil
+	})
+	ab.Events.After(authboss.EventLogout, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		w.WriteHeader(http.StatusOK)
 		return false, nil
 	})

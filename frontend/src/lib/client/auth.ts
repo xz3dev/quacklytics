@@ -42,7 +42,7 @@ export const authService = {
 
     async logout() {
         try {
-            await http.post('auth/logout')
+            await http.get('auth/logout')
             authStore.logout()
         } catch (error) {
             console.error('Logout error:', error)
