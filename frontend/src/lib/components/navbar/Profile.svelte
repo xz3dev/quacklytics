@@ -48,9 +48,3 @@
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style>
-  :global(.dark) .dark\:text-white {
-    color : white;
-  }
-</style>
