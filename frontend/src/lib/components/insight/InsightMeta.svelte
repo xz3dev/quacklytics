@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContext } from 'svelte'
-    import { Insight } from '$lib/components/insight/Insight.js'
+    import { Insight, timeBuckets } from '$lib/components/insight/Insight.js'
     import type { Writable } from 'svelte/store'
     import * as Popover from '$lib/components/ui/popover'
     import { Button } from '$lib/components/ui/button'
@@ -10,7 +10,6 @@
     import {
         getLocalTimeZone, now, startOfMonth, endOfMonth,
     } from '@internationalized/date'
-    import {DateFormatter} from '@internationalized/date'
 
     const insight = getContext<Writable<Insight>>('insight')
     let isOpen = false
@@ -48,6 +47,7 @@
         },
     }
 
+    const buckets = timeBuckets
 
     $: dateRangeText = date?.start && date?.end
         ? `${moment(date.start.toDate()).format('MMM DD, YYYY')} - ${moment(date.end.toDate()).format('MMM DD, YYYY')}`
@@ -109,13 +109,6 @@
         size="sm"
         on:click={() => {
                     if (date?.start && date?.end) {
-                        // $insight = {
-                        //     ...$insight,
-                        //     dateRange: {
-                        //         start: moment(date.from).startOf('day').toDate(),
-                        //         end: moment(date.to).endOf('day').toDate()
-                        //     }
-                        // }
                         isOpen = false
                     }
                 }}

@@ -112,7 +112,9 @@
     })
 </script>
 
-<InsightMeta />
+<div class="flex flex-row items-center mr-2">
+  <InsightMeta />
+</div>
 
 <TrendInsightOptions />
 

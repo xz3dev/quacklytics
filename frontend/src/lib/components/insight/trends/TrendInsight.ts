@@ -1,13 +1,7 @@
 import { buildQuery, type Field, type FieldFilter } from '$lib/local-queries'
-import { Insight, type InsightType } from '$lib/components/insight/Insight'
+import { Insight, type InsightType, type TimeBucket } from '$lib/components/insight/Insight'
 import moment from 'moment'
 import { dbManager } from '$lib/globals'
-
-const timeBuckets = ['Daily', 'Weekly', 'Monthly'] as const
-type TimeBucket = typeof timeBuckets[number]
-// const timeBucketMap = {
-//     'D'
-// }
 
 export class TrendInsight extends Insight {
     type: InsightType = 'Trend'
