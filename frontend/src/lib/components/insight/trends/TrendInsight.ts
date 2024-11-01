@@ -1,13 +1,11 @@
 import { buildQuery, type Field, type FieldFilter } from '$lib/local-queries'
 import { Insight, type InsightType, type TimeBucket } from '$lib/components/insight/Insight'
-import moment from 'moment'
 import { dbManager } from '$lib/globals'
+import type { InsightMeta } from '$lib/components/insight/InsightMeta'
 
 export class TrendInsight extends Insight {
     type: InsightType = 'Trend'
     series: TrendSeries[] = []
-    timeBucket: TimeBucket = 'Monthly'
-    duration: moment.Duration = moment.duration(12, 'weeks')
 
     private groupBy(timeBucket: TimeBucket): string {
         const dateTruncate = timeBucket === 'Daily'
@@ -18,18 +16,17 @@ export class TrendInsight extends Insight {
         return `date_trunc('${dateTruncate}', timestamp)`
     }
 
-    async fetchData(): Promise<ResultType[][]> {
-        const startDate = moment().subtract(this.duration).startOf('month')
+    async fetchData(meta: InsightMeta): Promise<ResultType[][]> {
         const results: ResultType[][] = []
         for (const series of this.series) {
             const { sql, params } = buildQuery({
                 aggregations: series.aggregations,
                 filters: [
                     ...series.filters,
-                    { field: { name: 'timestamp' }, operator: '>=', value: startDate.toISOString() },
-                    // { field: { name: 'timestamp' }, operator: '<=', value: this.endDate },
+                    { field: { name: 'timestamp' }, operator: '>=', value: meta.range.start.toISOString() },
+                    { field: { name: 'timestamp' }, operator: '<=', value: meta.range.end.toISOString() },
                 ],
-                groupBy: [{ name: this.groupBy(this.timeBucket) }],
+                groupBy: [{ name: this.groupBy(meta.timeBucket) }],
             })
             console.log(sql, params)
             results.push(await dbManager.runQuery(sql, params))

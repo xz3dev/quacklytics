@@ -87,9 +87,8 @@
 </script>
 
 {#each $insight.series as series, i}
-  <div class="rounded-lg flex flex-col p-2 mb-2">
+  <div class="rounded-lg flex flex-col mb-2">
     <div class="flex items-center">
-      <div class="mr-2 rounded-full w-5 h-5 bg-amber-600 flex-shrink-0"></div>
       <div class="flex flex-row gap-2 items-center flex-wrap">
         <!-- Aggregation Dropdown -->
         <DropdownMenu.Root>
@@ -170,4 +169,4 @@
   on:click={handleAddSeries}
 >Add Series
 </Button>
-  
+

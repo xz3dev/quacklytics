@@ -7,3 +7,10 @@ export abstract class Insight {
 
 export const timeBuckets = ['Daily', 'Weekly', 'Monthly'] as const
 export type TimeBucket = typeof timeBuckets[number]
+export const timeBucketLabels: {
+    [key in TimeBucket]: string
+} = {
+    Daily: 'Day',
+    Weekly: 'Week',
+    Monthly: 'Month',
+}

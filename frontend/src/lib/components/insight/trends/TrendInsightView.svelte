@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { onMount, setContext } from 'svelte'
+    import { getContext, onMount, setContext } from 'svelte'
     import Chart from 'chart.js/auto'
     import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
-    import { writable } from 'svelte/store'
+    import { derived, type Writable, writable } from 'svelte/store'
     import 'chartjs-adapter-moment';
 
     import {
@@ -14,7 +14,7 @@
         Tooltip,
         Legend,
     } from 'chart.js'
-    import InsightMeta from '$lib/components/insight/InsightMeta.svelte'
+    import type { InsightMeta } from '$lib/components/insight/InsightMeta'
 
     Chart.register(
         TimeScale,
@@ -28,30 +28,8 @@
 
     let chartInstance: Chart | null = null
 
-    const insight = new TrendInsight()
-    insight.series = [
-        {
-            name: 'Event Count',
-            filters: [
-                {
-                    field: { name: 'event_type' },
-                    operator: '=',
-                    value: 'test_type',
-                },
-            ],
-            aggregations: [
-                {
-                    function: 'COUNT',
-                    field: { name: 'event_type' },
-                    alias: 'result_value',
-                },
-            ],
-        },
-    ]
-
-
-    const insightStore = writable(insight)
-    setContext('insight', insightStore)
+    const insightStore = getContext<Writable<TrendInsight>>('insight')
+    const insightMetaStore = getContext<Writable<InsightMeta>>('insightMeta')
 
     onMount(async () => {
         const ctx = document.getElementById('eventChart') as HTMLCanvasElement
@@ -70,7 +48,7 @@
                 responsive: true,
                 plugins: {
                     title: {
-                        text: insight.id,
+                        text: $insightStore.id,
                         display: true
                     }
                 },
@@ -78,7 +56,7 @@
                     x: {
                         type: 'time',
                         time: {
-                            tooltipFormat: 'dd T'
+                            tooltipFormat: 'L'
                         },
                         title: {
                             display: true,
@@ -97,8 +75,10 @@
             },
         })
 
-        insightStore.subscribe(async insight => {
-            const data = await insight.fetchData()
+        const insightData = derived([insightMetaStore, insightStore], ([meta, insight]) => insight.fetchData(meta))
+
+        insightData.subscribe(async dataP => {
+            const data = await dataP
             if (chartInstance && data) {
                 const labels = data[0].map(r => new Date(r.bucket_0))
                 console.log(labels)
@@ -111,10 +91,6 @@
         })
     })
 </script>
-
-<div class="flex flex-row items-center mr-2">
-  <InsightMeta />
-</div>
 
 <TrendInsightOptions />
 
