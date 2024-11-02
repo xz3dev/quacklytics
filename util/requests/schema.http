@@ -1,0 +1,4 @@
+GET {{url}}/schema
+Accept: application/json
+
+###

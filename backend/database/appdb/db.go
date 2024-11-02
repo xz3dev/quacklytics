@@ -3,6 +3,7 @@ package appdb
 import (
 	"analytics/auth"
 	"analytics/model"
+	"analytics/schema"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
@@ -37,6 +38,8 @@ func Init() *gorm.DB {
 		&auth.User{},
 		&auth.RememberToken{},
 		&auth.RecoveryToken{},
+		&schema.EventSchema{},
+		&schema.EventSchemaProperty{},
 	)
 	if err != nil {
 		log.Fatal("Error migrating database: ", err)

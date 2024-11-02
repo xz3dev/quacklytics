@@ -61,6 +61,7 @@ func processBatch(events []*model.EventInput) {
 	defer appender.Flush()
 	defer appender.Close()
 
+	ApplySchemaChanges(events)
 	for _, event := range events {
 		propertiesJson, err := json.Marshal(event.Properties)
 		if err != nil {

@@ -58,6 +58,7 @@ func setupMux(c Config) *chi.Mux {
 	// Mount Authboss
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
 	mux.Get("/auth/me", routes.CurrentUser)
+	mux.Post("/dummy", routes.GenerateDummyEvents)
 	setupPublicEventRoutes(mux)
 
 	// Use Authboss middleware for protected routes
@@ -78,7 +79,6 @@ func setupPrivateEventRoutes(mux chi.Router) {
 	mux.Get("/events", routes.QueryEvents)
 	mux.Get("/events/parquet", routes.QueryEventAsParquet)
 	mux.Post("/event", routes.AppendEvent)
-	mux.Post("/dummy", routes.GenerateDummyEvents)
 	mux.Get("/events/parquet/kw", routes.QueryEventsKW)
 	mux.Get("/events/parquet/checksums", routes.LastTwelveWeeksChecksums)
 }
@@ -86,6 +86,7 @@ func setupPrivateEventRoutes(mux chi.Router) {
 func setupAnalyticsRoutes(mux chi.Router) {
 	mux.Get("/dashboards", routes.Dashboards)
 	mux.Post("/dashboards", routes.CreateDashboard)
+	mux.Get("/schema", routes.Schema)
 	//mux.Get("/insights/", ListInsights)
 	routes.SetupInsightRoutes(mux)
 }
