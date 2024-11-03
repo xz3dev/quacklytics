@@ -18,6 +18,7 @@
     import FilterSelector from '$lib/components/insight/filters/FilterSelector.svelte'
     import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte'
     import { type Schema, schemaStore } from '$lib/client/schema'
+    import { insightColor } from '$lib/components/insight/Insight'
 
     const insight = getContext<Writable<TrendInsight>>('insight')
     const dispatcher = createEventDispatcher()
@@ -94,8 +95,13 @@
 
 {#each $insight.series as series, i}
   <div class="rounded-lg flex flex-col mb-2">
-    <div class="flex items-center">
+    <div class="relative z-0 flex items-center">
+      <div
+        class="absolute h-[3px] w-full bg-red-950 top-[calc(50%-1.5px)] bottom-0 left-0 z-[-1]"
+        style="background-color: {insightColor(i)}"
+      ></div>
       <div class="flex flex-row gap-2 items-center flex-wrap">
+
         <!-- Aggregation Dropdown -->
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
@@ -120,7 +126,7 @@
           <Popover.Root open={openPopover[i]} onOpenChange={(open) => openPopover[i] = open}>
             <Popover.Trigger asChild let:builder>
               <Button builders={[builder]} variant="outline" size="sm" role="combobox">
-                {selectedProperties[i].name || "Select property"}
+                {selectedProperties[i]?.name || "Select property"}
                 <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </Popover.Trigger>
@@ -131,7 +137,7 @@
                 <Command.Group>
                   {#each availableFields.filter(f => f.type === 'number') as field}
                     <Command.Item onSelect={() => setProperty(i, field)}>
-                      <Check class={selectedProperties[i] === field ? "opacity-100" : "opacity-0"} />
+                      <Check class={selectedProperties[i]?.name === field.name ? "opacity-100" : "opacity-0"} />
                       <span>{field.name}</span>
                       <span class="ml-2 text-xs text-muted-foreground">{field.type}</span>
                     </Command.Item>
@@ -167,7 +173,7 @@
       </div>
       <div class="flex-1"></div>
       <Button
-        variant="ghost"
+        variant="outline"
         on:click={() => handleRemoveSeries(i)}
       >
         <X class="text-foreground-muted w-4 h-4" />

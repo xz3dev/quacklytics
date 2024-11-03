@@ -1,5 +1,5 @@
 <script lang="ts">
-    import InsightMetaView from '$lib/components/insight/InsightMetaView.svelte'
+    import InsightMetaView from '$lib/components/insight/meta/InsightMetaView.svelte'
     import TrendInsightView from '$lib/components/insight/trends/TrendInsightView.svelte'
     import { writable } from 'svelte/store'
     import { setContext } from 'svelte'

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContext, onMount, setContext } from 'svelte'
-    import Chart from 'chart.js/auto'
+    import Chart, { type ChartDataset } from 'chart.js/auto'
     import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
     import { derived, type Writable, writable } from 'svelte/store'
@@ -14,7 +14,8 @@
         Tooltip,
         Legend,
     } from 'chart.js'
-    import type { InsightMeta } from '$lib/components/insight/InsightMeta'
+    import type { InsightMeta } from '$lib/components/insight/meta/InsightMeta'
+    import { insightColor } from '$lib/components/insight/Insight'
 
     Chart.register(
         TimeScale,
@@ -31,18 +32,22 @@
     const insightStore = getContext<Writable<TrendInsight>>('insight')
     const insightMetaStore = getContext<Writable<InsightMeta>>('insightMeta')
 
+    const createDataset = (label: string, data: any[], index: number) => ({
+        label,
+        data,
+        borderColor: insightColor(index),
+        tension: 0.1,
+    }) satisfies ChartDataset
+
     onMount(async () => {
         const ctx = document.getElementById('eventChart') as HTMLCanvasElement
         chartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
-                datasets: [{
-                    label: 'Events',
-                    data: [],
-                    borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.1,
-                }],
+                datasets: [
+                    createDataset('Events', [], 0),
+                ],
             },
             options: {
                 responsive: true,
@@ -86,6 +91,9 @@
                 console.log(labels)
                 chartInstance.data.labels = labels
                 for (const [index, series] of data.entries()) {
+                    if(!chartInstance.data.datasets[index]) {
+                        chartInstance.data.datasets[index] = createDataset(`Series ${index}`, series.map(r => Number(r.result_value)), index)
+                    }
                     chartInstance.data.datasets[index].data = series.map(r => Number(r.result_value))
                 }
                 chartInstance.update()

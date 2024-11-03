@@ -11,7 +11,7 @@
     import {
         getLocalTimeZone, now, startOfMonth, endOfMonth,
     } from '@internationalized/date'
-    import { createInsightMetaStore } from '$lib/components/insight/InsightMeta'
+    import { createInsightMetaStore } from '$lib/components/insight/meta/InsightMeta'
 
     let isTimeRangeSelectionOpen = false
 

@@ -14,3 +14,16 @@ export const timeBucketLabels: {
     Weekly: 'Week',
     Monthly: 'Month',
 }
+
+
+const insightColors = [
+    '#4d7aa8',
+    '#8f0030',
+    '#368163',
+    '#cf8626',
+    '#ab49a3',
+]
+
+export const insightColor = (i: number): string => {
+    return insightColors[i % insightColors.length]
+}
