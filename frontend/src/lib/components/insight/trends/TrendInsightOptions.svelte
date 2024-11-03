@@ -5,7 +5,7 @@
         type AggregationFunction,
         aggregationFunctions,
         type Field,
-        type FieldFilter,
+        type FieldFilter, type FieldType,
         type Operator,
     } from '$lib/local-queries'
     import type { Writable } from 'svelte/store'
@@ -17,38 +17,44 @@
     import { Check, ChevronDown, ChevronsUpDown, Plus, X } from 'lucide-svelte'
     import FilterSelector from '$lib/components/insight/filters/FilterSelector.svelte'
     import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte'
+    import { type Schema, schemaStore } from '$lib/client/schema'
 
     const insight = getContext<Writable<TrendInsight>>('insight')
     const dispatcher = createEventDispatcher()
 
-    const setAggregation = (index: number, agg: AggregationFunction, field?: string) => {
+    const setAggregation = (index: number, agg: AggregationFunction, field?: Field) => {
         $insight.series[index].aggregations[0] = {
             function: agg,
             alias: 'result_value',
-            field: { name: field ?? 'id' },
+            field: field ?? { name: 'id', type: 'string' },
         }
     }
 
-    // Add a list of properties that can be aggregated
-    const properties = ['id', 'timestamp', '$properties.value', '$properties.count'] // Add more as needed
-
-    let selectedProperties: string[] = $insight.series.map(s => s.aggregations[0].field.name)
+    let selectedProperties: Field[] = $insight.series.map(s => s.aggregations[0].field)
     let openPopover: boolean[] = $insight.series.map(() => false)
     let addFilterOpen: boolean[] = $insight.series.map(() => false)
 
-    const setProperty = (index: number, property: string) => {
+    const setProperty = (index: number, property: Field) => {
         selectedProperties[index] = property
         setAggregation(index, $insight.series[index].aggregations[0].function, property)
         openPopover[index] = false
     }
 
-    const availableFields: Field[] = [
-        { name: 'event_type' },
-        { name: 'timestamp' },
-        { name: '$.prop_0' },
-        { name: '$.count' },
-        // Add more fields as needed
-    ]
+    const schema: Schema = $schemaStore
+    $: availableFields = [
+        { name: 'event_type', type: 'string' },
+        { name: 'timestamp', type: 'number' },
+        ...schema.uniqueProperties,
+    ] satisfies Field[]
+    $: console.log(schema)
+
+    // const availableFields: Field[] = [
+    //     { name: 'event_type' },
+    //     { name: 'timestamp' },
+    //     { name: '$.prop_0' },
+    //     { name: '$.count' },
+    //     // Add more fields as needed
+    // ]
 
     function handleFilterChange(seriesIndex: number, filterIndex: number, newFilter?: FieldFilter) {
         const newFilters = [...$insight.series[seriesIndex].filters]
@@ -70,7 +76,7 @@
                     {
                         function: 'COUNT',
                         alias: 'result_value',
-                        field: { name: 'id' },
+                        field: { name: 'id', type: 'string' },
                     },
                 ],
             })
@@ -100,7 +106,9 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
             {#each aggregationFunctions as func}
-              <DropdownMenu.Item on:click={() => setAggregation(i, func, selectedProperties[i])}>
+              <DropdownMenu.Item
+                on:click={() => setAggregation(i, func, func === 'COUNT' ? {name: 'id', type: 'string'} : selectedProperties[i])}
+              >
                 {func}
               </DropdownMenu.Item>
             {/each}
@@ -108,28 +116,32 @@
         </DropdownMenu.Root>
 
         <!-- Property Command (Combobox) -->
-        <Popover.Root open={openPopover[i]} onOpenChange={(open) => openPopover[i] = open}>
-          <Popover.Trigger asChild let:builder>
-            <Button builders={[builder]} variant="outline" size="sm" role="combobox">
-              {selectedProperties[i] || "Select property"}
-              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content class="w-[200px] p-0">
-            <Command.Root>
-              <Command.Input placeholder="Search property..." />
-              <Command.Empty>No property found.</Command.Empty>
-              <Command.Group>
-                {#each properties as property}
-                  <Command.Item onSelect={() => setProperty(i, property)}>
-                    <Check class={selectedProperties[i] === property ? "opacity-100" : "opacity-0"} />
-                    <span>{property}</span>
-                  </Command.Item>
-                {/each}
-              </Command.Group>
-            </Command.Root>
-          </Popover.Content>
-        </Popover.Root>
+        {#if series.aggregations[0].function !== 'COUNT'}
+          <Popover.Root open={openPopover[i]} onOpenChange={(open) => openPopover[i] = open}>
+            <Popover.Trigger asChild let:builder>
+              <Button builders={[builder]} variant="outline" size="sm" role="combobox">
+                {selectedProperties[i].name || "Select property"}
+                <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="w-[200px] p-0">
+              <Command.Root>
+                <Command.Input placeholder="Search property..." />
+                <Command.Empty>No property found.</Command.Empty>
+                <Command.Group>
+                  {#each availableFields.filter(f => f.type === 'number') as field}
+                    <Command.Item onSelect={() => setProperty(i, field)}>
+                      <Check class={selectedProperties[i] === field ? "opacity-100" : "opacity-0"} />
+                      <span>{field.name}</span>
+                      <span class="ml-2 text-xs text-muted-foreground">{field.type}</span>
+                    </Command.Item>
+                  {/each}
+                </Command.Group>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
+        {/if}
+
 
         {#each series.filters as filter, j}
           <FilterSelector
@@ -147,7 +159,6 @@
           </Popover.Trigger>
           <Popover.Content class="w-80 p-0">
             <FilterSelectorCard
-              availableFields={availableFields}
               on:add={(event) => handleFilterChange(i, series.filters.length, event.detail)}
               on:discard={() => handleFilterChange(i, series.filters.length, undefined)}
             />

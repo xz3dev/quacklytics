@@ -4,11 +4,18 @@ export type Operator = typeof operators[number];
 
 export const aggregationFunctions = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'] as const
 export type AggregationFunction = typeof aggregationFunctions[number];
+export const isNumericAggregation = (agg: AggregationFunction) => agg !== 'COUNT'
+
 export type SortDirection = 'ASC' | 'DESC';
 
+
+const fieldTypes = ['string', 'number', 'boolean'] as const
+export type FieldType = typeof fieldTypes[number]
 // Interface for a field in a query, with support for JSON properties
 export interface Field {
     name: string;                // Field name or JSON path
+    type: FieldType
+    isProperty?: boolean
 }
 
 // Interface for a filter condition
@@ -45,7 +52,7 @@ export interface Query {
 // Function to generate the SQL expression for a field
 function getFieldExpression(field: Field, castType?: string): string {
     let expression = ''
-    const isJsonField = field.name.startsWith('$.')
+    const isJsonField = field.name.startsWith('$.') || field.isProperty
     const nameCleaned = field.name.replace(/\$\./g, '')
     if (isJsonField) {
         const jsonPath = `$.${nameCleaned}`

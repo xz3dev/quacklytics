@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm/clause"
 	"log"
 	"reflect"
+	"strings"
 )
 
 func ApplySchemaChanges(events []*model.EventInput) {
@@ -75,7 +76,7 @@ func applyPropChanges(e *model.EventInput, s *schema.EventSchema) {
 	}
 
 	for key, value := range e.Properties {
-		observedType := reflect.TypeOf(value).String()
+		observedType := normalizeType(reflect.TypeOf(value).String())
 		existingType, exists := schemaPropsByKey[key]
 		if !exists {
 			schemaPropsByKey[key] = &schema.EventSchemaProperty{
@@ -96,21 +97,15 @@ func applyPropChanges(e *model.EventInput, s *schema.EventSchema) {
 	s.Properties = schemaProps
 }
 
-//schema, exists := schemas[event.EventType]
-//if !exists {
-//	schema = &EventSchema{
-//		EventType:  event.EventType,
-//		Properties: make(map[string][]string),
-//	}
-//	schemas[event.EventType] = schema
-//}
-//
-//for key, value := range event.Properties {
-//	observedType := reflect.TypeOf(value).String()
-//	types, exists := schema.Properties[key]
-//	if !exists {
-//		schema.Properties[key] = []string{observedType}
-//	} else if !contains(types, observedType) {
-//		schema.Properties[key] = append(types, observedType)
-//	}
-//}
+func normalizeType(t string) string {
+	if strings.Contains(t, "int") {
+		return "number"
+	}
+	if strings.Contains(t, "double") {
+		return "number"
+	}
+	if strings.Contains(t, "float") {
+		return "number"
+	}
+	return "string"
+}

@@ -4,7 +4,7 @@
     import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
     import { derived, type Writable, writable } from 'svelte/store'
-    import 'chartjs-adapter-moment';
+    import 'chartjs-adapter-moment'
 
     import {
         TimeScale,
@@ -49,18 +49,20 @@
                 plugins: {
                     title: {
                         text: $insightStore.id,
-                        display: true
-                    }
+                        display: true,
+                    },
                 },
                 scales: {
                     x: {
                         type: 'time',
+                        min: $insightMetaStore.range.start.getTime(),
+                        max: $insightMetaStore.range.end.getTime(),
                         time: {
-                            tooltipFormat: 'L'
+                            tooltipFormat: 'L',
                         },
                         title: {
                             display: true,
-                            text: 'Date'
+                            text: 'Date',
                         },
                         ticks: {
                             autoSkip: true,
@@ -89,7 +91,10 @@
                 chartInstance.update()
             }
         })
+
     })
+    $: if (chartInstance?.options.scales?.x) chartInstance.options.scales.x.min = $insightMetaStore.range.start.getTime()
+    $: if (chartInstance?.options.scales?.x) chartInstance.options.scales.x.max = $insightMetaStore.range.end.getTime()
 </script>
 
 <TrendInsightOptions />
