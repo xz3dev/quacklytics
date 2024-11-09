@@ -13,7 +13,6 @@
 	const schema: Schema = $schemaStore;
 	$: availableFields = [
 		{ name: 'event_type', type: 'string' },
-		{ name: 'timestamp', type: 'number' },
 		...schema.uniqueProperties
 	] satisfies Field[];
 
