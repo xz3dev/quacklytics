@@ -2,7 +2,7 @@
     import TrendInsight from '$lib/components/insight/trends/TrendInsightView.svelte'
     import {Button} from '$lib/components/ui/button/index'
     import {AnalyticsClient} from '$lib/client/client'
-    import Insight from '$lib/components/insight/Insight.svelte'
+    import Insight from '$lib/components/insight/InsightView.svelte'
 
     const fetchData = async () => {
         const client = new AnalyticsClient()

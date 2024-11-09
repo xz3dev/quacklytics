@@ -49,6 +49,7 @@
 		"@duckdb/duckdb-wasm": "^1.28.1-dev106.0",
 		"chart.js": "^4.4.6",
 		"chartjs-adapter-moment": "^1.0.1",
+		"datatables.net-dt": "^2.1.8",
 		"install": "^0.13.0",
 		"lucide-svelte": "^0.453.0",
 		"moment": "^2.30.1",

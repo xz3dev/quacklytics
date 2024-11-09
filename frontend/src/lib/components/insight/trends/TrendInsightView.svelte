@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getContext, onMount, setContext } from 'svelte'
     import Chart, { type ChartDataset } from 'chart.js/auto'
-    import { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
+    import { fetchData, type TrendInsight } from '$lib/components/insight/trends/TrendInsight'
     import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
     import { derived, type Writable, writable } from 'svelte/store'
     import 'chartjs-adapter-moment'
@@ -53,7 +53,7 @@
                 responsive: true,
                 plugins: {
                     title: {
-                        text: $insightStore.id,
+                        text: $insightStore.id.toString(),
                         display: true,
                     },
                 },
@@ -82,7 +82,10 @@
             },
         })
 
-        const insightData = derived([insightMetaStore, insightStore], ([meta, insight]) => insight.fetchData(meta))
+        const insightData = derived([insightMetaStore, insightStore], ([meta, insight]) => {
+            console.log(meta, insight, 'data')
+            return fetchData(insight, meta)
+        })
 
         insightData.subscribe(async dataP => {
             const data = await dataP

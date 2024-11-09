@@ -13,7 +13,7 @@
       Events
     </a>
     <a
-      href="/app/insight" class="hover:text-primary"
+      href="/app/insights" class="hover:text-primary"
     >
       Insights
     </a>

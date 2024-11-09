@@ -7,8 +7,3 @@ export class AnalyticsClient {
 
     }
 }
-
-const getInsights = async (): Promise<Insight[]> => {
-    const response = await fetch(`${baseUrl}/insights`)
-    return response.json()
-}

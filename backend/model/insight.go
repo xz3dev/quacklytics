@@ -2,6 +2,7 @@ package model
 
 type InsightInput struct {
 	Name   string    `json:"name" gorm:"size:255;not null"`
+	Type   string    `json:"type" gorm:"size:255;not null;default:'Trend'"`
 	Series *[]Series `json:"series"`
 }
 

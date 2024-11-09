@@ -65,7 +65,7 @@ func getInsight(w http.ResponseWriter, r *http.Request) {
 	var insight model.Insight
 	result := appdb.I.Preload("Series").First(&insight, id)
 	if result.Error != nil {
-		http.Error(w, "Insight not found", http.StatusNotFound)
+		http.Error(w, "Insight not found: "+result.Error.Error(), http.StatusNotFound)
 		return
 	}
 

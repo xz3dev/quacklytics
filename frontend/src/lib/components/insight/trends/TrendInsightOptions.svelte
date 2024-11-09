@@ -21,23 +21,27 @@
     import { insightColor } from '$lib/components/insight/Insight'
 
     const insight = getContext<Writable<TrendInsight>>('insight')
-    const dispatcher = createEventDispatcher()
 
     const setAggregation = (index: number, agg: AggregationFunction, field?: Field) => {
-        $insight.series[index].aggregations[0] = {
-            function: agg,
-            alias: 'result_value',
-            field: field ?? { name: 'id', type: 'string' },
+        if ($insight.series?.[index]) {
+            $insight.series[index].query.aggregations[0] = {
+                function: agg,
+                alias: 'result_value',
+                field: field ?? { name: 'id', type: 'string' },
+            }
         }
     }
 
-    let selectedProperties: Field[] = $insight.series.map(s => s.aggregations[0].field)
-    let openPopover: boolean[] = $insight.series.map(() => false)
-    let addFilterOpen: boolean[] = $insight.series.map(() => false)
+    console.log('insight', $insight)
+    let selectedProperties: Field[] = $insight.series?.map(s => s.query.aggregations[0]?.field) ?? []
+    let openPopover: boolean[] = $insight.series?.map(() => false) ?? []
+    let addFilterOpen: boolean[] = $insight.series?.map(() => false) ?? []
 
     const setProperty = (index: number, property: Field) => {
+        const series = $insight.series?.[index]
+        if (!series) return
         selectedProperties[index] = property
-        setAggregation(index, $insight.series[index].aggregations[0].function, property)
+        setAggregation(index, series.query.aggregations[0].function, property)
         openPopover[index] = false
     }
 
@@ -49,37 +53,33 @@
     ] satisfies Field[]
     $: console.log(schema)
 
-    // const availableFields: Field[] = [
-    //     { name: 'event_type' },
-    //     { name: 'timestamp' },
-    //     { name: '$.prop_0' },
-    //     { name: '$.count' },
-    //     // Add more fields as needed
-    // ]
-
     function handleFilterChange(seriesIndex: number, filterIndex: number, newFilter?: FieldFilter) {
-        const newFilters = [...$insight.series[seriesIndex].filters]
+        const series = $insight.series?.[seriesIndex]
+        if (!series) return
+        const newFilters = [...series.query.filters]
         if (newFilter) {
             newFilters[filterIndex] = newFilter
         } else {
             newFilters.splice(filterIndex, 1)
         }
-        $insight.series[seriesIndex].filters = newFilters
+        series.query.filters = newFilters
         addFilterOpen[seriesIndex] = false
     }
 
     const handleAddSeries = () => {
         insight.update(updatedInsight => {
-            updatedInsight.series.push({
+            updatedInsight.series?.push({
                 name: 'New Series',
-                filters: [],
-                aggregations: [
-                    {
-                        function: 'COUNT',
-                        alias: 'result_value',
-                        field: { name: 'id', type: 'string' },
-                    },
-                ],
+                query: {
+                    filters: [],
+                    aggregations: [
+                        {
+                            function: 'COUNT',
+                            alias: 'result_value',
+                            field: { name: 'id', type: 'string' },
+                        },
+                    ],
+                },
             })
             return updatedInsight
         })
@@ -87,13 +87,12 @@
 
     const handleRemoveSeries = (index: number) => {
         insight.update(updatedInsight => {
-            updatedInsight.series.splice(index, 1)
+            updatedInsight.series?.splice(index, 1)
             return updatedInsight
         })
     }
 </script>
-
-{#each $insight.series as series, i}
+{#each $insight.series ?? [] as series, i}
   <div class="rounded-lg flex flex-col mb-2">
     <div class="relative z-0 flex items-center">
       <div
@@ -101,12 +100,16 @@
         style="background-color: {insightColor(i)}"
       ></div>
       <div class="flex flex-row gap-2 items-center flex-wrap">
+        <div
+          class="h-full w-2"
+          style="background-color: {insightColor(i)}"
+        ></div>
 
         <!-- Aggregation Dropdown -->
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
             <Button builders={[builder]} variant="outline" size="sm">
-              {series.aggregations[0].function}
+              {series.query.aggregations[0].function}
               <ChevronDown class="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenu.Trigger>
@@ -122,7 +125,7 @@
         </DropdownMenu.Root>
 
         <!-- Property Command (Combobox) -->
-        {#if series.aggregations[0].function !== 'COUNT'}
+        {#if series.query.aggregations[0].function !== 'COUNT'}
           <Popover.Root open={openPopover[i]} onOpenChange={(open) => openPopover[i] = open}>
             <Popover.Trigger asChild let:builder>
               <Button builders={[builder]} variant="outline" size="sm" role="combobox">
@@ -149,7 +152,7 @@
         {/if}
 
 
-        {#each series.filters as filter, j}
+        {#each series.query.filters as filter, j}
           <FilterSelector
             filter={filter}
             on:save={(event) => handleFilterChange(i, j, event.detail)}
@@ -165,8 +168,8 @@
           </Popover.Trigger>
           <Popover.Content class="w-80 p-0">
             <FilterSelectorCard
-              on:add={(event) => handleFilterChange(i, series.filters.length, event.detail)}
-              on:discard={() => handleFilterChange(i, series.filters.length, undefined)}
+              on:add={(event) => handleFilterChange(i, series.query.filters.length, event.detail)}
+              on:discard={() => handleFilterChange(i, series.query.filters.length, undefined)}
             />
           </Popover.Content>
         </Popover.Root>

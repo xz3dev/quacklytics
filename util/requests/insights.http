@@ -5,24 +5,15 @@ POST {{url}}/insights
 Content-Type: application/json
 
 {
-  "name": "New Insight",
+  "name": "New Insight 11",
+
   "description": "This is a new insight",
-  "series": [
-    {
-      "name": "Series 1",
-      "query": {
-        "select": [
-          "column1"
-        ],
-        "from": "table1"
-      }
-    }
-  ]
+  "series": []
 }
 
 ###
 
-GET {{url}}/insights/1
+GET {{url}}/insights/12
 
 ###
 

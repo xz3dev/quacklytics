@@ -1,6 +1,6 @@
 <script lang="ts">
     import { getContext, setContext } from 'svelte'
-    import { Insight, type TimeBucket, timeBucketLabels, timeBuckets } from '$lib/components/insight/Insight.js'
+    import { type TimeBucket, timeBucketLabels, timeBuckets } from '$lib/components/insight/Insight.js'
     import type { Writable } from 'svelte/store'
     import * as Popover from '$lib/components/ui/popover'
     import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
