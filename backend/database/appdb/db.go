@@ -40,6 +40,7 @@ func Init() *gorm.DB {
 		&auth.RecoveryToken{},
 		&schema.EventSchema{},
 		&schema.EventSchemaProperty{},
+		&schema.EventSchemaPropertyValue{},
 	)
 	if err != nil {
 		log.Fatal("Error migrating database: ", err)

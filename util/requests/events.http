@@ -1,3 +1,5 @@
 POST {{url}}/dummy
 
 ###
+
+GET {{url}}/schema

@@ -8,21 +8,33 @@ import (
 	"net/http"
 )
 
+type PropertyDetails struct {
+	Type   string   `json:"type"`
+	Values []string `json:"values"`
+}
+
 func Schema(w http.ResponseWriter, r *http.Request) {
 	var ss []schema.EventSchema
-	query := appdb.I.Preload("Properties").Find(&ss)
+	query := appdb.I.Debug().Preload("Properties.Values").Find(&ss)
 	if query.Error != nil {
 		log.Printf("Error while querying schema: %v", query.Error)
 		http.Error(w, query.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	result := make(map[string]map[string]string)
+	result := make(map[string]map[string]PropertyDetails)
 
 	for _, s := range ss {
-		properties := make(map[string]string)
+		properties := make(map[string]PropertyDetails)
 		for _, prop := range s.Properties {
-			properties[prop.Key] = prop.Type
+			values := make([]string, 0, len(prop.Values))
+			for _, val := range prop.Values {
+				values = append(values, val.Value)
+			}
+			properties[prop.Key] = PropertyDetails{
+				Type:   prop.Type,
+				Values: values,
+			}
 		}
 		result[s.EventType] = properties
 	}

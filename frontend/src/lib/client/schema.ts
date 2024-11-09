@@ -8,39 +8,55 @@ export type Schema = {
     uniqueProperties: Field[]
     all: Field[]
     events: Record<string, Field[]>
+    propertyValues: Record<string, string[]>
 }
 
 const emptySchema: Schema = {
     uniqueProperties: [],
     all: [],
     events: {},
+    propertyValues: {},
 }
 
-const getSchema = async (): Promise<Schema> => parseSchema(await http.get<Record<string, Record<string, string>>>(`/schema`) ?? {})
+type SchemaResponse = Record<string, Record<string, { type: string, values: string[] }>>
 
-const parseSchema = (schema: Record<string, Record<string, string>>): Schema=> {
+const getSchema = async (): Promise<Schema> => parseSchema(await http.get<SchemaResponse>(`/schema`) ?? {})
+
+const parseSchema = (schema: SchemaResponse): Schema => {
     const uniqueProperties: Field[] = []
     const all: Field[] = []
     const events: Record<string, Field[]> = {}
+    const propertyValues: Record<string, string[]> = {}
+
     for (const [eventType, properties] of Object.entries(schema)) {
         events[eventType] = []
-        for (const [key, type] of Object.entries(properties)) {
+        for (const [key, details] of Object.entries(properties)) {
             const field = {
                 name: key,
-                type: type as FieldType,
+                type: details.type as FieldType,
                 isProperty: true,
             } satisfies Field
+
+            // Add field to collections
             all.push(field)
             events[eventType].push(field)
             if (!uniqueProperties.find(p => p.name === key)) {
                 uniqueProperties.push(field)
             }
+
+            // Merge values for this property across all event types
+            if (!propertyValues[key]) {
+                propertyValues[key] = []
+            }
+            propertyValues[key] = [...new Set([...propertyValues[key], ...details.values])]
         }
     }
+
     return {
         all,
         uniqueProperties,
         events,
+        propertyValues,
     }
 }
 

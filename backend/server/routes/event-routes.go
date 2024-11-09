@@ -88,9 +88,9 @@ func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	actions.GenerateRandomEvents(100, "test_type")
-	actions.GenerateRandomEvents(100, "test_type2")
-	actions.GenerateRandomEvents(100, "test_type3")
-	actions.GenerateRandomEvents(100, "test_type4")
+	//actions.GenerateRandomEvents(100, "test_type2")
+	//actions.GenerateRandomEvents(100, "test_type3")
+	//actions.GenerateRandomEvents(100, "test_type4")
 	w.WriteHeader(http.StatusOK)
 }
 
