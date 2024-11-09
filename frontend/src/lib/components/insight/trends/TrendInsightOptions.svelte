@@ -101,7 +101,7 @@
       ></div>
       <div class="flex flex-row gap-2 items-center flex-wrap">
         <div
-          class="h-full w-2"
+          class="self-stretch w-1 my-2 rounded-sm"
           style="background-color: {insightColor(i)}"
         ></div>
 
