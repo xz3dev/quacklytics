@@ -1,45 +1,43 @@
 <script lang="ts">
-    import { insightsStore } from '$lib/client/insights'
-    import moment from 'moment'
-    import { Button } from '$lib/components/ui/button'
-    import { Input } from '$lib/components/ui/input'
-    import { onMount } from 'svelte'
-    import DataTable from 'datatables.net-dt'
+  import { insightsStore } from '$lib/client/insights';
+  import moment from 'moment';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { onMount } from 'svelte';
+  import DataTable from 'datatables.net-dt';
 
-    const insights = $insightsStore
-    let table: DataTable
-    let searchValue = ''
+  const insights = $insightsStore;
+  let table: DataTable;
+  let searchValue = '';
 
-    const data = [
-        ...insights,
-    ].map(insight => ({
-        id: insight.id,
-        name: insight.name,
-        createdAt: insight.createdAt, //moment().fromNow(),
-        updatedAt: insight.updatedAt, //moment().fromNow(),
-    }))
+  const data = [...insights].map((insight) => ({
+    id: insight.id,
+    name: insight.name,
+    createdAt: insight.createdAt, //moment().fromNow(),
+    updatedAt: insight.updatedAt, //moment().fromNow(),
+  }));
 
-    onMount(() => {
-        table = new DataTable('#igrid', {
-            order: [[1, 'desc']],
-            columns: [
-                { data: 'name', name: 'Name', width: '75%' },
-                { data: 'createdAt', name: 'Created At', width: '200px' },
-                { data: 'updatedAt', name: 'Updated At', width: '200px' },
-            ],
-            layout: {
-                topEnd: 'search',
-            },
-            search: {
-                smart: true,           // Enable smart search
-                regex: false,          // Disable regex search
-                caseInsensitive: true, // Case insensitive search
-            },
-            searching: true,
-            paging: false,
-            info: false,
-        })
-    })
+  onMount(() => {
+    table = new DataTable('#igrid', {
+      order: [[1, 'desc']],
+      columns: [
+        { data: 'name', name: 'Name', width: '75%' },
+        { data: 'createdAt', name: 'Created At', width: '200px' },
+        { data: 'updatedAt', name: 'Updated At', width: '200px' },
+      ],
+      layout: {
+        topEnd: 'search',
+      },
+      search: {
+        smart: true, // Enable smart search
+        regex: false, // Disable regex search
+        caseInsensitive: true, // Case insensitive search
+      },
+      searching: true,
+      paging: false,
+      info: false,
+    });
+  });
 </script>
 
 <div class="container mx-auto p-4">
@@ -50,24 +48,24 @@
 
   <table id="igrid" class="display w-full">
     <thead>
-    <tr>
-      <th>Name</th>
-      <th>Created At</th>
-      <th>Updated At</th>
-    </tr>
+      <tr>
+        <th>Name</th>
+        <th>Created At</th>
+        <th>Updated At</th>
+      </tr>
     </thead>
     <tbody>
-    {#each data as row}
-      <tr>
-        <td>
-          <a class="font-bold hover:underline" href="/app/insight/{row.id}">
-            {row.name}
-          </a>
-        </td>
-        <td>{moment(row.createdAt).fromNow()}</td>
-        <td>{moment(row.updatedAt).fromNow()}</td>
-      </tr>
-    {/each}
+      {#each data as row}
+        <tr>
+          <td>
+            <a class="font-bold hover:underline" href="/app/insight/{row.id}">
+              {row.name}
+            </a>
+          </td>
+          <td>{moment(row.createdAt).fromNow()}</td>
+          <td>{moment(row.updatedAt).fromNow()}</td>
+        </tr>
+      {/each}
     </tbody>
   </table>
 </div>

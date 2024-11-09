@@ -1,60 +1,61 @@
 <script lang="ts">
-    import { Button } from "$lib/components/ui/button";
-    import { Input } from "$lib/components/ui/input";
-    import { Label } from "$lib/components/ui/label";
-    import * as Card from "$lib/components/ui/card";
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import * as Card from '$lib/components/ui/card';
 
-    let email = "";
-    let password = "";
-    let confirmPassword = "";
-    let errors: { email?: string; password?: string; confirmPassword?: string } = {};
-    let isSubmitting = false;
+  let email = '';
+  let password = '';
+  let confirmPassword = '';
+  let errors: { email?: string; password?: string; confirmPassword?: string } = {};
+  let isSubmitting = false;
 
-    $: isValidEmail = (email: string) => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    };
+  $: isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
-    $: isValidPassword = (password: string) => {
-        return password.length >= 8;
-    };
+  $: isValidPassword = (password: string) => {
+    return password.length >= 8;
+  };
 
-    $: doPasswordsMatch = (password: string, confirmPassword: string) => {
-        return password === confirmPassword;
-    };
+  $: doPasswordsMatch = (password: string, confirmPassword: string) => {
+    return password === confirmPassword;
+  };
 
-    $: isFormValid = isValidEmail(email) && isValidPassword(password) && doPasswordsMatch(password, confirmPassword);
+  $: isFormValid =
+    isValidEmail(email) && isValidPassword(password) && doPasswordsMatch(password, confirmPassword);
 
-    function validateForm() {
-        errors = {};
-        if (!isValidEmail(email)) {
-            errors.email = "Please enter a valid email address";
-        }
-        if (!isValidPassword(password)) {
-            errors.password = "Password must be at least 8 characters long";
-        }
-        if (!doPasswordsMatch(password, confirmPassword)) {
-            errors.confirmPassword = "Passwords do not match";
-        }
-        return Object.keys(errors).length === 0;
+  function validateForm() {
+    errors = {};
+    if (!isValidEmail(email)) {
+      errors.email = 'Please enter a valid email address';
     }
-
-    async function handleSubmit() {
-        if (validateForm()) {
-            isSubmitting = true;
-            try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                console.log("Form submitted", { email, password });
-                // Here you would typically make an API call to your backend
-                alert("Registration successful!");
-            } catch (error) {
-                console.error("Registration failed", error);
-                alert("Registration failed. Please try again.");
-            } finally {
-                isSubmitting = false;
-            }
-        }
+    if (!isValidPassword(password)) {
+      errors.password = 'Password must be at least 8 characters long';
     }
+    if (!doPasswordsMatch(password, confirmPassword)) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    return Object.keys(errors).length === 0;
+  }
+
+  async function handleSubmit() {
+    if (validateForm()) {
+      isSubmitting = true;
+      try {
+        // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        console.log('Form submitted', { email, password });
+        // Here you would typically make an API call to your backend
+        alert('Registration successful!');
+      } catch (error) {
+        console.error('Registration failed', error);
+        alert('Registration failed. Please try again.');
+      } finally {
+        isSubmitting = false;
+      }
+    }
+  }
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-100">

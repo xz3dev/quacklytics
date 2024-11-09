@@ -1,3 +1,3 @@
-import { DuckDbManager } from '$lib/duck-db-manager'
+import { DuckDbManager } from '$lib/duck-db-manager';
 
-export const dbManager = new DuckDbManager()
+export const dbManager = new DuckDbManager();

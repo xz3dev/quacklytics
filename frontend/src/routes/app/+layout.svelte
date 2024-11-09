@@ -1,9 +1,8 @@
 <script lang="ts">
-
-    import AuthRoute from '$lib/components/AuthRoute.svelte'
-    import NavBar from '$lib/components/navbar/NavBar.svelte'
-    import { isLoadingEvents } from '$lib/parquet-manager'
-    import Spinner from '$lib/components/ui/spinner/Spinner.svelte'
+  import AuthRoute from '$lib/components/AuthRoute.svelte';
+  import NavBar from '$lib/components/navbar/NavBar.svelte';
+  import { isLoadingEvents } from '$lib/parquet-manager';
+  import Spinner from '$lib/components/ui/spinner/Spinner.svelte';
 </script>
 
 <AuthRoute>
@@ -18,5 +17,4 @@
       <slot />
     {/if}
   </div>
-
 </AuthRoute>

@@ -1,49 +1,49 @@
 <script lang="ts">
-    import { Button } from '$lib/components/ui/button'
-    import { Input } from '$lib/components/ui/input'
-    import { Label } from '$lib/components/ui/label'
-    import * as Card from '$lib/components/ui/card'
-    import { authService } from '$lib/client/auth'
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import * as Card from '$lib/components/ui/card';
+  import { authService } from '$lib/client/auth';
 
-    let email = ''
-    let password = ''
-    let errors: { email?: string; password?: string } = {}
-    let isSubmitting = false
+  let email = '';
+  let password = '';
+  let errors: { email?: string; password?: string } = {};
+  let isSubmitting = false;
 
-    $: isValidEmail = (email: string) => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  $: isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  $: isValidPassword = (password: string) => {
+    return password.length >= 6;
+  };
+
+  $: isFormValid = isValidEmail(email) && isValidPassword(password);
+
+  function validateForm() {
+    errors = {};
+    if (!isValidEmail(email)) {
+      errors.email = 'Please enter a valid email address';
     }
-
-    $: isValidPassword = (password: string) => {
-        return password.length >= 6
+    if (!isValidPassword(password)) {
+      errors.password = 'Password must be at least 6 characters long';
     }
+    return Object.keys(errors).length === 0;
+  }
 
-    $: isFormValid = isValidEmail(email) && isValidPassword(password)
-
-    function validateForm() {
-        errors = {}
-        if (!isValidEmail(email)) {
-            errors.email = 'Please enter a valid email address'
-        }
-        if (!isValidPassword(password)) {
-            errors.password = 'Password must be at least 6 characters long'
-        }
-        return Object.keys(errors).length === 0
+  async function handleSubmit() {
+    if (validateForm()) {
+      isSubmitting = true;
+      try {
+        await authService.login(email, password);
+      } catch (error) {
+        console.error('Login failed', error);
+        alert('Login failed. Please try again.');
+      } finally {
+        isSubmitting = false;
+      }
     }
-
-    async function handleSubmit() {
-        if (validateForm()) {
-            isSubmitting = true
-            try {
-                await authService.login(email, password)
-            } catch (error) {
-                console.error('Login failed', error)
-                alert('Login failed. Please try again.')
-            } finally {
-                isSubmitting = false
-            }
-        }
-    }
+  }
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-100">
@@ -87,7 +87,9 @@
       </form>
     </Card.Content>
     <Card.Footer class="text-center text-sm text-gray-600">
-      Don't have an account? <a href="/auth/register" class="ml-2 text-blue-600 hover:underline">Register</a>
+      Don't have an account? <a href="/auth/register" class="ml-2 text-blue-600 hover:underline"
+        >Register</a
+      >
     </Card.Footer>
   </Card.Root>
 </div>
