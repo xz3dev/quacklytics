@@ -8,9 +8,15 @@
     import { Check, ChevronsUpDown } from 'lucide-svelte'
     import type { Field, FieldFilter, Operator } from '$lib/local-queries'
     import type { Selected } from 'bits-ui'
+    import { type Schema, schemaStore } from '$lib/client/schema'
 
-    export let availableFields: Field[] = []
-    export let availableOperators: Operator[] = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN']
+    const schema: Schema = $schemaStore
+    $: availableFields = [
+        { name: 'event_type', type: 'string' },
+        { name: 'timestamp', type: 'number' },
+        ...schema.uniqueProperties,
+    ] satisfies Field[]
+    export let allOperators: Operator[] = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN']
     export let initialFilter: FieldFilter | null = null
 
     const dispatch = createEventDispatcher()
@@ -75,7 +81,10 @@
             aria-expanded={openField}
             class="w-full justify-between"
           >
-            {currentField ? currentField.name : "Select field..."}
+            <span>
+              {currentField ? currentField.name : "Select field..."}
+              <span class="text-muted-foreground text-xs ml-2">{currentField?.type ?? ''}</span>
+            </span>
             <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </Popover.Trigger>
@@ -94,6 +103,7 @@
                 >
                   <Check class={currentField?.name === field.name ? "mr-2 h-4 w-4" : "mr-2 h-4 w-4 invisible"} />
                   {field.name}
+                  <span class="text-muted-foreground text-xs ml-2">{field.type}</span>
                 </Command.Item>
               {/each}
             </Command.Group>
@@ -109,7 +119,7 @@
           <Select.Value placeholder="Select operator" />
         </Select.Trigger>
         <Select.Content>
-          {#each availableOperators as operator}
+          {#each allOperators as operator}
             <Select.Item value={operator}>{operator}</Select.Item>
           {/each}
         </Select.Content>
