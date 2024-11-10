@@ -1,104 +1,140 @@
 <script lang="ts">
-  import { getContext, onMount, setContext } from 'svelte';
-  import Chart, { type ChartDataset } from 'chart.js/auto';
-  import { fetchData, type TrendInsight } from '$lib/components/insight/trends/TrendInsight';
-  import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte';
-  import { derived, type Writable, writable } from 'svelte/store';
-  import 'chartjs-adapter-moment';
+import {
+    type TrendInsight,
+    type TrendSeriesType,
+    fetchData,
+} from '$lib/components/insight/trends/TrendInsight'
+import TrendInsightOptions from '$lib/components/insight/trends/TrendInsightOptions.svelte'
+import Chart, { type ChartDataset } from 'chart.js/auto'
+import { getContext, onDestroy, onMount, setContext } from 'svelte'
+import { type Writable, derived, writable } from 'svelte/store'
+import 'chartjs-adapter-moment'
 
-  import { TimeScale, LinearScale, LineElement, Title, Tooltip, Legend } from 'chart.js';
-  import type { InsightMeta } from '$lib/components/insight/meta/InsightMeta';
-  import { insightColor } from '$lib/components/insight/Insight';
+import { insightColor } from '$lib/components/insight/Insight'
+import type { InsightMeta } from '$lib/components/insight/meta/InsightMeta'
+import InsightMetaContainer from '$lib/components/insight/meta/InsightMetaContainer.svelte'
+import InsightMetaView from '$lib/components/insight/meta/InsightMetaView.svelte'
+import type { Selected } from 'bits-ui'
+import {
+    Legend,
+    LineElement,
+    LinearScale,
+    TimeScale,
+    Title,
+    Tooltip,
+} from 'chart.js'
 
-  Chart.register(TimeScale, LinearScale, LineElement, Title, Tooltip, Legend);
+Chart.register(TimeScale, LinearScale, LineElement, Title, Tooltip, Legend)
 
-  let chartInstance: Chart | null = null;
+let chartInstance: Chart | null = null
 
-  const insightStore = getContext<Writable<TrendInsight>>('insight');
-  const insightMetaStore = getContext<Writable<InsightMeta>>('insightMeta');
+const insightStore = getContext<Writable<TrendInsight>>('insight')
+const insightMetaStore = getContext<Writable<InsightMeta>>('insightMeta')
 
-  const createDataset = (label: string, data: any[], index: number) =>
+const createDataset = (
+    type: 'line' | 'bar',
+    label: string,
+    data: any[],
+    index: number,
+) =>
     ({
-      label,
-      data,
-      borderColor: insightColor(index),
-      tension: 0.1,
-    }) satisfies ChartDataset;
+        type,
+        label,
+        data,
+        borderColor: insightColor(index),
+        backgroundColor: insightColor(index),
+        tension: 0.1,
+    }) satisfies ChartDataset
 
-  onMount(async () => {
-    const ctx = document.getElementById('eventChart') as HTMLCanvasElement;
+let unsubscribe: () => void
+
+onMount(async () => {
+    const ctx = document.getElementById('eventChart') as HTMLCanvasElement
     chartInstance = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [createDataset('Events', [], 0)],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          title: {
-            text: $insightStore.id.toString(),
-            display: true,
-          },
+        data: {
+            labels: [],
+            datasets: [createDataset('line', 'Events', [], 0)],
         },
-        scales: {
-          x: {
-            type: 'time',
-            min: $insightMetaStore.range.start.getTime(),
-            max: $insightMetaStore.range.end.getTime(),
-            time: {
-              tooltipFormat: 'L',
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    text: $insightStore.id.toString(),
+                    display: true,
+                },
             },
-            title: {
-              display: true,
-              text: 'Date',
+            scales: {
+                x: {
+                    type: 'time',
+                    min: $insightMetaStore.range.start.getTime(),
+                    max: $insightMetaStore.range.end.getTime(),
+                    time: {
+                        tooltipFormat: 'L',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Date',
+                    },
+                    ticks: {
+                        autoSkip: true,
+                        maxRotation: 0,
+                        maxTicksLimit: 10, // Adjust this value to control the maximum number of ticks
+                    },
+                },
+                y: {
+                    beginAtZero: true,
+                },
             },
-            ticks: {
-              autoSkip: true,
-              maxRotation: 0,
-              maxTicksLimit: 10, // Adjust this value to control the maximum number of ticks
-            },
-          },
-          y: {
-            beginAtZero: true,
-          },
         },
-      },
-    });
+    })
 
-    const insightData = derived([insightMetaStore, insightStore], ([meta, insight]) => {
-      console.log(meta, insight, 'data');
-      return fetchData(insight, meta);
-    });
+    const insightData = derived(
+        [insightMetaStore, insightStore],
+        ([meta, insight]) => {
+            // console.log(meta, insight, 'data')
+            return fetchData(insight, meta)
+        },
+    )
 
-    insightData.subscribe(async (dataP) => {
-      const data = await dataP;
-      if (chartInstance && data) {
-        const labels = data[0].map((r) => new Date(r.bucket_0));
-        console.log(labels);
-        chartInstance.data.labels = labels;
-        for (const [index, series] of data.entries()) {
-          if (!chartInstance.data.datasets[index]) {
-            chartInstance.data.datasets[index] = createDataset(
-              `Series ${index}`,
-              series.map((r) => Number(r.result_value)),
-              index,
-            );
-          }
-          chartInstance.data.datasets[index].data = series.map((r) => Number(r.result_value));
+    unsubscribe = insightData.subscribe(async (dataP) => {
+        const data = await dataP
+        if (chartInstance && data) {
+            const labels = data[0].map((r) => new Date(r.bucket_0))
+            console.log(labels)
+            chartInstance.data.labels = labels
+            for (const [index, series] of data.entries()) {
+                const type = $insightStore.series?.[index]?.type ?? 'bar'
+                if (!chartInstance.data.datasets[index]) {
+                    chartInstance.data.datasets[index] = createDataset(
+                        type,
+                        `Series ${index}`,
+                        series.map((r) => Number(r.result_value)),
+                        index,
+                    )
+                }
+                chartInstance.data.datasets[index].type = type
+                chartInstance.data.datasets[index].data = series.map((r) =>
+                    Number(r.result_value),
+                )
+            }
+            chartInstance.update()
         }
-        chartInstance.update();
-      }
-    });
-  });
-  $: if (chartInstance?.options.scales?.x)
-    chartInstance.options.scales.x.min = $insightMetaStore.range.start.getTime();
-  $: if (chartInstance?.options.scales?.x)
-    chartInstance.options.scales.x.max = $insightMetaStore.range.end.getTime();
-</script>
+    })
+})
 
-<TrendInsightOptions />
+onDestroy(() => unsubscribe())
+
+$: if (chartInstance?.options.scales?.x)
+    chartInstance.options.scales.x.min = $insightMetaStore.range.start.getTime()
+$: if (chartInstance?.options.scales?.x)
+    chartInstance.options.scales.x.max = $insightMetaStore.range.end.getTime()
+</script>
+<div class="flex items-center gap-2 mb-4">
+    <InsightMetaView />
+    <!-- dropdown to select bar type -->
+</div>
+<TrendInsightOptions/>
 
 <div class="w-full h-[400px]">
-  <canvas id="eventChart"></canvas>
+    <canvas id="eventChart"></canvas>
 </div>

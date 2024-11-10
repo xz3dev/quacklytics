@@ -1,109 +1,158 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from 'svelte';
-  import type { TrendInsight } from '$lib/components/insight/trends/TrendInsight';
-  import {
+import { type Schema, schemaStore } from '$lib/client/schema'
+import { insightColor } from '$lib/components/insight/Insight'
+import FilterSelector from '$lib/components/insight/filters/FilterSelector.svelte'
+import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte'
+import {
+    type TrendInsight,
+    type TrendSeriesType,
+    trendSeriesTypes,
+} from '$lib/components/insight/trends/TrendInsight'
+import { Button } from '$lib/components/ui/button'
+import * as Card from '$lib/components/ui/card'
+import * as Command from '$lib/components/ui/command'
+import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
+import * as Popover from '$lib/components/ui/popover'
+import * as Select from '$lib/components/ui/select'
+import {
     type AggregationFunction,
-    aggregationFunctions,
     type Field,
     type FieldFilter,
     type FieldType,
     type Operator,
-  } from '$lib/local-queries';
-  import type { Writable } from 'svelte/store';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import * as Card from '$lib/components/ui/card';
-  import * as Popover from '$lib/components/ui/popover';
-  import * as Command from '$lib/components/ui/command';
-  import { Button } from '$lib/components/ui/button';
-  import { Check, ChevronDown, ChevronsUpDown, Plus, X } from 'lucide-svelte';
-  import FilterSelector from '$lib/components/insight/filters/FilterSelector.svelte';
-  import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte';
-  import { type Schema, schemaStore } from '$lib/client/schema';
-  import { insightColor } from '$lib/components/insight/Insight';
+    aggregationFunctions,
+} from '$lib/local-queries'
+import type { Selected } from 'bits-ui'
+import {
+    BarChart,
+    Check,
+    ChevronDown,
+    ChevronsUpDown,
+    LineChart,
+    Plus,
+    X,
+} from 'lucide-svelte'
+import { createEventDispatcher, getContext } from 'svelte'
+import type { Writable } from 'svelte/store'
 
-  const insight = getContext<Writable<TrendInsight>>('insight');
+const insight = getContext<Writable<TrendInsight>>('insight')
 
-  const setAggregation = (index: number, agg: AggregationFunction, field?: Field) => {
+const setAggregation = (
+    index: number,
+    agg: AggregationFunction,
+    field?: Field,
+) => {
     if ($insight.series?.[index]) {
-      $insight.series[index].query.aggregations[0] = {
-        function: agg,
-        alias: 'result_value',
-        field: field ?? { name: 'id', type: 'string' },
-      };
+        $insight.series[index].query.aggregations[0] = {
+            function: agg,
+            alias: 'result_value',
+            field: field ?? { name: 'id', type: 'string' },
+        }
     }
-  };
+}
 
-  console.log('insight', $insight);
-  let selectedProperties: Field[] =
-    $insight.series?.map((s) => s.query.aggregations[0]?.field) ?? [];
-  let openPopover: boolean[] = $insight.series?.map(() => false) ?? [];
-  let addFilterOpen: boolean[] = $insight.series?.map(() => false) ?? [];
+const selectedProperties: Field[] =
+    $insight.series?.map((s) => s.query.aggregations[0]?.field) ?? []
+const openPopover: boolean[] = $insight.series?.map(() => false) ?? []
+const addFilterOpen: boolean[] = $insight.series?.map(() => false) ?? []
 
-  const setProperty = (index: number, property: Field) => {
-    const series = $insight.series?.[index];
-    if (!series) return;
-    selectedProperties[index] = property;
-    setAggregation(index, series.query.aggregations[0].function, property);
-    openPopover[index] = false;
-  };
+const setProperty = (index: number, property: Field) => {
+    const series = $insight.series?.[index]
+    if (!series) return
+    selectedProperties[index] = property
+    setAggregation(index, series.query.aggregations[0].function, property)
+    openPopover[index] = false
+}
 
-  const schema: Schema = $schemaStore;
-  $: availableFields = [
+const schema: Schema = $schemaStore
+$: availableFields = [
     { name: 'event_type', type: 'string' },
     { name: 'timestamp', type: 'number' },
     ...schema.uniqueProperties,
-  ] satisfies Field[];
-  $: console.log(schema);
+] satisfies Field[]
+$: console.log(schema)
 
-  function handleFilterChange(seriesIndex: number, filterIndex: number, newFilter?: FieldFilter) {
-    const series = $insight.series?.[seriesIndex];
-    if (!series) return;
-    const newFilters = [...series.query.filters];
+function handleFilterChange(
+    seriesIndex: number,
+    filterIndex: number,
+    newFilter?: FieldFilter,
+) {
+    const series = $insight.series?.[seriesIndex]
+    if (!series) return
+    const newFilters = [...series.query.filters]
 
     if (newFilter) {
-      newFilters[filterIndex] = newFilter;
+        newFilters[filterIndex] = newFilter
     } else {
-      newFilters.splice(filterIndex, 1);
+        newFilters.splice(filterIndex, 1)
     }
-    series.query.filters = newFilters;
-    addFilterOpen[seriesIndex] = false;
-  }
+    series.query.filters = newFilters
+    addFilterOpen[seriesIndex] = false
+}
 
-  const handleAddSeries = () => {
+const handleAddSeries = () => {
     insight.update((updatedInsight) => {
-      updatedInsight.series?.push({
-        name: 'New Series',
-        query: {
-          filters: [],
-          aggregations: [
-            {
-              function: 'COUNT',
-              alias: 'result_value',
-              field: { name: 'id', type: 'string' },
+        updatedInsight.series?.push({
+            type: 'line',
+            name: 'New Series',
+            query: {
+                filters: [],
+                aggregations: [
+                    {
+                        function: 'COUNT',
+                        alias: 'result_value',
+                        field: { name: 'id', type: 'string' },
+                    },
+                ],
             },
-          ],
-        },
-      });
-      return updatedInsight;
-    });
-  };
+        })
+        return updatedInsight
+    })
+}
 
-  const handleRemoveSeries = (index: number) => {
+const handleRemoveSeries = (index: number) => {
     insight.update((updatedInsight) => {
-      updatedInsight.series?.splice(index, 1);
-      return updatedInsight;
-    });
-  };
+        updatedInsight.series?.splice(index, 1)
+        return updatedInsight
+    })
+}
+
+function capitalizeFirstLetter(val: string) {
+    return String(val).charAt(0).toUpperCase() + String(val).slice(1)
+}
+
+function trendSeriesTypeSelectable(
+    type: TrendSeriesType | undefined,
+): Selected<TrendSeriesType> {
+    const value = type ?? 'line'
+    return {
+        value,
+        label: capitalizeFirstLetter(value),
+    }
+}
+
+function trendSeriesTypeSelected(
+    index: number,
+    type: Selected<TrendSeriesType> | undefined,
+) {
+    console.log(type)
+    insight.update((updatedInsight) => {
+        if (updatedInsight.series?.[index]) {
+            updatedInsight.series[index].type = type?.value ?? 'line'
+        }
+        return updatedInsight
+    })
+}
 </script>
 
 {#each $insight.series ?? [] as series, i}
-  <div class="rounded-lg flex flex-col mb-2">
-    <div class="relative z-0 flex items-center">
+  <div class="flex flex-col mb-2">
+    <div class="relative z-0 flex items-center gap-2">
       <div
-        class="absolute h-[3px] w-full bg-red-950 top-[calc(50%-1.5px)] bottom-0 left-0 z-[-1]"
+        class="absolute h-[3px] w-full bg-red-950 top-[calc(50%-1.5px)] bottom-0 left-0 z-[-20]"
         style="background-color: {insightColor(i)}"
       ></div>
-      <div class="flex flex-row gap-2 items-center flex-wrap">
+      <div class="flex flex-row gap-2 items-center flex-wrap z-0">
         <div
           class="self-stretch w-1 my-2 rounded-sm"
           style="background-color: {insightColor(i)}"
@@ -187,6 +236,23 @@
         </Popover.Root>
       </div>
       <div class="flex-1"></div>
+
+      <Select.Root
+        selected={trendSeriesTypeSelectable(series?.type)}
+        onSelectedChange={(type) => trendSeriesTypeSelected(i, type)}
+      >
+        <Select.Trigger class="w-[120px] bg-background hover:bg-gray-100">
+          <Select.Value placeholder="Chart type">
+            {series?.type}
+          </Select.Value></Select.Trigger>
+        <Select.Content>
+          {#each trendSeriesTypes as type}
+            <Select.Item value={type}>
+              {capitalizeFirstLetter(type)}
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
       <Button variant="outline" on:click={() => handleRemoveSeries(i)}>
         <X class="text-foreground-muted w-4 h-4" />
       </Button>
