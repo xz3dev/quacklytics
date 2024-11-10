@@ -1,6 +1,7 @@
 import { baseUrl } from '$lib/client/client'
 import { http } from '$lib/client/fetch'
 import type { Insight } from '$lib/components/insight/Insight'
+import type { TrendInsight } from '$lib/components/insight/trends/TrendInsight'
 import { writable } from 'svelte/store'
 
 const createInsightStore = () => {
@@ -9,9 +10,12 @@ const createInsightStore = () => {
     getInsights().then((insights) => set(insights))
 
     return {
-        create: async (insight: Insight) => {
-            const response = await createInsight(insight)
-            update((insights) => [...insights, response])
+        create: async () => {
+            const response = await createInsight('New Insight')
+            if (response) {
+                update((insights) => [...insights, response])
+            }
+            return response
         },
         delete: (insightId: number) => {
             return new Promise((resolve, reject) => {
@@ -37,13 +41,18 @@ const createInsightStore = () => {
 }
 
 const getInsights = async (): Promise<Insight[]> => {
-    const response = await http.get<Insight[]>(`/insights`)
+    const response = await http.get<Insight[]>('/insights')
     return response ?? []
 }
 
-const createInsight = async (insight: Insight) => {
-    const response = await http.post<Insight>(`/insights`, insight)
-    return response ?? insight
+const createInsight = async (name: string) => {
+    const response = await http.post<Insight>('/insights', {
+        type: 'Trend',
+        name,
+        description: '',
+        series: [],
+    })
+    return response
 }
 const updateInsight = async (insight: Insight) => {
     const response = await http.put<Insight>(`/insights/${insight.id}`, insight)

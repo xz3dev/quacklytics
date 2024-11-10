@@ -1,49 +1,60 @@
 <script lang="ts">
-  import { insightsStore } from '$lib/client/insights';
-  import moment from 'moment';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { onMount } from 'svelte';
-  import DataTable from 'datatables.net-dt';
+import { goto } from '$app/navigation'
+import { insightsStore } from '$lib/client/insights'
+import { Button } from '$lib/components/ui/button'
+import { Input } from '$lib/components/ui/input'
+import DataTable from 'datatables.net-dt'
+import moment from 'moment'
+import { onMount } from 'svelte'
 
-  const insights = $insightsStore;
-  let table: DataTable;
-  let searchValue = '';
+const insights = $insightsStore
+let table: DataTable
+const searchValue = ''
 
-  const data = [...insights].map((insight) => ({
+const data = [...insights].map((insight) => ({
     id: insight.id,
     name: insight.name,
     createdAt: insight.createdAt, //moment().fromNow(),
     updatedAt: insight.updatedAt, //moment().fromNow(),
-  }));
+}))
 
-  onMount(() => {
+onMount(() => {
     table = new DataTable('#igrid', {
-      order: [[1, 'desc']],
-      columns: [
-        { data: 'name', name: 'Name', width: '75%' },
-        { data: 'createdAt', name: 'Created At', width: '200px' },
-        { data: 'updatedAt', name: 'Updated At', width: '200px' },
-      ],
-      layout: {
-        topEnd: 'search',
-      },
-      search: {
-        smart: true, // Enable smart search
-        regex: false, // Disable regex search
-        caseInsensitive: true, // Case insensitive search
-      },
-      searching: true,
-      paging: false,
-      info: false,
-    });
-  });
+        order: [[1, 'desc']],
+        columns: [
+            { data: 'name', name: 'Name', width: '75%' },
+            { data: 'createdAt', name: 'Created At', width: '200px' },
+            { data: 'updatedAt', name: 'Updated At', width: '200px' },
+        ],
+        layout: {
+            topEnd: 'search',
+        },
+        search: {
+            smart: true, // Enable smart search
+            regex: false, // Disable regex search
+            caseInsensitive: true, // Case insensitive search
+        },
+        searching: true,
+        paging: false,
+        info: false,
+    })
+})
+
+async function createInsight() {
+    const insight = await insightsStore.create()
+    if (insight) {
+        await goto(`/app/insight/${insight.id}`)
+    }
+}
 </script>
 
 <div class="container mx-auto p-4">
   <div class="flex justify-between items-center mb-4">
     <h1 class="text-2xl font-bold">Insights</h1>
-    <Button variant="default">Create Insight</Button>
+    <Button
+      variant="default"
+      on:click={() => createInsight()}
+    >Create Insight</Button>
   </div>
 
   <table id="igrid" class="display w-full">
