@@ -46,7 +46,7 @@ export const fetchData = async (
             ],
             groupBy: [{ name: groupBy(meta.timeBucket), type: 'string' }],
         })
-        console.log(sql, params)
+        // console.log(sql, params)
         results.push(await dbManager.runQuery(sql, params))
     }
     return results
