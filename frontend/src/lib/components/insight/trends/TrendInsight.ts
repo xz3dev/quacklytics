@@ -30,9 +30,9 @@ export const fetchData = async (
     for (let series of insight.series ?? []) {
         series = applySeriesDefaults(series)
         const { sql, params } = buildQuery({
-            aggregations: series.query.aggregations,
+            aggregations: series.query?.aggregations,
             filters: [
-                ...series.query.filters,
+                ...(series.query?.filters ?? []),
                 {
                     field: { name: 'timestamp', type: 'number' },
                     operator: '>=',
@@ -70,7 +70,7 @@ export type TrendSeriesType = (typeof trendSeriesTypes)[number]
 export interface TrendSeries {
     type: 'line' | 'bar'
     name: string
-    query: {
+    query?: {
         aggregations: TrendAggregation[]
         filters: FieldFilter[]
     }

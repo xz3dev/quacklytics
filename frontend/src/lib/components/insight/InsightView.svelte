@@ -27,7 +27,7 @@ $: console.log('insights', $insightsStore)
   {#if insight}
     <Card.Header>
       <div class="flex items-center gap-2">
-        <h2 class="font-semibold text-lg">•
+        <h2 class="font-semibold text-lg">
           {insight.name}
         </h2>
         <div class="flex-1"></div>

@@ -3,12 +3,16 @@ import { goto } from '$app/navigation'
 import { insightsStore } from '$lib/client/insights'
 import { Button } from '$lib/components/ui/button'
 import { Input } from '$lib/components/ui/input'
-import DataTable from 'datatables.net-dt'
+import * as Popover from '$lib/components/ui/popover'
+import DataTable, { type Api, type CellMetaSettings } from 'datatables.net-dt'
+import { ChartNoAxesCombined } from 'lucide-svelte'
 import moment from 'moment'
 import { onMount } from 'svelte'
+import { DotsHorizontal } from 'svelte-radix'
+import ActionMenu from './ActionMenu.svelte'
 
 const insights = $insightsStore
-let table: DataTable
+let table: Api<unknown>
 const searchValue = ''
 
 const data = [...insights].map((insight) => ({
@@ -18,13 +22,58 @@ const data = [...insights].map((insight) => ({
     updatedAt: insight.updatedAt, //moment().fromNow(),
 }))
 
+let openMenu: number | undefined
+
 onMount(() => {
     table = new DataTable('#igrid', {
         order: [[1, 'desc']],
         columns: [
-            { data: 'name', name: 'Name', width: '75%' },
+            {
+                data: 'id',
+                name: 'ID',
+                visible: false,
+            },
+            {
+                data: 'name',
+                name: 'Name',
+                width: '65%',
+                render: (data, type, row, meta: CellMetaSettings) => {
+                    const target = document.createElement('a')
+                    target.classList.add(
+                        'flex',
+                        'items-center',
+                        'gap-2',
+                        'font-bold',
+                        'hover:underline',
+                    )
+                    target.href = `/app/insight/${row.id}`
+                    new ChartNoAxesCombined({
+                        target,
+                        props: { class: 'h-5 w-5 text-muted-foreground' },
+                    })
+                    target.innerHTML = `${target.innerHTML}<span>${data}</span>`
+                    return target
+                },
+            },
             { data: 'createdAt', name: 'Created At', width: '200px' },
             { data: 'updatedAt', name: 'Updated At', width: '200px' },
+            {
+                data: '',
+                name: '',
+                width: '80px',
+                orderable: false,
+                render: (data, type, row, meta: CellMetaSettings) => {
+                    const target = document.createElement('div')
+                    new ActionMenu({
+                        target,
+                        props: {
+                            rowIndex: meta.row,
+                            openMenu,
+                        },
+                    })
+                    return target
+                },
+            },
         ],
         layout: {
             topEnd: 'search',
@@ -50,7 +99,7 @@ async function createInsight() {
 
 <div class="container mx-auto p-4">
   <div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold">Insights</h1>
+    <h1 class="text-2xl font-bold">Insights {openMenu}</h1>
     <Button
       variant="default"
       on:click={() => createInsight()}
@@ -60,74 +109,26 @@ async function createInsight() {
   <table id="igrid" class="display w-full">
     <thead>
       <tr>
+      <th>ID</th>
         <th>Name</th>
         <th>Created At</th>
         <th>Updated At</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
-      {#each data as row}
+      {#each data as row, i}
         <tr>
+          <td>{row.id}</td>
           <td>
-            <a class="font-bold hover:underline" href="/app/insight/{row.id}">
               {row.name}
-            </a>
           </td>
           <td>{moment(row.createdAt).fromNow()}</td>
           <td>{moment(row.updatedAt).fromNow()}</td>
+          <td>
+          </td>
         </tr>
       {/each}
     </tbody>
   </table>
 </div>
-
-<!--<style>-->
-<!--    :global(.dataTables_wrapper) {-->
-<!--        @apply font-sans;-->
-<!--    }-->
-
-<!--    :global(.dataTables_filter),-->
-<!--    :global(.dataTables_length) {-->
-<!--        @apply mb-4;-->
-<!--    }-->
-
-<!--    :global(.dataTables_info),-->
-<!--    :global(.dataTables_paginate) {-->
-<!--        @apply mt-4;-->
-<!--    }-->
-
-<!--    :global(.dataTables_paginate) {-->
-<!--        @apply flex gap-2;-->
-<!--    }-->
-
-<!--    :global(.paginate_button) {-->
-<!--        @apply px-3 py-1 rounded border border-gray-200 hover:bg-gray-100 cursor-pointer;-->
-<!--    }-->
-
-<!--    :global(.paginate_button.current) {-->
-<!--        @apply bg-primary text-white border-primary;-->
-<!--    }-->
-
-<!--    table {-->
-<!--        @apply w-full border-collapse;-->
-<!--    }-->
-
-<!--    th {-->
-<!--        @apply px-4 py-2 text-left bg-gray-50 font-medium text-gray-700;-->
-<!--    }-->
-
-<!--    td {-->
-<!--        @apply px-4 py-2 border-t border-gray-100;-->
-<!--    }-->
-
-<!--    tr:hover td {-->
-<!--        @apply bg-gray-50;-->
-<!--    }-->
-
-<!--    :global(.dt-search) {-->
-<!--        @apply mb-2;-->
-<!--    }-->
-<!--    :global(.dt-search input) {-->
-<!--        @apply p-1 ml-1 border border-gray-400 rounded-md;-->
-<!--    }-->
-<!--</style>-->

@@ -42,7 +42,7 @@ const setAggregation = (
     agg: AggregationFunction,
     field?: Field,
 ) => {
-    if ($insight.series?.[index]) {
+    if ($insight.series?.[index]?.query) {
         $insight.series[index].query.aggregations[0] = {
             function: agg,
             alias: 'result_value',
@@ -52,15 +52,17 @@ const setAggregation = (
 }
 
 const selectedProperties: Field[] =
-    $insight.series?.map((s) => s.query.aggregations[0]?.field) ?? []
+    $insight.series
+        ?.map((s) => s.query?.aggregations?.[0]?.field)
+        ?.filter((f) => f !== undefined) ?? []
 const openPopover: boolean[] = $insight.series?.map(() => false) ?? []
 const addFilterOpen: boolean[] = $insight.series?.map(() => false) ?? []
 
 const setProperty = (index: number, property: Field) => {
     const series = $insight.series?.[index]
-    if (!series) return
+    if (!series?.query?.aggregations[0].function) return
     selectedProperties[index] = property
-    setAggregation(index, series.query.aggregations[0].function, property)
+    setAggregation(index, series.query?.aggregations[0].function, property)
     openPopover[index] = false
 }
 
@@ -79,14 +81,16 @@ function handleFilterChange(
 ) {
     const series = $insight.series?.[seriesIndex]
     if (!series) return
-    const newFilters = [...series.query.filters]
+    const newFilters = [...(series.query?.filters ?? [])]
 
     if (newFilter) {
         newFilters[filterIndex] = newFilter
     } else {
         newFilters.splice(filterIndex, 1)
     }
-    series.query.filters = newFilters
+    if (series.query) {
+        series.query.filters = newFilters
+    }
     addFilterOpen[seriesIndex] = false
 }
 
@@ -162,7 +166,7 @@ function trendSeriesTypeSelected(
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
             <Button builders={[builder]} variant="outline" size="sm">
-              {series.query.aggregations[0].function}
+              {series.query?.aggregations[0].function}
               <ChevronDown class="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenu.Trigger>
@@ -183,7 +187,7 @@ function trendSeriesTypeSelected(
         </DropdownMenu.Root>
 
         <!-- Property Command (Combobox) -->
-        {#if series.query.aggregations[0].function !== 'COUNT'}
+        {#if series.query?.aggregations[0].function !== 'COUNT'}
           <Popover.Root open={openPopover[i]} onOpenChange={(open) => (openPopover[i] = open)}>
             <Popover.Trigger asChild let:builder>
               <Button builders={[builder]} variant="outline" size="sm" role="combobox">
@@ -213,7 +217,7 @@ function trendSeriesTypeSelected(
           </Popover.Root>
         {/if}
 
-        {#each series.query.filters as filter, j}
+        {#each (series.query?.filters ?? []) as filter, j}
           <FilterSelector
             {filter}
             on:save={(event) => handleFilterChange(i, j, event.detail)}
@@ -229,8 +233,8 @@ function trendSeriesTypeSelected(
           </Popover.Trigger>
           <Popover.Content class="w-80 p-0">
             <FilterSelectorCard
-              on:add={(event) => handleFilterChange(i, series.query.filters.length, event.detail)}
-              on:discard={() => handleFilterChange(i, series.query.filters.length, undefined)}
+              on:add={(event) => handleFilterChange(i, series.query?.filters.length ?? 0, event.detail)}
+              on:discard={() => handleFilterChange(i, series.query?.filters.length ?? 0, undefined)}
             />
           </Popover.Content>
         </Popover.Root>
