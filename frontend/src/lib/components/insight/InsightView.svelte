@@ -43,6 +43,7 @@ $: console.log('insights', $insightsStore)
           <Button
             variant="default"
             on:click={async () => {
+              console.log($insightStore)
               await insightsStore.update($insightStore)
               original = structuredClone($insightStore)
             }}

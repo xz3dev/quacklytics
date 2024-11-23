@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
-	"log"
 	"time"
 )
 
@@ -25,7 +24,6 @@ func (q JSON) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	b := bytes.TrimPrefix(q, []byte("\xef\xbb\xbf")) // remove BOM
-	log.Println(json.RawMessage(b).MarshalJSON())
 	return json.RawMessage(b).MarshalJSON()
 }
 
@@ -40,7 +38,6 @@ func (q *JSON) Scan(value interface{}) error {
 	result := json.RawMessage{}
 	err := json.Unmarshal(bytesWithoutBOM, &result)
 	*q = JSON(result)
-	log.Println(string(*q))
 	return err
 }
 

@@ -1,75 +1,85 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
-  import * as Card from '$lib/components/ui/card';
-  import { Button } from '$lib/components/ui/button';
-  import * as Popover from '$lib/components/ui/popover';
-  import * as Command from '$lib/components/ui/command';
-  import * as Select from '$lib/components/ui/select';
-  import { Check, ChevronsUpDown } from 'lucide-svelte';
-  import type { Field, FieldFilter, Operator } from '$lib/local-queries';
-  import type { Selected } from 'bits-ui';
-  import { type Schema, schemaStore } from '$lib/client/schema';
+import { type Schema, schemaStore } from '$lib/client/schema'
+import { Button } from '$lib/components/ui/button'
+import * as Card from '$lib/components/ui/card'
+import * as Command from '$lib/components/ui/command'
+import * as Popover from '$lib/components/ui/popover'
+import * as Select from '$lib/components/ui/select'
+import type { Field, FieldFilter } from '$lib/queries/field'
+import type { Operator } from '$lib/queries/operators'
+import type { Selected } from 'bits-ui'
+import { Check, ChevronsUpDown } from 'lucide-svelte'
+import { createEventDispatcher, onMount } from 'svelte'
 
-  const schema: Schema = $schemaStore;
-  $: availableFields = [
+const schema: Schema = $schemaStore
+$: availableFields = [
     { name: 'event_type', type: 'string' },
     ...schema.uniqueProperties,
-  ] satisfies Field[];
+] satisfies Field[]
 
-  $: eventTypes = Object.keys(schema.events);
+$: eventTypes = Object.keys(schema.events)
 
-  $: propertyValues = schema.propertyValues;
-  export let allOperators: Operator[] = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN'];
-  export let initialFilter: FieldFilter | null = null;
+$: propertyValues = schema.propertyValues
+export const allOperators: Operator[] = [
+    '=',
+    '>',
+    '<',
+    '>=',
+    '<=',
+    '<>',
+    'LIKE',
+    'IN',
+]
+export let initialFilter: FieldFilter | null = null
 
-  const dispatch = createEventDispatcher();
+const dispatch = createEventDispatcher()
 
-  let currentField: Field | null = null;
-  let currentOperator: Selected<Operator> | undefined;
-  let currentValue: string = '';
-  let openField = false;
-  let openValue = false;
+let currentField: Field | null = null
+let currentOperator: Selected<Operator> | undefined
+let currentValue: string | undefined = ''
+let openField = false
+let openValue = false
 
-  $: isInitial =
+$: isInitial =
     (initialFilter &&
-      currentField === initialFilter.field &&
-      currentOperator?.value === initialFilter.operator &&
-      currentValue === initialFilter.value) ||
-    (!currentField && !currentOperator && !currentValue);
+        currentField === initialFilter.field &&
+        currentOperator?.value === initialFilter.operator &&
+        currentValue === initialFilter.value) ||
+    (!currentField && !currentOperator && !currentValue)
 
-  onMount(() => {
+onMount(() => {
     if (initialFilter) {
-      currentField = initialFilter.field;
-      currentOperator = {
-        value: initialFilter.operator,
-        label: initialFilter.operator,
-      };
-      currentValue = initialFilter.value.toString();
+        currentField = initialFilter.field
+        currentOperator = {
+            value: initialFilter.operator,
+            label: initialFilter.operator,
+        }
+        currentValue = initialFilter.value?.toString()
     }
-  });
+})
 
-  function addFilter() {
+function addFilter() {
     if (currentField && currentOperator && currentValue) {
-      const newFilter: FieldFilter = {
-        field: currentField,
-        operator: currentOperator?.value,
-        value: currentValue,
-      };
-      dispatch('save', newFilter);
-      resetFields();
+        const newFilter: FieldFilter = {
+            field: currentField,
+            operator: currentOperator?.value,
+            value: currentValue,
+        }
+        dispatch('save', newFilter)
+        resetFields()
     }
-  }
+}
 
-  function resetFields() {
-    currentField = null;
-    currentOperator = undefined;
-    currentValue = '';
-  }
+function resetFields() {
+    currentField = null
+    currentOperator = undefined
+    currentValue = ''
+}
 
-  function handleDiscard() {
-    resetFields();
-    dispatch('discard');
-  }
+function handleDiscard() {
+    resetFields()
+    dispatch('discard')
+}
 </script>
 
 <Card.Root class="w-full max-w-md border-0 shadow-none overflow-hidden">

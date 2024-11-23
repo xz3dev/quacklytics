@@ -5,15 +5,10 @@ import (
 	sv_mw "analytics/server/middlewares"
 	"analytics/util"
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
 func CurrentUser(w http.ResponseWriter, r *http.Request) {
-	cookies := r.Cookies()
-	for _, cookie := range cookies {
-		log.Printf("Cookie: %s=%s", cookie.Name, cookie.Value)
-	}
 	ab, err := sv_mw.GetAuthboss(r)
 	util.HandleError(w, err)
 	user, err := ab.CurrentUser(r)

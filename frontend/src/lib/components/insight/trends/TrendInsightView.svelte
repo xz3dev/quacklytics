@@ -100,9 +100,15 @@ onMount(async () => {
         if (chartInstance && data && data.length > 0) {
             chartInstance.data.datasets = []
             const labels = data[0].map((r) => new Date(r.bucket_0))
+            console.log(labels)
             chartInstance.data.labels = labels
             for (const [index, series] of data.entries()) {
-                const type = $insightStore.series?.[index]?.type ?? 'line'
+                console.log(
+                    index,
+                    series.map((r) => Number(r.result_value)),
+                )
+                const type =
+                    $insightStore.series?.[index]?.visualisation ?? 'line'
                 if (!chartInstance.data.datasets[index]) {
                     chartInstance.data.datasets[index] = createDataset(
                         type,

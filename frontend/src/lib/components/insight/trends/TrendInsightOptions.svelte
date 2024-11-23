@@ -4,6 +4,7 @@ import { insightColor } from '$lib/components/insight/Insight'
 import FilterSelector from '$lib/components/insight/filters/FilterSelector.svelte'
 import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte'
 import {
+    type TrendAggregationFunction,
     type TrendInsight,
     type TrendSeriesType,
     trendSeriesTypes,
@@ -16,12 +17,10 @@ import * as Popover from '$lib/components/ui/popover'
 import * as Select from '$lib/components/ui/select'
 import {
     type AggregationFunction,
-    type Field,
-    type FieldFilter,
-    type FieldType,
-    type Operator,
     aggregationFunctions,
-} from '$lib/local-queries'
+} from '$lib/queries/aggregations'
+import type { Field, FieldFilter, FieldType } from '$lib/queries/field'
+import type { Operator } from '$lib/queries/operators'
 import type { Selected } from 'bits-ui'
 import {
     BarChart,
@@ -37,16 +36,52 @@ import type { Writable } from 'svelte/store'
 
 const insight = getContext<Writable<TrendInsight>>('insight')
 
+interface TrendAggregationOptions {
+    name: string
+    func: TrendAggregationFunction
+    distinct?: Field
+}
+const trendAggregationOptions: TrendAggregationOptions[] = [
+    {
+        name: 'Count',
+        func: 'COUNT',
+        distinct: { name: 'id', type: 'string' },
+    },
+    {
+        name: 'Distinct Users',
+        func: 'COUNT',
+        distinct: { name: 'user_id', type: 'string' },
+    },
+    {
+        name: 'Sum',
+        func: 'SUM',
+    },
+    {
+        name: 'Average',
+        func: 'AVG',
+    },
+    {
+        name: 'Minimum',
+        func: 'MIN',
+    },
+    {
+        name: 'Maximum',
+        func: 'MAX',
+    },
+]
+
 const setAggregation = (
     index: number,
     agg: AggregationFunction,
     field?: Field,
+    distinct?: boolean,
 ) => {
     if ($insight.series?.[index]?.query) {
         $insight.series[index].query.aggregations[0] = {
             function: agg,
             alias: 'result_value',
             field: field ?? { name: 'id', type: 'string' },
+            distinct,
         }
     }
 }
@@ -72,32 +107,53 @@ $: availableFields = [
     { name: 'timestamp', type: 'number' },
     ...schema.uniqueProperties,
 ] satisfies Field[]
-$: console.log(schema)
 
 function handleFilterChange(
     seriesIndex: number,
-    filterIndex: number,
+    filterIndex: number | undefined,
     newFilter?: FieldFilter,
 ) {
+    console.log(seriesIndex, filterIndex, newFilter)
     const series = $insight.series?.[seriesIndex]
-    if (!series) return
+    if (!series) {
+        return
+    }
     const newFilters = [...(series.query?.filters ?? [])]
-
     if (newFilter) {
-        newFilters[filterIndex] = newFilter
+        if (filterIndex === undefined) {
+            console.log(newFilters.slice())
+            newFilters.push(newFilter)
+            console.log(newFilters.slice())
+        } else {
+            newFilters[filterIndex] = newFilter
+        }
     } else {
-        newFilters.splice(filterIndex, 1)
+        if (filterIndex !== undefined) {
+            newFilters.splice(filterIndex, 1)
+        }
     }
-    if (series.query) {
-        series.query.filters = newFilters
-    }
+
     addFilterOpen[seriesIndex] = false
+    insight.update((updatedInsight) => {
+        if (!updatedInsight.series) {
+            updatedInsight.series = []
+        }
+        if (!updatedInsight.series[seriesIndex]) return updatedInsight
+        if (!updatedInsight.series[seriesIndex].query) {
+            updatedInsight.series[seriesIndex].query = {
+                filters: [],
+                aggregations: [],
+            }
+        }
+        updatedInsight.series[seriesIndex].query.filters = newFilters
+        return updatedInsight
+    })
 }
 
 const handleAddSeries = () => {
     insight.update((updatedInsight) => {
         updatedInsight.series?.push({
-            type: 'line',
+            visualisation: 'line',
             name: 'New Series',
             query: {
                 filters: [],
@@ -142,7 +198,7 @@ function trendSeriesTypeSelected(
     console.log(type)
     insight.update((updatedInsight) => {
         if (updatedInsight.series?.[index]) {
-            updatedInsight.series[index].type = type?.value ?? 'line'
+            updatedInsight.series[index].visualisation = type?.value ?? 'line'
         }
         return updatedInsight
     })
@@ -171,16 +227,17 @@ function trendSeriesTypeSelected(
             </Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
-            {#each aggregationFunctions as func}
+            {#each trendAggregationOptions as o}
               <DropdownMenu.Item
                 on:click={() =>
                   setAggregation(
                     i,
-                    func,
-                    func === 'COUNT' ? { name: 'id', type: 'string' } : selectedProperties[i],
+                    o.func,
+                    o.distinct ? o.distinct : selectedProperties[i],
+                    !!o.distinct,
                   )}
               >
-                {func}
+                {o.name}
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>
@@ -233,8 +290,8 @@ function trendSeriesTypeSelected(
           </Popover.Trigger>
           <Popover.Content class="w-80 p-0">
             <FilterSelectorCard
-              on:add={(event) => handleFilterChange(i, series.query?.filters.length ?? 0, event.detail)}
-              on:discard={() => handleFilterChange(i, series.query?.filters.length ?? 0, undefined)}
+              on:save={(event) => handleFilterChange(i, undefined, event.detail)}
+              on:discard={() => handleFilterChange(i, undefined, undefined)}
             />
           </Popover.Content>
         </Popover.Root>
@@ -242,12 +299,12 @@ function trendSeriesTypeSelected(
       <div class="flex-1"></div>
 
       <Select.Root
-        selected={trendSeriesTypeSelectable(series?.type)}
+        selected={trendSeriesTypeSelectable(series?.visualisation)}
         onSelectedChange={(type) => trendSeriesTypeSelected(i, type)}
       >
         <Select.Trigger class="w-[120px] bg-background hover:bg-gray-100">
           <Select.Value placeholder="Chart type">
-            {series?.type}
+            {series?.visualisation}
           </Select.Value></Select.Trigger>
         <Select.Content>
           {#each trendSeriesTypes as type}

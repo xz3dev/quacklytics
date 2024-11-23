@@ -1,16 +1,16 @@
 <!-- FilterItem.svelte -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import { Button } from '$lib/components/ui/button';
-  import * as Popover from '$lib/components/ui/popover';
-  import { X } from 'lucide-svelte';
-  import type { FieldFilter } from '$lib/local-queries';
-  import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte';
+import FilterSelectorCard from '$lib/components/insight/filters/FilterSelectorCard.svelte'
+import { Button } from '$lib/components/ui/button'
+import * as Popover from '$lib/components/ui/popover'
+import type { FieldFilter } from '$lib/queries/field'
+import { X } from 'lucide-svelte'
+import { createEventDispatcher } from 'svelte'
 
-  export let filter: FieldFilter;
-  let isOpen: boolean;
+export let filter: FieldFilter
+let isOpen: boolean
 
-  const dispatch = createEventDispatcher();
+const dispatch = createEventDispatcher()
 </script>
 
 <div class="flex">

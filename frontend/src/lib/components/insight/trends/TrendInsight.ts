@@ -5,7 +5,8 @@ import type {
 } from '$lib/components/insight/Insight'
 import type { InsightMeta } from '$lib/components/insight/meta/InsightMeta'
 import { dbManager } from '$lib/globals'
-import { type Field, type FieldFilter, buildQuery } from '$lib/local-queries'
+import type { Field, FieldFilter } from '$lib/queries/field'
+import { type OrderBy, buildQuery } from '$lib/queries/queries'
 
 export interface TrendInsight extends Insight {
     type: 'Trend'
@@ -29,6 +30,8 @@ export const fetchData = async (
     const results: ResultType[][] = []
     for (let series of insight.series ?? []) {
         series = applySeriesDefaults(series)
+        const aggregation = series.query?.aggregations?.[0]
+        console.log(aggregation)
         const { sql, params } = buildQuery({
             aggregations: series.query?.aggregations,
             filters: [
@@ -45,8 +48,17 @@ export const fetchData = async (
                 },
             ],
             groupBy: [{ name: groupBy(meta.timeBucket), type: 'string' }],
+            orderBy: [
+                {
+                    direction: 'ASC',
+                    field: {
+                        name: 'bucket_0',
+                        type: 'number',
+                    },
+                },
+            ],
         })
-        // console.log(sql, params)
+        console.log(sql, params)
         results.push(await dbManager.runQuery(sql, params))
     }
     return results
@@ -68,7 +80,7 @@ export const trendSeriesTypes = ['line', 'bar'] as const
 export type TrendSeriesType = (typeof trendSeriesTypes)[number]
 
 export interface TrendSeries {
-    type: 'line' | 'bar'
+    visualisation: 'line' | 'bar'
     name: string
     query?: {
         aggregations: TrendAggregation[]
@@ -77,7 +89,7 @@ export interface TrendSeries {
 }
 
 export const trendSeriesDefaults: TrendSeries = {
-    type: 'line',
+    visualisation: 'line',
     name: '',
     query: {
         aggregations: [],
@@ -91,4 +103,5 @@ export interface TrendAggregation {
     function: TrendAggregationFunction
     field: Field
     alias: 'result_value'
+    distinct?: boolean
 }

@@ -5,8 +5,9 @@ import (
 )
 
 type SeriesInput struct {
-	Name  string `json:"name" gorm:"size:255;not null"`
-	Query JSON   `json:"query" gorm:"type:json;not null"`
+	Name          string `json:"name" gorm:"size:255;not null"`
+	Visualisation string `json:"visualisation" gorm:"size:255;not null;default:'line'"`
+	Query         JSON   `json:"query" gorm:"type:json;not null"`
 }
 
 type Series struct {

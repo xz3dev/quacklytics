@@ -13,11 +13,11 @@ Content-Type: application/json
 
 ###
 
-GET {{url}}/insights/12
+GET {{url}}/insights/18
 
 ###
 
-PUT {{url}}/insights/1
+PUT {{url}}/insights/20
 Content-Type: application/json
 
 {
