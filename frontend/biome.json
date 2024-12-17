@@ -22,7 +22,7 @@
         "rules": {
             "recommended": true,
             "style": {
-                "useConst": "info"
+                "useConst": "off"
             }
         }
     },

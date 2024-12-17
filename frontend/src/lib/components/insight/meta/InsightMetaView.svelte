@@ -24,6 +24,8 @@ import moment from 'moment'
 import { getContext, setContext } from 'svelte'
 import type { Writable } from 'svelte/store'
 
+const days = 24 * 60 * 60 * 1000
+
 let isTimeRangeSelectionOpen = false
 isTimeRangeSelectionOpen = false // hack to force biome to ignore the let here
 
@@ -33,27 +35,32 @@ const defaultRange = {
 }
 
 let date = defaultRange
+let duration: number | undefined
 // Preset date ranges
 const presets = {
     'Last 7 Days': () => {
+        duration = 7 * days
         date = {
             start: now(getLocalTimeZone()).subtract({ days: 7 }),
             end: now(getLocalTimeZone()),
         }
     },
     'Last 30 Days': () => {
+        duration = 30 * days
         date = {
             start: now(getLocalTimeZone()).subtract({ days: 30 }),
             end: now(getLocalTimeZone()),
         }
     },
     'This Month': () => {
+        duration = undefined
         date = {
             start: startOfMonth(now(getLocalTimeZone())),
             end: now(getLocalTimeZone()),
         }
     },
     'Last Month': () => {
+        duration = undefined
         date = {
             start: startOfMonth(
                 now(getLocalTimeZone()).subtract({ months: 1 }),
@@ -83,6 +90,7 @@ $: store.set({
                   start: defaultRange.start.toDate(),
                   end: defaultRange.end.toDate(),
               },
+    duration: 0,
     timeBucket: bucket,
 })
 

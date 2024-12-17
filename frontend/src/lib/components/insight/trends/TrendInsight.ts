@@ -15,7 +15,7 @@ export interface TrendInsight extends Insight {
 
 const groupBy = (timeBucket: TimeBucket): string => {
     const dateTruncate =
-        timeBucket === 'Daily'
+        #timeBucket === 'Daily'
             ? 'day'
             : timeBucket === 'Weekly'
               ? 'week'

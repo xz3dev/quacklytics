@@ -41,6 +41,7 @@ func Init() *gorm.DB {
 		&schema.EventSchema{},
 		&schema.EventSchemaProperty{},
 		&schema.EventSchemaPropertyValue{},
+		&model.InsightMeta{},
 	)
 	if err != nil {
 		log.Fatal("Error migrating database: ", err)

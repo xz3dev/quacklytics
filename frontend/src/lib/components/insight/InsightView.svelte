@@ -6,11 +6,12 @@ import InsightMetaView from '$lib/components/insight/meta/InsightMetaView.svelte
 import TrendInsightView from '$lib/components/insight/trends/TrendInsightView.svelte'
 import { Button } from '$lib/components/ui/button'
 import * as Card from '$lib/components/ui/card/index.js'
-import { X } from 'lucide-svelte'
+import { Check, Edit, X } from 'lucide-svelte'
 import { onMount, setContext } from 'svelte'
 import { writable } from 'svelte/store'
+import { Input } from '$lib/components/ui/input'
 
-export let insight: Insight | undefined
+export let insight: Insight | undefined = undefined
 
 let original = structuredClone(insight)
 original = structuredClone(insight)
@@ -19,7 +20,18 @@ const insightStore = writable(insight)
 setContext('insight', insightStore)
 
 $: isDirty = JSON.stringify(original) !== JSON.stringify($insightStore)
-$: console.log('insights', $insightsStore)
+let editing = false
+let nameOriginal = insight?.name
+let name = insight?.name
+
+const setName = (name: string | undefined) => {
+  editing = false
+  nameOriginal = name
+  insightStore.update(insight => {
+    insight.name = name
+    return insight
+  })
+}
 </script>
 
 
@@ -28,7 +40,26 @@ $: console.log('insights', $insightsStore)
     <Card.Header>
       <div class="flex items-center gap-2">
         <h2 class="font-semibold text-lg">
-          {insight.name}
+          {#if editing}
+            <div class="flex items-center gap-2">
+              <Input
+                class="max-w-md min-w-md"
+                bind:value={name}
+              />
+              <Button variant="ghost"on:click={() => setName(name)}><Check class="w-4 h-4" /></Button>
+              <Button variant="ghost" on:click={() => setName(nameOriginal)}>
+                <X class="w-4 h-4" />
+              </Button>
+            </div>
+          {:else}
+            <button 
+              class="cursor-pointer flex items-center gap-2" 
+              on:click={() => editing = true}
+            >
+              {$insightStore.name}
+              <Edit class="w-4 h-4" />
+            </button>
+          {/if}
         </h2>
         <div class="flex-1"></div>
         <div

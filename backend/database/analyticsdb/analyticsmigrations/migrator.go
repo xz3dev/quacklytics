@@ -30,8 +30,9 @@ func MigrateDBIfNeeded(db *sql.DB) {
 		isLocked: isLocked,
 	}
 	driver.ensureVersionTable()
-	m, err := migrate.NewWithInstance("iofs", fs, "data", &driver)
 	log.Printf("Found %d migrations", len(files))
+	m, err := migrate.NewWithInstance("iofs", fs, "data", &driver)
+	log.Printf("Migrate DuckDB to newest version successfully.")
 
 	//err = m.Down()
 	//if err != nil && !errors.Is(err, migrate.ErrNoChange) {
