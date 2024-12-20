@@ -1,9 +1,9 @@
 import '../../App.css'
 
-export function Home() {
+export function Landing() {
   return (
     <>
-        Henlo!234
+        landing
     </>
   )
 }
