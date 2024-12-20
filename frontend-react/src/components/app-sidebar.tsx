@@ -5,7 +5,7 @@ import {
   Bot,
   Command,
   Frame,
-  GalleryVerticalEnd,
+  GalleryVerticalEnd, LucideIcon,
   Map,
   PieChart,
   Settings2,
@@ -24,8 +24,37 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
+interface SidebarData {
+  user: {
+    name: string
+    email: string
+    avatar: string
+  }
+  teams: {
+    name: string
+    logo: LucideIcon
+    plan: string
+  }[]
+  navMain: {
+    title: string
+    url: string
+    icon: LucideIcon
+    isActive?: boolean
+    items: {
+      title: string
+      url: string
+    }[]
+  }[]
+  projects: {
+    name: string
+    url: string
+    icon: LucideIcon
+  }[]
+}
+
+
 // This is sample data.
-const data = {
+const data: SidebarData = {
   user: {
     name: "shadcn",
     email: "m@example.com",
