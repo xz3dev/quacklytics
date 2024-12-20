@@ -1,7 +1,6 @@
 import {StrictMode} from 'react'
 import {createRoot} from 'react-dom/client'
-import './index.css'
-import {AppRouter, BaseRouter} from "@app/routes.tsx";
+import {AppRouter, BaseRouter} from "@/routes/routes.tsx";
 import {BrowserRouter} from "react-router";
 
 
