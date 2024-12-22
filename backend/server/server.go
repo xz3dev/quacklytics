@@ -27,7 +27,7 @@ func DefaultConfig() Config {
 	return Config{
 		Port:        3000,
 		Url:         "http://localhost:3000",
-		FrontendUrl: "http://localhost:3001",
+		FrontendUrl: "http://localhost:5173",
 	}
 }
 

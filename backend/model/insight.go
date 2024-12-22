@@ -44,6 +44,6 @@ func (i *Insight) UpdateSeries(db *gorm.DB) error {
 	return nil
 }
 
-func (i *Insight) UpdateMeta(db *gorm.DB) (*InsightMeta, error) {
-
-}
+//func (i *Insight) UpdateMeta(db *gorm.DB) (*InsightMeta, error) {
+//
+//}
