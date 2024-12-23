@@ -19,6 +19,13 @@ import {useEffect, useState} from "react"
 import {useInsightsStore} from "@/services/insights"
 import {formatDistance} from "date-fns"
 import {Insight} from "@/model/insight.ts";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu.tsx";
+import { MoreHorizontal } from "lucide-react"
 
 export function InsightsList() {
     const {insights, isLoading, error, createInsight, deleteInsight, updateInsight} = useInsightsStore()
@@ -107,9 +114,9 @@ export function InsightsList() {
                             <TableCell>
                                 {insight.updatedAt && formatDistance(new Date(insight.updatedAt), new Date(), {addSuffix: true})}
                             </TableCell>
-                            <TableCell className="text-right space-x-2">
+                            <TableCell className="text-right">
                                 {editingId === insight.id ? (
-                                    <>
+                                    <div className="space-x-2">
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -124,24 +131,27 @@ export function InsightsList() {
                                         >
                                             Cancel
                                         </Button>
-                                    </>
+                                    </div>
                                 ) : (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleStartEdit(insight)}
-                                        >
-                                            Rename
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => deleteInsight(insight.id)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                <span className="sr-only">Open menu</span>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleStartEdit(insight)}>
+                                                Rename
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-red-600"
+                                                onClick={() => deleteInsight(insight.id)}
+                                            >
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 )}
                             </TableCell>
                         </TableRow>
