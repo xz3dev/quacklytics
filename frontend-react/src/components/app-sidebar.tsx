@@ -1,28 +1,21 @@
 import * as React from "react"
 import {
-  AudioWaveform,
   BookOpen,
-  Bot,
-  Command,
+  ChartLine,
   Frame,
-  GalleryVerticalEnd, LucideIcon,
+  GalleryVerticalEnd,
+  HardDriveDownload,
+  LucideIcon,
   Map,
   PieChart,
   Settings2,
-  SquareTerminal,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from "@/components/ui/sidebar"
+import {NavMain} from "@/components/nav-main"
+import {NavDashboards} from "@/components/nav-dashboards.tsx"
+import {NavUser} from "@/components/nav-user"
+import {TeamSwitcher} from "@/components/team-switcher"
+import {Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail,} from "@/components/ui/sidebar"
 
 interface SidebarData {
   user: {
@@ -60,57 +53,47 @@ export const sidebarSampleData =  {
     },
     teams: [
       {
-        name: "Acme Inc",
+        name: "Default",
         logo: GalleryVerticalEnd,
         plan: "Enterprise",
-      },
-      {
-        name: "Acme Corp.",
-        logo: AudioWaveform,
-        plan: "Startup",
-      },
-      {
-        name: "Evil Corp.",
-        logo: Command,
-        plan: "Free",
       },
     ],
     navMain: [
       {
-        title: "Playground",
+        title: "Analytics",
         url: "#",
-        icon: SquareTerminal,
+        icon: ChartLine,
         isActive: true,
         items: [
           {
-            title: "History",
+            title: "Dashboards",
             url: "#",
           },
           {
-            title: "Starred",
+            title: "Insights",
             url: "#",
           },
           {
-            title: "Settings",
+            title: "Events",
             url: "#",
           },
         ],
       },
       {
-        title: "Models",
-        url: "#",
-        icon: Bot,
+        title: "Data Ingestion",
+        url: "#ts",
+        icon: HardDriveDownload,
         items: [
           {
-            title: "Genesis",
+            title: "Overview",
             url: "#",
           },
           {
-            title: "Explorer",
+            title: "Schema",
             url: "#",
           },
           {
-            title: "Quantum",
+            title: "Settings",
             url: "#",
           },
         ],
@@ -190,7 +173,7 @@ export function AppSidebar(data: SidebarData, { ...props }: React.ComponentProps
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavDashboards projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
