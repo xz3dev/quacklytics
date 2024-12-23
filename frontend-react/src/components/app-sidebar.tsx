@@ -1,18 +1,7 @@
 import * as React from "react"
-import {
-  BookOpen,
-  ChartLine,
-  Frame,
-  GalleryVerticalEnd,
-  HardDriveDownload,
-  LucideIcon,
-  Map,
-  PieChart,
-  Settings2,
-} from "lucide-react"
+import {ChartLine, GalleryVerticalEnd, HardDriveDownload, LucideIcon, Settings2,} from "lucide-react"
 
 import {NavMain} from "@/components/nav-main"
-import {NavDashboards} from "@/components/nav-dashboards.tsx"
 import {NavUser} from "@/components/nav-user"
 import {TeamSwitcher} from "@/components/team-switcher"
 import {Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail,} from "@/components/ui/sidebar"
@@ -45,7 +34,7 @@ interface SidebarData {
   }[]
 }
 
-export const sidebarSampleData =  {
+export const staticSidebarData =  {
     user: {
       name: "shadcn",
       email: "m@example.com",

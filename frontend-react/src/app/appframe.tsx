@@ -1,5 +1,5 @@
 import {Outlet} from "react-router";
-import {AppSidebar, sidebarSampleData} from "@/components/app-sidebar.tsx";
+import {AppSidebar, staticSidebarData} from "@/components/app-sidebar.tsx";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.tsx";
 import {Separator} from "@/components/ui/separator.tsx";
 import {
@@ -19,13 +19,13 @@ export function AppFrame() {
             <SidebarProvider>
                 <AppSidebar
                     user={{
-                        name: user?.id ?? "",
-                        email: user?.email ?? "",
+                        name: user?.email ?? "",
+                        email: "",
                         avatar: ""
                     }}
-                    teams={[...sidebarSampleData.teams]}
-                    navMain={[...sidebarSampleData.navMain]}
-                    projects={[...sidebarSampleData.projects]}
+                    teams={[...staticSidebarData.teams]}
+                    navMain={[...staticSidebarData.navMain]}
+                    projects={[...staticSidebarData.projects]}
                 />
                 <SidebarInset>
                     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">

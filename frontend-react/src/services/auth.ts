@@ -1,11 +1,7 @@
 // src/stores/auth.store.ts
-import { create } from 'zustand'
-import {http} from "@app/lib/fetch.ts";
-
-interface User {
-    id: string
-    email: string
-}
+import {create} from 'zustand'
+import {http} from "@lib/fetch.ts";
+import {User} from '@/model/user';
 
 interface AuthState {
     loading: boolean
@@ -19,16 +15,16 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
     loading: true,
     user: null,
-    setUser: (user) => set({ user }),
+    setUser: (user) => set({user}),
 
     login: async (email: string, password: string) => {
         set({user: null, loading: true})
         try {
             const resp: {
                 location: string
-            } | undefined = await http.post(`auth/login`, { email, password })
+            } | undefined = await http.post(`auth/login`, {email, password})
             const user = await http.get<User>(`auth/me`)
-            set({ user, loading: false })
+            set({user, loading: false})
             return resp?.location ?? 'login'
         } catch (error) {
             console.error('Login error:', error)
@@ -39,7 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     logout: async () => {
         try {
             await http.get('auth/logout')
-            set({ user: null, loading: false })
+            set({user: null, loading: false})
         } catch (error) {
             console.error('Logout error:', error)
             throw error
@@ -49,11 +45,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     checkAuth: async () => {
         try {
             const user = await http.get<User>(`auth/me`)
-            set({ user, loading: false })
+            set({user, loading: false})
             return user ?? null
         } catch (error) {
             console.error('Auth check error:', error)
-            set({ user: null })
+            set({user: null})
             return null
         }
     },
