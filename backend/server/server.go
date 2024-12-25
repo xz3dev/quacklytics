@@ -51,9 +51,15 @@ func Start() {
 
 func setupMux(c Config) *chi.Mux {
 	mux := chi.NewMux()
-	setupCORS(mux, c)
+	//setupCORS(mux, c)
 	setupMiddleware(mux)
-	//mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
+
+	mux.Mount("/api", http.StripPrefix("/api", buildRouter()))
+	return mux
+}
+
+func buildRouter() *chi.Mux {
+	mux := chi.NewMux()
 
 	// Mount Authboss
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
@@ -68,6 +74,7 @@ func setupMux(c Config) *chi.Mux {
 		setupPrivateEventRoutes(r)
 		setupAnalyticsRoutes(r)
 	})
+
 	return mux
 }
 
