@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
 import { MoreHorizontal } from "lucide-react"
+import {Link} from "react-router";
 
 export function InsightsList() {
     const {insights, isLoading, error, createInsight, deleteInsight, updateInsight} = useInsightsStore()
@@ -105,7 +106,7 @@ export function InsightsList() {
                                         className="w-full"
                                     />
                                 ) : (
-                                    insight.name
+                                    <Link to={`/app/insights/${insight.id}`}>{insight.name}</Link>
                                 )}
                             </TableCell>
                             <TableCell>

@@ -60,7 +60,7 @@ export const staticSidebarData =  {
           },
           {
             title: "Insights",
-            url: "#",
+            url: "/app/insights",
           },
           {
             title: "Events",

@@ -3,6 +3,7 @@ import {Landing} from "@app/landing/landing.tsx";
 import {AppFrame} from "@app/appframe.tsx";
 import LoginPage from "@app/login/page.tsx";
 import {InsightsList} from "@app/insights/insight-list.tsx";
+import {InsightView} from "@app/insights/insight-view.tsx";
 
 
 export function AppRouter() {
@@ -17,6 +18,7 @@ export function AppRouter() {
             <Route path="app" element={<AppFrame></AppFrame>}>
                 <Route path={'test'} element={<h1>test</h1>}></Route>
                 <Route path="insights" element={<InsightsList></InsightsList>}></Route>
+                <Route path="insights/:insightid" element={<InsightView></InsightView>}></Route>
             </Route>
         </Routes>
     )
