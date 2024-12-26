@@ -2,8 +2,10 @@ package routes
 
 import (
 	"analytics/actions"
+	"analytics/events"
 	"analytics/model"
 	"analytics/queries"
+	sv_mw "analytics/server/middlewares"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -27,7 +29,9 @@ func AppendEvent(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 		return
 	}
-	actions.ProcessEvent(&event)
+
+	projectId := sv_mw.GetProjectID(r)
+	events.ProcessEvent(projectId, &event)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -41,7 +45,9 @@ func QueryEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := actions.QueryEvents(queryParams)
+	projectId := sv_mw.GetProjectID(r)
+
+	events, err := actions.QueryEvents(projectId, queryParams)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Error while querying events: %v", err)
@@ -59,7 +65,8 @@ func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(requestId, "/")
 	shortRequestId := parts[len(parts)-1]
 
-	events, err := actions.QueryEvents(nil)
+	projectId := sv_mw.GetProjectID(r)
+	events, err := actions.QueryEvents(projectId, nil)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("Error while querying events: ", err)
@@ -87,7 +94,9 @@ func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	actions.GenerateRandomEvents(100, "test_type")
+	projectId := sv_mw.GetProjectID(r)
+
+	actions.GenerateRandomEvents(projectId, 100, "test_type")
 	//actions.GenerateRandomEvents(100, "test_type2")
 	//actions.GenerateRandomEvents(100, "test_type3")
 	//actions.GenerateRandomEvents(100, "test_type4")
@@ -146,8 +155,9 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Printf("Start %s, End %s", kwStart, kwEnd)
+	projectId := sv_mw.GetProjectID(r)
 
-	events, err := actions.QueryEvents(&queries.QueryParams{
+	events, err := actions.QueryEvents(projectId, &queries.QueryParams{
 		Conditions: conditions,
 	})
 	if err != nil {

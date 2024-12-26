@@ -1,5 +1,5 @@
-POST {{url}}/dummy
+POST {{url}}/{{project}}/dummy
 
 ###
 
-GET {{url}}/schema
+GET {{url}}/{{project}}/schema

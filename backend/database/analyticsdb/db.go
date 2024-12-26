@@ -1,61 +1,118 @@
 package analyticsdb
 
 import (
+	"analytics/database/analyticsdb/analyticsmigrations"
+	"analytics/database/appdb"
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"github.com/marcboeker/go-duckdb"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-const DbFile = "_data/data.db"
+const (
+	DbFile       = "_data/data.db"
+	DbDir        = "_data"
+	DbFilePrefix = "analytics_"
+)
 
-var db *sql.DB
-var connection driver.Conn
+type DBConnection struct {
+	db         *sql.DB
+	connection driver.Conn
+}
 
-func Appender(table string) *duckdb.Appender {
-	appender, err := duckdb.NewAppenderFromConn(connection, "", table)
+var I2 = make(map[string]*DBConnection)
+
+func Appender(projectID string, table string) *duckdb.Appender {
+	proj, exists := I2[projectID]
+	if !exists {
+		log.Fatal("Project connection not found: ", projectID)
+	}
+	appender, err := duckdb.NewAppenderFromConn(proj.connection, "", table)
 	if err != nil {
 		log.Fatal("Error while creating duckdb appender: ", err)
 	}
 	return appender
 }
 
-func Tx() (*sql.Tx, error) {
-	tx, err := db.BeginTx(context.Background(), nil)
-	return tx, err
+func Tx(projectID string) (*sql.Tx, error) {
+	proj, exists := I2[projectID]
+	if !exists {
+		return nil, fmt.Errorf("project connection not found: %s", projectID)
+	}
+	return proj.db.BeginTx(context.Background(), nil)
 }
 
-func Init() *sql.DB {
-	var err error
-	// Ensure the directory exists
-	dir := filepath.Dir(DbFile)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		log.Fatal("Error creating directory for database: ", err)
+func InitProjects() {
+	files, err := os.ReadDir(DbDir)
+	if err != nil {
+		log.Fatal("Error reading directory: ", err)
 	}
 
-	connector, err := duckdb.NewConnector(DbFile+"?"+"access_mode=READ_WRITE", nil)
-	if err != nil {
-		log.Fatal("Error while initialising connector", err)
+	// Create analytics DBs for any project DB found
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), appdb.DbFilePrefix) {
+			projectID := strings.TrimSuffix(
+				strings.TrimPrefix(file.Name(), appdb.DbFilePrefix),
+				".db",
+			)
+
+			dbPath := filepath.Join(DbDir, DbFilePrefix+projectID+".db")
+			if err := initProjectDB(projectID, dbPath); err != nil {
+				log.Printf("Error initializing project DB %s: %v", projectID, err)
+			}
+		}
 	}
+}
+
+func initProjectDB(projectID string, dbPath string) error {
+	connector, err := duckdb.NewConnector(dbPath+"?"+"access_mode=READ_WRITE", nil)
+	if err != nil {
+		return err
+	}
+
 	con, err := connector.Connect(context.Background())
 	if err != nil {
-		log.Fatal("Error while creating db connection: ", err)
+		return err
 	}
-	connection = con
-	db = sql.OpenDB(connector)
-	testdb()
-	return db
+
+	projectDB := sql.OpenDB(connector)
+
+	I2[projectID] = &DBConnection{
+		db:         projectDB,
+		connection: con,
+	}
+
+	if err := testProjectDB(projectDB); err != nil {
+		return err
+	}
+
+	analyticsmigrations.MigrateDBIfNeeded(projectDB)
+
+	log.Printf("Initialized DuckDB for project: %s", projectID)
+	return nil
 }
 
-func testdb() {
-	check(db.Ping())
-	setting := db.QueryRowContext(context.Background(), "select current_setting('access_mode')")
+func testProjectDB(db *sql.DB) error {
+	if err := db.Ping(); err != nil {
+		return err
+	}
+
 	var am string
-	check(setting.Scan(&am))
-	log.Printf("db opened with access mode %s", am)
+	err := db.QueryRowContext(
+		context.Background(),
+		"select current_setting('access_mode')",
+	).Scan(&am)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func check(args ...interface{}) {

@@ -1,7 +1,7 @@
-GET {{url}}/insights
+GET {{url}}/{{project}}/insights
 
 ###
-POST {{url}}/insights
+POST {{url}}/{{project}}/insights
 Content-Type: application/json
 
 {
@@ -13,11 +13,11 @@ Content-Type: application/json
 
 ###
 
-GET {{url}}/insights/18
+GET {{url}}/{{project}}/insights/18
 
 ###
 
-PUT {{url}}/insights/20
+PUT {{url}}/{{project}}/insights/20
 Content-Type: application/json
 
 {
@@ -38,7 +38,7 @@ Content-Type: application/json
 
 ###
 
-DELETE {{url}}/insights/1
+DELETE {{url}}/{{project}}/insights/1
 
 ###
 

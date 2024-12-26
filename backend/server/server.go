@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/remember"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 )
@@ -33,44 +34,44 @@ func DefaultConfig() Config {
 
 const port = 3000
 
-func Start() {
+func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	config := DefaultConfig()
 	var err error
-	ab, err = auth.SetupAuthboss(appdb.I)
+	ab, err = auth.SetupAuthboss(appDb)
 	if err != nil {
 		log.Fatal(err)
 	}
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: setupMux(config),
+		Handler: setupMux(config, appDb, projectDbs),
 	}
 
 	log.Printf("Starting server on port %d", port)
 	server.ListenAndServe()
 }
 
-func setupMux(c Config) *chi.Mux {
+func setupMux(c Config, db *gorm.DB, dbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
 	//setupCORS(mux, c)
 	setupMiddleware(mux)
 
-	mux.Mount("/api", http.StripPrefix("/api", buildRouter()))
+	mux.Mount("/api", http.StripPrefix("/api", buildRouter(db, dbs)))
 	return mux
 }
 
-func buildRouter() *chi.Mux {
+func buildRouter(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
 
 	// Mount Authboss
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
 	mux.Get("/auth/me", routes.CurrentUser)
-	mux.Post("/dummy", routes.GenerateDummyEvents)
 	setupPublicEventRoutes(mux)
 
 	// Use Authboss middleware for protected routes
-	mux.Group(func(r chi.Router) {
+	mux.Route("/{projectid}", func(r chi.Router) {
+		r.Use(sv_mw.ProjectMiddleware(projectDbs))
 		r.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
-		r.Get("/me", routes.CurrentUser)
+		r.Post("/dummy", routes.GenerateDummyEvents)
 		setupPrivateEventRoutes(r)
 		setupAnalyticsRoutes(r)
 	})

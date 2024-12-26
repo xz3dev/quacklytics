@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"analytics/database/appdb"
 	"analytics/schema"
+	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -14,8 +14,10 @@ type PropertyDetails struct {
 }
 
 func Schema(w http.ResponseWriter, r *http.Request) {
+
+	db := sv_mw.GetProjectDB(r, w)
 	var ss []schema.EventSchema
-	query := appdb.I.Debug().Preload("Properties.Values").Find(&ss)
+	query := db.Preload("Properties.Values").Find(&ss)
 	if query.Error != nil {
 		log.Printf("Error while querying schema: %v", query.Error)
 		http.Error(w, query.Error.Error(), http.StatusInternalServerError)

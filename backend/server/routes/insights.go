@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"analytics/database/appdb"
 	"analytics/model"
+	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -25,8 +25,10 @@ func getInsight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	db := sv_mw.GetProjectDB(r, w)
+
 	var insight model.Insight
-	result := appdb.I.Preload("Series").First(&insight, id)
+	result := db.Preload("Series").First(&insight, id)
 	if result.Error != nil {
 		http.Error(w, "Insight not found: "+result.Error.Error(), http.StatusNotFound)
 		return
@@ -37,8 +39,9 @@ func getInsight(w http.ResponseWriter, r *http.Request) {
 }
 
 func listInsights(w http.ResponseWriter, r *http.Request) {
+	db := sv_mw.GetProjectDB(r, w)
 	var insights []model.Insight
-	result := appdb.I.Preload("Series").Find(&insights)
+	result := db.Preload("Series").Find(&insights)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
@@ -49,6 +52,7 @@ func listInsights(w http.ResponseWriter, r *http.Request) {
 }
 
 func createInsight(w http.ResponseWriter, r *http.Request) {
+	db := sv_mw.GetProjectDB(r, w)
 	var input model.InsightInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -60,7 +64,7 @@ func createInsight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Start a transaction
-	tx := appdb.I.Begin()
+	tx := db.Begin()
 	if tx.Error != nil {
 		http.Error(w, tx.Error.Error(), http.StatusInternalServerError)
 		return
@@ -92,7 +96,7 @@ func createInsight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reload the insight to get the series
-	appdb.I.Preload("Series").First(&insight, insight.ID)
+	db.Preload("Series").First(&insight, insight.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -112,15 +116,17 @@ func updateInsight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	db := sv_mw.GetProjectDB(r, w)
+
 	var insight model.Insight
-	result := appdb.I.Preload("Series").First(&insight, id)
+	result := db.Preload("Series").First(&insight, id)
 	if result.Error != nil {
 		http.Error(w, "Insight not found", http.StatusNotFound)
 		return
 	}
 
 	// Start a transaction
-	tx := appdb.I.Begin()
+	tx := db.Begin()
 	if tx.Error != nil {
 		http.Error(w, tx.Error.Error(), http.StatusInternalServerError)
 		return
@@ -149,7 +155,7 @@ func updateInsight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reload the insight to get updated series
-	appdb.I.Preload("Series").First(&insight, insight.ID)
+	db.Preload("Series").First(&insight, insight.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(insight)
@@ -162,8 +168,10 @@ func deleteInsight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	db := sv_mw.GetProjectDB(r, w)
+
 	// Start a transaction
-	tx := appdb.I.Begin()
+	tx := db.Begin()
 	if tx.Error != nil {
 		http.Error(w, tx.Error.Error(), http.StatusInternalServerError)
 		return

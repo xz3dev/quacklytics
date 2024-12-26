@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"analytics/events"
 	"analytics/model"
 	"fmt"
 	"github.com/google/uuid"
@@ -10,7 +11,7 @@ import (
 	"time"
 )
 
-func GenerateRandomEvents(numEvents int, eventType string) {
+func GenerateRandomEvents(projectId string, numEvents int, eventType string) {
 	now := time.Now()
 	rand.New(rand.NewSource(now.UnixNano()))
 
@@ -44,6 +45,6 @@ func GenerateRandomEvents(numEvents int, eventType string) {
 			Properties: randomProperties,
 		}
 
-		ProcessEvent(eventInput)
+		events.ProcessEvent(projectId, eventInput)
 	}
 }

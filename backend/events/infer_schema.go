@@ -1,25 +1,34 @@
-package actions
+package events
 
 import (
-	"analytics/database/appdb"
 	"analytics/model"
 	"analytics/schema"
 	"fmt"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"log"
 	"reflect"
 	"strings"
 )
 
-func ApplySchemaChanges(events []*model.EventInput) {
+func ApplySchemaChanges(events []*model.EventInput, db *gorm.DB) {
 	uniqueEventTypes := extractUniqueEventTypes(events)
-	schemas := fetchExistingSchemas(uniqueEventTypes)
+	schemas := fetchExistingSchemas(uniqueEventTypes, db)
 	if schemas == nil {
 		return
 	}
 
 	schemasByType := makeSchemaMap(schemas)
-	updateSchemasFromEvents(events, schemasByType)
+	updateSchemasFromEvents(events, schemasByType, db)
+}
+
+func fetchExistingSchemas(eventTypes []string, db *gorm.DB) []schema.EventSchema {
+	var schemas []schema.EventSchema
+	if err := db.Where("event_type in ?", eventTypes).Find(&schemas).Error; err != nil {
+		log.Println("Error fetching event schemas:", err)
+		return nil
+	}
+	return schemas
 }
 
 func extractUniqueEventTypes(events []*model.EventInput) []string {
@@ -35,15 +44,6 @@ func extractUniqueEventTypes(events []*model.EventInput) []string {
 	return uniqueEventTypes
 }
 
-func fetchExistingSchemas(eventTypes []string) []schema.EventSchema {
-	var schemas []schema.EventSchema
-	if err := appdb.I.Where("event_type in ?", eventTypes).Find(&schemas).Error; err != nil {
-		log.Println("Error fetching event schemas:", err)
-		return nil
-	}
-	return schemas
-}
-
 func makeSchemaMap(schemas []schema.EventSchema) map[string]*schema.EventSchema {
 	schemaMap := make(map[string]*schema.EventSchema, len(schemas))
 	for _, schema := range schemas {
@@ -52,19 +52,27 @@ func makeSchemaMap(schemas []schema.EventSchema) map[string]*schema.EventSchema 
 	return schemaMap
 }
 
-func updateSchemasFromEvents(events []*model.EventInput, schemasByType map[string]*schema.EventSchema) {
+func updateSchemasFromEvents(
+	events []*model.EventInput,
+	schemasByType map[string]*schema.EventSchema,
+	db *gorm.DB,
+) {
 	for _, event := range events {
-		schema := ensureSchemaExists(event.EventType, schemasByType)
+		schema := ensureSchemaExists(event.EventType, schemasByType, db)
 		if schema == nil {
 			continue
 		}
 
 		updateSchemaProperties(event, schema)
-		persistSchemaChanges(schema)
+		persistSchemaChanges(schema, db)
 	}
 }
 
-func ensureSchemaExists(eventType string, schemasByType map[string]*schema.EventSchema) *schema.EventSchema {
+func ensureSchemaExists(
+	eventType string,
+	schemasByType map[string]*schema.EventSchema,
+	db *gorm.DB,
+) *schema.EventSchema {
 	s, exists := schemasByType[eventType]
 	if exists {
 		return s
@@ -74,7 +82,7 @@ func ensureSchemaExists(eventType string, schemasByType map[string]*schema.Event
 		EventType:  eventType,
 		Properties: []schema.EventSchemaProperty{},
 	}
-	if err := appdb.I.Create(s).Error; err != nil {
+	if err := db.Create(s).Error; err != nil {
 		log.Println("Error creating schema:", err)
 		return nil
 	}
@@ -138,21 +146,21 @@ func convertMapToSlice(propMap map[string]*schema.EventSchemaProperty) []schema.
 	return props
 }
 
-func persistSchemaChanges(s *schema.EventSchema) {
+func persistSchemaChanges(s *schema.EventSchema, db *gorm.DB) {
 	// First persist the properties and get their IDs
-	if err := persistPropertiesAndUpdateIDs(s); err != nil {
+	if err := persistPropertiesAndUpdateIDs(s, db); err != nil {
 		log.Println("Error persisting properties:", err)
 		return
 	}
 
 	// Now persist values with the correct property IDs
-	persistPropertyValues(s.Properties)
+	persistPropertyValues(s.Properties, db)
 }
 
-func persistPropertiesAndUpdateIDs(s *schema.EventSchema) error {
+func persistPropertiesAndUpdateIDs(s *schema.EventSchema, db *gorm.DB) error {
 	for i := range s.Properties {
 		prop := &s.Properties[i]
-		result := appdb.I.Where(schema.EventSchemaProperty{
+		result := db.Where(schema.EventSchemaProperty{
 			EventSchemaID: s.ID,
 			Key:           prop.Key,
 		}).Attrs(schema.EventSchemaProperty{
@@ -166,12 +174,12 @@ func persistPropertiesAndUpdateIDs(s *schema.EventSchema) error {
 	return nil
 }
 
-func persistPropertyValues(properties []schema.EventSchemaProperty) {
+func persistPropertyValues(properties []schema.EventSchemaProperty, db *gorm.DB) {
 	for _, prop := range properties {
 		// Now we can be sure prop.ID is set correctly
 		values := prepareValuesForPersistence(prop)
 		if len(values) > 0 {
-			if err := persistValues(values); err != nil {
+			if err := persistValues(values, db); err != nil {
 				log.Println("Error persisting property values:", err)
 			}
 		}
@@ -189,8 +197,8 @@ func prepareValuesForPersistence(prop schema.EventSchemaProperty) []schema.Event
 	return values
 }
 
-func persistValues(values []schema.EventSchemaPropertyValue) error {
-	return appdb.I.Clauses(clause.OnConflict{
+func persistValues(values []schema.EventSchemaPropertyValue, db *gorm.DB) error {
+	return db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "event_schema_property_id"}, {Name: "value"}},
 		DoNothing: true,
 	}).CreateInBatches(&values, 100).Error

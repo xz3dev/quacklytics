@@ -1,15 +1,18 @@
 package routes
 
 import (
-	"analytics/database/appdb"
 	"analytics/model"
+	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"net/http"
 )
 
 func Dashboards(w http.ResponseWriter, r *http.Request) {
 	var dashboards []model.Dashboard
-	appdb.I.Find(&dashboards)
+
+	db := sv_mw.GetProjectDB(r, w)
+
+	db.Find(&dashboards)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(dashboards)

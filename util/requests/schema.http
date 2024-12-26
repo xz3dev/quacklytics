@@ -1,4 +1,4 @@
-GET {{url}}/schema
+GET {{url}}/{{project}}/schema
 Accept: application/json
 
 ###

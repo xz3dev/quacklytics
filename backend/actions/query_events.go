@@ -9,12 +9,12 @@ import (
 	"log"
 )
 
-func QueryEvents(params *queries.QueryParams) (*[]model.Event, error) {
+func QueryEvents(projectId string, params *queries.QueryParams) (*[]model.Event, error) {
 	if params == nil {
 		params = &queries.EmptyQueryParams
 	}
 
-	tx, err := analyticsdb.Tx()
+	tx, err := analyticsdb.Tx(projectId)
 	if err != nil {
 		log.Println("Error while creating transaction: ", err)
 		return nil, err
