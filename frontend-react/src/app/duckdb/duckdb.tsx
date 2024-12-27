@@ -1,7 +1,8 @@
-import {DuckDbManager} from "../../services/duck-db-manager.js";
 import {create} from "zustand/index";
 import {ParquetManager} from "@lib/parquet-manager.ts";
 import {useEffect} from "react";
+import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
+import {DuckDbManager} from "@/services/duck-db-manager.ts";
 
 
 interface DuckDBState {
@@ -10,7 +11,7 @@ interface DuckDBState {
     parquetManager: ParquetManager,
 }
 
-const useDuckDBStore = create<DuckDBState>(() => ({
+export const useDuckDBStore = create<DuckDBState>(() => ({
     isLoading: true,
     db: new DuckDbManager(),
     parquetManager: new ParquetManager(),
@@ -19,14 +20,22 @@ const useDuckDBStore = create<DuckDBState>(() => ({
 export const useDB = () => useDuckDBStore(state => state.db)
 
 export function DuckDB(props: { children: React.ReactNode }) {
-    const dbStore = useDuckDBStore()
+    const pqManager = useDuckDBStore(state => state.parquetManager)
+    const db = useDB()
 
     useEffect(() => {
-        void dbStore.parquetManager.downloadLast12Weeks()
+        pqManager
+            .downloadLast12Weeks()
+            .then(db.importParquetFiles)
+            .then(() => {
+                useDuckDBStore.setState({isLoading: false})
+            })
     })
     return (
         <>
-            {props.children}
+            <DuckDBLoadingIndicator>
+                {props.children}
+            </DuckDBLoadingIndicator>
         </>
     )
 }
