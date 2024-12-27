@@ -26,7 +26,7 @@ export function DuckDB(props: { children: React.ReactNode }) {
     useEffect(() => {
         pqManager
             .downloadLast12Weeks()
-            .then(db.importParquetFiles)
+            .then((files) => db.importParquetFiles(files))
             .then(() => {
                 useDuckDBStore.setState({isLoading: false})
             })

@@ -2,16 +2,13 @@ package analyticsdb
 
 import (
 	"analytics/database/analyticsdb/analyticsmigrations"
-	"analytics/database/appdb"
+	"analytics/projects"
 	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"github.com/marcboeker/go-duckdb"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 const (
@@ -48,23 +45,11 @@ func Tx(projectID string) (*sql.Tx, error) {
 }
 
 func InitProjects() {
-	files, err := os.ReadDir(DbDir)
-	if err != nil {
-		log.Fatal("Error reading directory: ", err)
-	}
+	projectList := projects.ListProjects()
 
-	// Create analytics DBs for any project DB found
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), appdb.DbFilePrefix) {
-			projectID := strings.TrimSuffix(
-				strings.TrimPrefix(file.Name(), appdb.DbFilePrefix),
-				".db",
-			)
-
-			dbPath := filepath.Join(DbDir, DbFilePrefix+projectID+".db")
-			if err := initProjectDB(projectID, dbPath); err != nil {
-				log.Printf("Error initializing project DB %s: %v", projectID, err)
-			}
+	for _, project := range projectList {
+		if err := initProjectDB(project.ID, project.AnalyticsDbFile); err != nil {
+			log.Printf("Error initializing project DB %s: %v", project.ID, err)
 		}
 	}
 }

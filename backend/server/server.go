@@ -67,16 +67,25 @@ func buildRouter(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) *chi.Mux {
 	mux.Get("/auth/me", routes.CurrentUser)
 	setupPublicEventRoutes(mux)
 
+	mux.Group(func(mux chi.Router) {
+		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
+		setupProjectRoutes(mux)
+	})
+
 	// Use Authboss middleware for protected routes
-	mux.Route("/{projectid}", func(r chi.Router) {
-		r.Use(sv_mw.ProjectMiddleware(projectDbs))
-		r.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
-		r.Post("/dummy", routes.GenerateDummyEvents)
-		setupPrivateEventRoutes(r)
-		setupAnalyticsRoutes(r)
+	mux.Route("/{projectid}", func(mux chi.Router) {
+		mux.Use(sv_mw.ProjectMiddleware(projectDbs))
+		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
+		mux.Post("/dummy", routes.GenerateDummyEvents)
+		setupPrivateEventRoutes(mux)
+		setupAnalyticsRoutes(mux)
 	})
 
 	return mux
+}
+
+func setupProjectRoutes(mux chi.Router) {
+	mux.Get("/projects", routes.ListProjects)
 }
 
 func setupPublicEventRoutes(mux chi.Router) {

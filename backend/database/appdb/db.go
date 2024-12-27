@@ -3,13 +3,13 @@ package appdb
 import (
 	"analytics/auth"
 	"analytics/model"
+	"analytics/projects"
 	"analytics/schema"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const DbFile = "_data/app.db"
@@ -38,33 +38,17 @@ var appTables = []interface{}{
 }
 
 func InitProjects() ProjectDBLookup {
-	// Ensure the directory exists
-	dir := filepath.Dir(DbDir)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		log.Fatal("Error creating directory for database: ", err)
-	}
+	projectList := projects.ListProjects()
 
-	// list all files in the directory
-	files, err := os.ReadDir(DbDir)
-	if err != nil {
-		log.Fatal("Error reading directory: ", err)
-	}
-
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), DbFilePrefix) {
-			var projectName = strings.TrimSuffix(
-				strings.TrimPrefix(file.Name(), DbFilePrefix),
-				".db",
-			)
-			var err error
-			ProjectDBs[projectName], err = gorm.Open(sqlite.Open(filepath.Join(DbDir, file.Name())), &gorm.Config{})
-			if err != nil {
-				log.Fatal("Error opening database: ", err)
-			}
-			log.Printf("Opened DB for project: %s", projectName)
-			ProjectDBs[projectName].AutoMigrate(projectTables...)
-			log.Printf("Migrated DB for project: %s", projectName)
+	for _, project := range projectList {
+		var err error
+		ProjectDBs[project.ID], err = gorm.Open(sqlite.Open(project.DbFile), &gorm.Config{})
+		if err != nil {
+			log.Fatal("Error opening database: ", err)
 		}
+		log.Printf("Opened DB for project: %s", project.ID)
+		ProjectDBs[project.ID].AutoMigrate(projectTables...)
+		log.Printf("Migrated DB for project: %s", project.ID)
 	}
 
 	return ProjectDBs
