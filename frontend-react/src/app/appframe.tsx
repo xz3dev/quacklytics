@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb.tsx";
 import {RequireAuth} from "@app/login/requireAuth.tsx";
 import {useAuthStore} from "@/services/auth.ts";
+import {DuckDB} from "@app/duckdb/duckdb.tsx";
 
 export function AppFrame() {
     const {user} = useAuthStore()
@@ -46,7 +47,9 @@ export function AppFrame() {
                         </Breadcrumb>
                     </header>
                     <div className="flex flex-1 flex-col gap-4 p-4">
-                        <Outlet/>
+                        <DuckDB>
+                            <Outlet/>
+                        </DuckDB>
                     </div>
                 </SidebarInset>
             </SidebarProvider>

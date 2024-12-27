@@ -1,7 +1,7 @@
-import { createDb } from '$lib/duckdb'
-import type { AnalyticsEvent, RawEventRow } from '$lib/event'
-import type { DataType } from '@apache-arrow/ts'
-import type { AsyncDuckDBConnection } from '@duckdb/duckdb-wasm'
+import {createDb} from "@lib/duckdb.ts";
+import type {DataType} from '@apache-arrow/ts'
+import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
+import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 
 export class DuckDbManager {
     private db = createDb()
@@ -34,7 +34,7 @@ export class DuckDbManager {
 
         const queries = []
 
-        for (const { filename, blob } of files) {
+        for (const {filename, blob} of files) {
             const arrayBuffer = await blob.arrayBuffer()
             await db.registerFileBuffer(filename, new Uint8Array(arrayBuffer))
 
