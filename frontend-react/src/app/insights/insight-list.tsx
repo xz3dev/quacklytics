@@ -13,7 +13,6 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
 import {MoreHorizontal} from "lucide-react"
-import {Link} from "react-router";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
 
