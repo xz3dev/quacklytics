@@ -14,9 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu.tsx";
 import {MoreHorizontal} from "lucide-react"
 import {Link} from "react-router";
+import {useProjectId} from "@/hooks/use-project-id.tsx";
+import {ProjectLink} from "@/components/project-link.tsx";
 
 export function InsightsList() {
-    const projectId = 'test'
+    const projectId = useProjectId()
     const { data: insights = [], isLoading, error } = useInsights(projectId)
     const createInsightMutation = useCreateInsight(projectId)
     const updateInsightMutation = useUpdateInsight(projectId)
@@ -94,7 +96,7 @@ export function InsightsList() {
                                         className="w-full"
                                     />
                                 ) : (
-                                    <Link to={`/app/insights/${insight.id}`}>{insight.name}</Link>
+                                    <ProjectLink to={`/insights/${insight.id}`}>{insight.name}</ProjectLink>
                                 )}
                             </TableCell>
                             <TableCell>
