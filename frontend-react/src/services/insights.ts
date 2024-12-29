@@ -1,85 +1,91 @@
-// src/stores/insights.store.ts
-import { create } from 'zustand'
+// src/services/insights.ts
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query'
 import { http } from '@/lib/fetch'
 import { Insight } from '@/model/insight'
 
-interface InsightsState {
-    insights: Insight[]
-    isLoading: boolean
-    error: string | null
-    fetchInsights: () => Promise<void>
-    createInsight: (name: string) => Promise<Insight | undefined>
-    deleteInsight: (insightId: number) => Promise<void>
-    updateInsight: (insight: Insight) => Promise<void>
+// Query key
+export const INSIGHTS_KEY = (project: string | number) => ['insights', project] as const
+
+// API functions
+const insightsApi = {
+    getInsights: async (project: string | number): Promise<Insight[]> => {
+        const response = await http.get<Insight[]>(`${project}/insights`)
+        return response ?? []
+    },
+
+    createInsight: async (params: { project: string | number, name: string }): Promise<Insight> => {
+        return http.post<Insight>(`${params.project}/insights`, {
+            type: 'Trend',
+            name: params.name,
+            description: '',
+            series: [],
+        })
+    },
+
+    deleteInsight: async (params: { project: string | number, insightId: number }): Promise<void> => {
+        await http.del(`${params.project}/insights/${params.insightId}`)
+    },
+
+    updateInsight: async (params: { project: string | number, insight: Insight }): Promise<Insight> => {
+        return http.put<Insight>(`${params.project}/insights/${params.insight.id}`, params.insight)
+    },
 }
 
-export const useInsightsStore = create<InsightsState>((set) => ({
-    insights: [],
-    isLoading: false,
-    error: null,
+// Query hook with options
+export function useInsights(
+    project: string | number,
+    options?: Partial<UseQueryOptions<Insight[], Error>>
+) {
+    return useQuery<Insight[], Error>({
+        queryKey: INSIGHTS_KEY(project),
+        queryFn: () => insightsApi.getInsights(project),
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: true,
+        ...options,
+    })
+}
 
-    fetchInsights: async () => {
-        set({ isLoading: true, error: null })
-        try {
-            const response = await http.get<Insight[]>('/insights')
-            set({ insights: response ?? [], isLoading: false })
-        } catch (error) {
-            set({
-                error: 'Failed to fetch insights',
-                isLoading: false
-            })
-            console.error('Fetch insights error:', error)
-        }
-    },
+// Mutation hooks
+export function useCreateInsight(project: string | number) {
+    const queryClient = useQueryClient()
 
-    createInsight: async (name: string) => {
-        try {
-            const newInsight = await http.post<Insight>('/insights', {
-                type: 'Trend',
-                name,
-                description: '',
-                series: [],
-            })
-
-            if (newInsight) {
-                set((state) => ({
-                    insights: [...state.insights, newInsight]
-                }))
-            }
-
-            return newInsight
-        } catch (error) {
-            console.error('Create insight error:', error)
-            set({ error: 'Failed to create insight' })
-        }
-    },
-
-    deleteInsight: async (insightId: number) => {
-        try {
-            set((state) => ({
-                insights: state.insights.filter(i => i.id !== insightId)
-            }))
-        } catch (error) {
-            console.error('Delete insight error:', error)
-            set({ error: 'Failed to delete insight' })
-        }
-    },
-
-    updateInsight: async (insight: Insight) => {
-        try {
-            const updated = await http.put<Insight>(
-                `/insights/${insight.id}`,
-                insight
+    return useMutation({
+        mutationFn: (name: string) => insightsApi.createInsight({ project, name }),
+        onSuccess: (newInsight) => {
+            queryClient.setQueryData<Insight[]>(
+                INSIGHTS_KEY(project),
+                (old = []) => [...old, newInsight]
             )
+        },
+    })
+}
 
-            set((state) => ({
-                insights: state.insights.map(i =>
-                    i.id === insight.id ? (updated ?? insight) : i
+export function useDeleteInsight(project: string | number) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (insightId: number) => insightsApi.deleteInsight({ project, insightId }),
+        onSuccess: (_, insightId) => {
+            queryClient.setQueryData<Insight[]>(
+                INSIGHTS_KEY(project),
+                (old = []) => old.filter(insight => insight.id !== insightId)
+            )
+        },
+    })
+}
+
+export function useUpdateInsight(project: string | number) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (insight: Insight) => insightsApi.updateInsight({ project, insight }),
+        onSuccess: (updatedInsight) => {
+            queryClient.setQueryData<Insight[]>(
+                INSIGHTS_KEY(project),
+                (old = []) => old.map(insight =>
+                    insight.id === updatedInsight.id ? updatedInsight : insight
                 )
-            }))
-        } catch (error) {
-            console.error('Update insight error:', error)
-            set({ error: 'Failed to update insight' })
-        }
-    },
-}))
+            )
+        },
+    })
+}

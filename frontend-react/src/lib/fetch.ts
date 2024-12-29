@@ -3,6 +3,7 @@ import {baseUrl} from "@app/conf.ts";
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 const get = async <T>(url: string) => request<T>('GET', url, {})
+const del = async <T>(url: string) => request<T>('DELETE', url, {})
 
 const post = async <T>(url: string, body?: unknown) =>
     request<T>('POST', url, {
@@ -32,17 +33,21 @@ const request = async <T>(
         method,
     })
 
+    if(!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} : ${response.statusText}`)
+    }
+
     try {
         const result = (await response.json()) as T
         return result
     } catch (e) {
-        console.error(`Cannot unmarshal response: ${e}`)
+        throw new Error(`Cannot unmarshal response: ${e}`)
     }
-    return undefined
 }
 
 export const http = {
     get,
     post,
     put,
+    del,
 }

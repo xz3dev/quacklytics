@@ -1,22 +1,9 @@
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
-import {useEffect, useState} from "react"
-import {useInsightsStore} from "@/services/insights"
+import {useState} from "react"
+import {useCreateInsight, useDeleteInsight, useInsights, useUpdateInsight} from "@/services/insights"
 import {formatDistance} from "date-fns"
 import {Insight} from "@/model/insight.ts";
 import {
@@ -25,26 +12,27 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
-import { MoreHorizontal } from "lucide-react"
+import {MoreHorizontal} from "lucide-react"
 import {Link} from "react-router";
 
 export function InsightsList() {
-    const {insights, isLoading, error, createInsight, deleteInsight, updateInsight} = useInsightsStore()
+    const projectId = 'test'
+    const { data: insights = [], isLoading, error } = useInsights(projectId)
+    const createInsightMutation = useCreateInsight(projectId)
+    const updateInsightMutation = useUpdateInsight(projectId)
+    const deleteInsightMutation = useDeleteInsight(projectId)
+
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [newInsightName, setNewInsightName] = useState("")
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editingName, setEditingName] = useState("")
 
-    useEffect(() => {
-        void useInsightsStore.getState().fetchInsights()
-    }, [])
-
     if (isLoading) return <div>Loading...</div>
-    if (error) return <div>Error: {error}</div>
+    if (error) return <div>Error: {error.message}</div>
 
     const handleCreate = async () => {
         if (newInsightName.trim()) {
-            await createInsight(newInsightName)
+            await createInsightMutation.mutateAsync(newInsightName)
             setNewInsightName("")
             setIsCreateOpen(false)
         }
@@ -56,7 +44,7 @@ export function InsightsList() {
     }
 
     const handleSaveEdit = async (insight: Insight) => {
-        await updateInsight({...insight, name: editingName})
+        await updateInsightMutation.mutateAsync({...insight, name: editingName})
         setEditingId(null)
     }
 
@@ -147,7 +135,7 @@ export function InsightsList() {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 className="text-red-600"
-                                                onClick={() => deleteInsight(insight.id)}
+                                                onClick={() => deleteInsightMutation.mutateAsync(insight.id)}
                                             >
                                                 Delete
                                             </DropdownMenuItem>
