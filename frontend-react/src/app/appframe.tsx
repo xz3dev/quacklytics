@@ -6,15 +6,22 @@ import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbLink,
-    BreadcrumbList, BreadcrumbPage,
+    BreadcrumbList,
+    BreadcrumbPage,
     BreadcrumbSeparator
 } from "@/components/ui/breadcrumb.tsx";
 import {RequireAuth} from "@app/login/requireAuth.tsx";
 import {useAuthStore} from "@/services/auth.ts";
 import {DuckDB} from "@app/duckdb/duckdb.tsx";
+import {useProjects} from "@/services/projects.ts";
+import {GalleryVerticalEnd} from "lucide-react";
+import {Spinner} from "@/components/spinner.tsx";
 
 export function AppFrame() {
     const {user} = useAuthStore()
+    const { data: projects, error, status } = useProjects()
+    if (status === 'pending') return <div className="flex items-center justify-center"><Spinner/></div>
+    if (status === 'error') return <div>Error: {error.message}</div>
     return (
         <RequireAuth>
             <SidebarProvider>
@@ -24,7 +31,13 @@ export function AppFrame() {
                         email: "",
                         avatar: ""
                     }}
-                    teams={[...staticSidebarData.teams]}
+                    teams={
+                        projects.map((p) => ({
+                            name: p.id,
+                            plan: 'Enterprise',
+                            logo: GalleryVerticalEnd,
+                        }))
+                    }
                     navMain={[...staticSidebarData.navMain]}
                     projects={[...staticSidebarData.projects]}
                 />
