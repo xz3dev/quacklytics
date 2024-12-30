@@ -1,16 +1,18 @@
 import {useProjectId} from "./use-project-id";
 import {ChartLine, HardDriveDownload, LucideIcon, Settings2} from "lucide-react";
+import {useMatch} from "react-router";
 
 export function useSidebarData(): SidebarData {
     const projectId = useProjectId()
-
+    const isInsights = useMatch('/app/:projectid/insights')
+    const isAnalytics = isInsights !== null
     return ({
         navMain: [
             {
                 title: "Analytics",
                 url: "#",
                 icon: ChartLine,
-                isActive: true,
+                isActive: isAnalytics,
                 items: [
                     {
                         title: "Dashboards",
@@ -19,6 +21,7 @@ export function useSidebarData(): SidebarData {
                     {
                         title: "Insights",
                         url: `/app/${projectId}/insights`,
+                        isActive: !!isInsights,
                     },
                     {
                         title: "Events",
