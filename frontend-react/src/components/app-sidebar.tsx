@@ -1,9 +1,9 @@
 import * as React from "react"
-import {ChartLine, GalleryVerticalEnd, HardDriveDownload, LucideIcon, Settings2,} from "lucide-react"
+import {ChartLine, HardDriveDownload, LucideIcon, Settings2,} from "lucide-react"
 
 import {NavMain} from "@/components/nav-main"
 import {NavUser} from "@/components/nav-user"
-import {TeamSwitcher} from "@/components/team-switcher"
+import {ProjectSwitcher} from "@/components/project-switcher.tsx"
 import {Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail,} from "@/components/ui/sidebar"
 
 interface SidebarData {
@@ -12,11 +12,6 @@ interface SidebarData {
     email: string
     avatar: string
   }
-  teams: {
-    name: string
-    logo: LucideIcon
-    plan: string
-  }[]
   navMain: {
     title: string
     url: string
@@ -34,19 +29,12 @@ interface SidebarData {
   }[]
 }
 
-export const staticSidebarData =  {
+export const staticSidebarData =  (projectId: string) => ({
     user: {
       name: "shadcn",
       email: "m@example.com",
       avatar: "/avatars/shadcn.jpg",
     },
-    teams: [
-      {
-        name: "Default",
-        logo: GalleryVerticalEnd,
-        plan: "Enterprise",
-      },
-    ],
     navMain: [
       {
         title: "Analytics",
@@ -60,7 +48,7 @@ export const staticSidebarData =  {
           },
           {
             title: "Insights",
-            url: "/app/insights",
+            url: `/app/${projectId}/insights`,
           },
           {
             title: "Events",
@@ -108,14 +96,14 @@ export const staticSidebarData =  {
       },
     ],
     projects: [],
-} satisfies SidebarData
+}) satisfies SidebarData
 
 
 export function AppSidebar(data: SidebarData, { ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <ProjectSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

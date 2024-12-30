@@ -41,17 +41,21 @@ func InitProjects() ProjectDBLookup {
 	projectList := projects.ListProjects()
 
 	for _, project := range projectList {
-		var err error
-		ProjectDBs[project.ID], err = gorm.Open(sqlite.Open(project.DbFile), &gorm.Config{})
-		if err != nil {
-			log.Fatal("Error opening database: ", err)
-		}
-		log.Printf("Opened DB for project: %s", project.ID)
-		ProjectDBs[project.ID].AutoMigrate(projectTables...)
-		log.Printf("Migrated DB for project: %s", project.ID)
+		InitProjectDB(project)
 	}
 
 	return ProjectDBs
+}
+
+func InitProjectDB(project projects.ProjectFiles) {
+	var err error
+	ProjectDBs[project.ID], err = gorm.Open(sqlite.Open(project.DbFile), &gorm.Config{})
+	if err != nil {
+		log.Fatal("Error opening database: ", err)
+	}
+	log.Printf("Opened DB for project: %s", project.ID)
+	ProjectDBs[project.ID].AutoMigrate(projectTables...)
+	log.Printf("Migrated DB for project: %s", project.ID)
 }
 
 func Init() *gorm.DB {

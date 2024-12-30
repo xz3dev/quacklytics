@@ -13,15 +13,12 @@ import {
 import {RequireAuth} from "@app/login/requireAuth.tsx";
 import {useAuthStore} from "@/services/auth.ts";
 import {DuckDB} from "@app/duckdb/duckdb.tsx";
-import {useProjects} from "@/services/projects.ts";
-import {GalleryVerticalEnd} from "lucide-react";
-import {Spinner} from "@/components/spinner.tsx";
+import {useProjectId} from "@/hooks/use-project-id.tsx";
 
 export function AppFrame() {
     const {user} = useAuthStore()
-    const { data: projects, error, status } = useProjects()
-    if (status === 'pending') return <div className="flex items-center justify-center"><Spinner/></div>
-    if (status === 'error') return <div>Error: {error.message}</div>
+    const projectId = useProjectId()
+    const sidebarData = staticSidebarData(projectId)
     return (
         <RequireAuth>
             <SidebarProvider>
@@ -31,15 +28,8 @@ export function AppFrame() {
                         email: "",
                         avatar: ""
                     }}
-                    teams={
-                        projects.map((p) => ({
-                            name: p.id,
-                            plan: 'Enterprise',
-                            logo: GalleryVerticalEnd,
-                        }))
-                    }
-                    navMain={[...staticSidebarData.navMain]}
-                    projects={[...staticSidebarData.projects]}
+                    navMain={[...sidebarData.navMain]}
+                    projects={[...sidebarData.projects]}
                 />
                 <SidebarInset>
                     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">

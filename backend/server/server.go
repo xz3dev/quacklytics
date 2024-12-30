@@ -86,6 +86,7 @@ func buildRouter(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) *chi.Mux {
 
 func setupProjectRoutes(mux chi.Router) {
 	mux.Get("/projects", routes.ListProjects)
+	mux.Post("/projects", routes.CreateProject)
 }
 
 func setupPublicEventRoutes(mux chi.Router) {

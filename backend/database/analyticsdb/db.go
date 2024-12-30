@@ -48,14 +48,14 @@ func InitProjects() {
 	projectList := projects.ListProjects()
 
 	for _, project := range projectList {
-		if err := initProjectDB(project.ID, project.AnalyticsDbFile); err != nil {
+		if err := InitProjectDB(project); err != nil {
 			log.Printf("Error initializing project DB %s: %v", project.ID, err)
 		}
 	}
 }
 
-func initProjectDB(projectID string, dbPath string) error {
-	connector, err := duckdb.NewConnector(dbPath+"?"+"access_mode=READ_WRITE", nil)
+func InitProjectDB(project projects.ProjectFiles) error {
+	connector, err := duckdb.NewConnector(project.AnalyticsDbFile+"?"+"access_mode=READ_WRITE", nil)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func initProjectDB(projectID string, dbPath string) error {
 
 	projectDB := sql.OpenDB(connector)
 
-	I2[projectID] = &DBConnection{
+	I2[project.ID] = &DBConnection{
 		db:         projectDB,
 		connection: con,
 	}
@@ -78,7 +78,7 @@ func initProjectDB(projectID string, dbPath string) error {
 
 	analyticsmigrations.MigrateDBIfNeeded(projectDB)
 
-	log.Printf("Initialized DuckDB for project: %s", projectID)
+	log.Printf("Initialized DuckDB for project: %s", project.ID)
 	return nil
 }
 
