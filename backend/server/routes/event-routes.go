@@ -4,6 +4,7 @@ import (
 	"analytics/actions"
 	"analytics/events"
 	"analytics/model"
+	"analytics/projects"
 	"analytics/queries"
 	sv_mw "analytics/server/middlewares"
 	"crypto/sha1"
@@ -73,7 +74,7 @@ func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := "_tmp/"
+	path := projects.TmpDir + "/"
 	filename := shortRequestId + ".parquet"
 	err = actions.ConvertEventsToParquet(events, path+filename)
 	if err != nil {
@@ -117,7 +118,7 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	kwStart, kwEnd := getWeekStartEnd(year, kw)
 	weekCompleted := time.Now().After(kwEnd)
 
-	path := "_tmp/"
+	path := projects.TmpDir + "/"
 	filename := fmt.Sprintf("events_kw%d_%d.parquet", kw, year)
 
 	// Set headers for file download
@@ -192,7 +193,7 @@ func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 		}
 
 		filename := fmt.Sprintf("events_kw%d_%d.parquet", week, year)
-		filepath := fmt.Sprintf("_tmp/%s", filename)
+		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
 
 		checksum, err := calculateFileChecksum(filepath)
 		if err != nil {

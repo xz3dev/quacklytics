@@ -10,12 +10,21 @@ import (
 const DbProjectFilePrefix = "project_"
 const DbAnalyticsFilePrefix = "analytics_"
 const DbDir = "_data"
+const TmpDir = "_tmp"
 
-func ListProjects() []ProjectFiles {
+func CreateDirectories() {
 	dir := filepath.Dir(DbDir)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		log.Fatal("Error creating directory for database: ", err)
 	}
+
+	dir = filepath.Dir(TmpDir)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		log.Fatal("Error creating directory for database: ", err)
+	}
+}
+
+func ListProjects() []ProjectFiles {
 
 	files, err := os.ReadDir(DbDir)
 	if err != nil {
