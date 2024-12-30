@@ -1,5 +1,5 @@
 import {Outlet} from "react-router";
-import {AppSidebar, staticSidebarData} from "@/components/app-sidebar.tsx";
+import {AppSidebar} from "@/components/app-sidebar.tsx";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.tsx";
 import {Separator} from "@/components/ui/separator.tsx";
 import {
@@ -13,12 +13,11 @@ import {
 import {RequireAuth} from "@app/login/requireAuth.tsx";
 import {useAuthStore} from "@/services/auth.ts";
 import {DuckDB} from "@app/duckdb/duckdb.tsx";
-import {useProjectId} from "@/hooks/use-project-id.tsx";
+import {useSidebarData} from "@/hooks/use-sidebar-data.tsx";
 
 export function AppFrame() {
     const {user} = useAuthStore()
-    const projectId = useProjectId()
-    const sidebarData = staticSidebarData(projectId)
+    const sidebarData = useSidebarData()
     return (
         <RequireAuth>
             <SidebarProvider>
@@ -29,7 +28,6 @@ export function AppFrame() {
                         avatar: ""
                     }}
                     navMain={[...sidebarData.navMain]}
-                    projects={[...sidebarData.projects]}
                 />
                 <SidebarInset>
                     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
