@@ -25,7 +25,7 @@ func ProjectMiddleware(dbMap appdb.ProjectDBLookup) func(http.Handler) http.Hand
 			// Get DB instance for this project
 			db, exists := dbMap[projectID]
 			if !exists {
-				http.Error(w, "Project database not found", http.StatusNotFound)
+				http.Error(w, "Project database not found. Project:"+projectID, http.StatusNotFound)
 				return
 			}
 

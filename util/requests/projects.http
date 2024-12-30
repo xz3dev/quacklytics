@@ -1,1 +1,9 @@
+POST {{url}}/projects
+Content-Type: application/json
+
+{
+  "name": "test"
+}
+
+###
 GET {{url}}/projects

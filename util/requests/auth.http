@@ -5,8 +5,7 @@ Content-Type: application/json
 
 {
   "email": "xyron1996@gmail.com",
-  "password": "123123",
-  "rm": "true"
+  "password": "123123"
 }
 
 
@@ -16,7 +15,7 @@ GET {{url}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "xyron1998@gmail.com",
+  "email": "xyron1996@gmail.com",
   "password": "123123"
 }
 
