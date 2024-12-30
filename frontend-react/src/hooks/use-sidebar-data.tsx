@@ -25,7 +25,7 @@ export function useSidebarData(): SidebarData {
                     },
                     {
                         title: "Events",
-                        url: "#",
+                        url: `/app/${projectId}/events`,
                     },
                 ],
             },

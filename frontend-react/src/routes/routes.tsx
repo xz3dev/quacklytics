@@ -4,6 +4,7 @@ import {AppFrame} from "@app/appframe.tsx";
 import LoginPage from "@app/login/page.tsx";
 import {InsightsList} from "@app/insights/insight-list.tsx";
 import {InsightView} from "@app/insights/insight-view.tsx";
+import {EventsViewer} from "@app/events/events-viewer.tsx";
 
 
 export function AppRouter() {
@@ -18,6 +19,7 @@ export function AppRouter() {
             <Route path="app/:projectid" element={<AppFrame></AppFrame>}>
                 <Route path="insights" element={<InsightsList></InsightsList>}></Route>
                 <Route path="insights/:insightid" element={<InsightView></InsightView>}></Route>
+                <Route path="events" element={<EventsViewer></EventsViewer>}></Route>
             </Route>
         </Routes>
     )
