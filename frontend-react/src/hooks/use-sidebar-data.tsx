@@ -5,7 +5,8 @@ import {useMatch} from "react-router";
 export function useSidebarData(): SidebarData {
     const projectId = useProjectId()
     const isInsights = useMatch('/app/:projectid/insights')
-    const isAnalytics = isInsights !== null
+    const isEvents = useMatch('/app/:projectid/events')
+    const isAnalytics = !!isEvents || !!isInsights
     return ({
         navMain: [
             {
@@ -26,6 +27,7 @@ export function useSidebarData(): SidebarData {
                     {
                         title: "Events",
                         url: `/app/${projectId}/events`,
+                        isActive: !!isEvents,
                     },
                 ],
             },

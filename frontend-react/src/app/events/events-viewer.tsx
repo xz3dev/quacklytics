@@ -49,38 +49,31 @@ export function EventsViewer() {
 
     return (
         <div className="space-y-4 p-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Query Editor</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-2">
-                        <Textarea
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Enter your SQL query"
-                            className="font-mono min-h-[100px]"
-                        />
-                        <div className="flex justify-between items-center">
-                            <Button
-                                onClick={runQuery}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? "Running..." : "Run Query"}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setQuery(DEFAULT_QUERY)}
-                            >
-                                Reset Query
-                            </Button>
-                        </div>
-                        {error && (
-                            <div className="text-red-500 text-sm">{error}</div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="space-y-2">
+                <Textarea
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Enter your SQL query"
+                    className="font-mono min-h-[100px]"
+                />
+                <div className="flex justify-between items-center">
+                    <Button
+                        onClick={runQuery}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "Running..." : "Run Query"}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => setQuery(DEFAULT_QUERY)}
+                    >
+                        Reset Query
+                    </Button>
+                </div>
+                {error && (
+                    <div className="text-red-500 text-sm">{error}</div>
+                )}
+            </div>
 
             <Card>
                 <CardHeader>
