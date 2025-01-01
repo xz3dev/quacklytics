@@ -11,7 +11,15 @@ export const InsightContext = createContext<{
 
 export const TrendInsightContext = createContext<{
     data?: TrendInsight,
-    update?: (fn: (insight: TrendInsight) => void) => void,
+    updateFn?: (fn: (insight: TrendInsight) => void) => void,
+    update?: (insight: TrendInsight) => void,
 }>({})
 
 
+export const BaseInsightContext = createContext<{
+    original?: Insight,
+    updateWorkingCopy?: (insight: Insight) => void,
+    isChanged: boolean,
+}>({
+    isChanged: false,
+})

@@ -3,31 +3,31 @@ import {TrendInsightContext} from "@app/insights/insight-context.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import { FilterSelectorCard } from "@/components/filters/filter-selector-card";
-import {Plus} from "lucide-react";
+import {Plus, TrendingUp, X} from "lucide-react";
 import {FieldFilter} from "@/model/filters.ts";
 import {FilterSelector} from "@/components/filters/filter-selector.tsx";
 
 export function TrendInsightOptions() {
-    const {data, update} = useContext(TrendInsightContext)
+    const {data, updateFn} = useContext(TrendInsightContext)
     const [addFilterOpen, setAddFilterOpen] = useState<boolean[]>([])
 
     if (!data) return <></>
 
     const handleAddFilter = (filter: FieldFilter, seriesIndex: number) => {
-        update?.((insight) => {
+        updateFn?.((insight) => {
             insight.series?.[seriesIndex]?.query?.filters.push(filter)
         })
     }
 
     const handleRemoveFilter = (seriesIndex: number, filterIndex: number) => {
-        update?.((insight) => {
+        updateFn?.((insight) => {
             insight.series?.[seriesIndex]?.query?.filters.splice(filterIndex, 1)
         })
     }
 
     const handleFilterUpdate = (seriesIndex: number, filterIndex: number, filter: FieldFilter) => {
         console.log(`update`, filter)
-        update?.((insight) => {
+        updateFn?.((insight) => {
             if(insight.series?.[seriesIndex]?.query?.filters[filterIndex]) {
                 insight.series[seriesIndex].query.filters[filterIndex] = filter
             }
@@ -40,17 +40,28 @@ export function TrendInsightOptions() {
         setAddFilterOpen(newOpenStates)
     }
 
+    const handleRemoveSeries = (seriesIndex: number) => {
+        updateFn?.((insight) => {
+            insight.series?.splice(seriesIndex, 1)
+        })
+    }
+
     return (
-        <div className="flex flex-col items-start gap-2">
+        <div className="flex flex-col items-stretch gap-2">
             {
                 data.series?.map((series, seriesIndex) => {
                     return <div
                         key={seriesIndex}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 p-2 bg-muted/40 border border-border rounded-md"
                     >
-                        ({series.name})
+                        <TrendingUp className="w-5 h-5 text-muted-foreground mx-1"></TrendingUp>
                         {series.query?.filters.map((filter, filterIndex) => (
-                            <FilterSelector filter={filter} onSave={(filter) => handleFilterUpdate(seriesIndex, filterIndex, filter)} onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}/>
+                            <FilterSelector
+                                key={filterIndex}
+                                filter={filter}
+                                onSave={(filter) => handleFilterUpdate(seriesIndex, filterIndex, filter)}
+                                onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}
+                            />
                         ))}
                         <Popover
                             open={addFilterOpen[seriesIndex]}
@@ -78,13 +89,20 @@ export function TrendInsightOptions() {
                                 />
                             </PopoverContent>
                         </Popover>
+                        <div className="flex-1"></div>
+                        <Button
+                            variant="ghost"
+                            onClick={() => handleRemoveSeries(seriesIndex)}
+                        >
+                            <X className="w-5 h-5"></X>
+                        </Button>
                     </div>
                 })
             }
             <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => {
-                    update?.((data) => {
+                    updateFn?.((data) => {
                         data.series = [...(data.series ?? []), {
                             name: 'New Series',
                             visualisation: 'line',
@@ -101,7 +119,10 @@ export function TrendInsightOptions() {
                         }]
                     })
                 }}
-            >Add Series</Button>
+            >
+                <Plus className="w-4 h-4"/>
+                Add Series
+            </Button>
         </div>
     )
 }

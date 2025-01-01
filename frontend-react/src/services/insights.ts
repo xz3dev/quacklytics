@@ -59,6 +59,10 @@ export function useCreateInsight(project: string) {
                 INSIGHTS_KEY(project),
                 (old = []) => [...old, newInsight]
             )
+            queryClient.setQueryData<Insight[]>(
+                INSIGHT_KEY(project, newInsight.id),
+                (old = []) => [...old, newInsight]
+            )
         },
     })
 }
@@ -70,7 +74,7 @@ export function useDeleteInsight(project: string) {
         mutationFn: (insightId: number) => insightsApi.deleteInsight({project, insightId}),
         onSuccess: (_, insightId) => {
             queryClient.setQueryData<Insight[]>(
-                INSIGHTS_KEY(project),
+                INSIGHT_KEY(project, insightId),
                 (old = []) => old.filter(insight => insight.id !== insightId)
             )
         },
@@ -83,11 +87,9 @@ export function useUpdateInsight(project: string) {
     return useMutation({
         mutationFn: (insight: Insight) => insightsApi.updateInsight({project, insight}),
         onSuccess: (updatedInsight) => {
-            queryClient.setQueryData<Insight[]>(
-                INSIGHTS_KEY(project),
-                (old = []) => old.map(insight =>
-                    insight.id === updatedInsight.id ? updatedInsight : insight
-                )
+            queryClient.setQueryData<Insight>(
+                INSIGHT_KEY(project, updatedInsight.id),
+                () => updatedInsight,
             )
         },
     })
