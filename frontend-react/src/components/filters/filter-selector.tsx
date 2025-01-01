@@ -4,6 +4,7 @@ import {Button} from '@/components/ui/button'
 import {Popover, PopoverContent, PopoverTrigger,} from '@/components/ui/popover'
 import {FieldFilter} from "@/model/filters.ts";
 import {FilterSelectorCard} from "@/components/filters/filter-selector-card.tsx";
+import {useState} from "react";
 
 interface Props {
     filter: FieldFilter
@@ -16,9 +17,15 @@ export function FilterSelector({
                                    onSave,
                                    onRemove,
                                }: Props) {
+    const [open, setOpen] = useState(false)
     return (
         <div className="flex">
-            <Popover>
+            <Popover
+                open={open}
+                onOpenChange={(isOpen) => {
+                    setOpen(isOpen)
+                }}
+            >
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -33,8 +40,12 @@ export function FilterSelector({
                 <PopoverContent className="w-80 p-0">
                     <FilterSelectorCard
                         initialFilter={filter}
-                        onSave={onSave}
+                        onSave={(filter) => {
+                            onSave(filter)
+                            setOpen(false)
+                        }}
                         onDiscard={() => {
+                            setOpen(false)
                         }}
                     />
                 </PopoverContent>

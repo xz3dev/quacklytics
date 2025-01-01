@@ -25,6 +25,15 @@ export function TrendInsightOptions() {
         })
     }
 
+    const handleFilterUpdate = (seriesIndex: number, filterIndex: number, filter: FieldFilter) => {
+        console.log(`update`, filter)
+        update?.((insight) => {
+            if(insight.series?.[seriesIndex]?.query?.filters[filterIndex]) {
+                insight.series[seriesIndex].query.filters[filterIndex] = filter
+            }
+        })
+    }
+
     const closeAddFilter = (seriesIndex: number) => {
         const newOpenStates = [...addFilterOpen]
         newOpenStates[seriesIndex] = false
@@ -41,7 +50,7 @@ export function TrendInsightOptions() {
                     >
                         ({series.name})
                         {series.query?.filters.map((filter, filterIndex) => (
-                            <FilterSelector filter={filter} onSave={() => {}} onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}/>
+                            <FilterSelector filter={filter} onSave={(filter) => handleFilterUpdate(seriesIndex, filterIndex, filter)} onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}/>
                         ))}
                         <Popover
                             open={addFilterOpen[seriesIndex]}
