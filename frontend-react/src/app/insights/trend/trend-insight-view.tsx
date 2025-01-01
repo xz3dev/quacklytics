@@ -39,12 +39,6 @@ export function TrendInsightView({readOnly}: Props) {
                 </div>
             </div>}
             {!readOnly && <TrendInsightOptions/>}
-            <div>
-                {JSON.stringify(isChanged)}
-            </div>
-            <div>
-                {JSON.stringify(original)}
-            </div>
         </>
     )
 }
