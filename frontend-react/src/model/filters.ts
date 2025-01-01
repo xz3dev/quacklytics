@@ -9,4 +9,15 @@ export interface FieldFilter {
     value: string
 }
 
-export type Operator = '=' | '>' | '<' | '>=' | '<=' | '<>' | 'LIKE' | 'IN'
+export const operators = [
+    '=',
+    '>',
+    '<',
+    '>=',
+    '<=',
+    '<>',
+    'LIKE',
+    'IN',
+] as const
+export type Operator = (typeof operators)[number]
+

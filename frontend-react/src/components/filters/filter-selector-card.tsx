@@ -1,59 +1,35 @@
 // src/components/filters/FilterSelectorCard.tsx
-import { useState, useEffect } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from '@/components/ui/command'
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import {Field, FieldFilter, Operator} from "@/model/filters.ts";
-
-const ALL_OPERATORS: Operator[] = ['=', '>', '<', '>=', '<=', '<>', 'LIKE', 'IN']
+import {useEffect, useState} from 'react'
+import {Check, ChevronsUpDown} from 'lucide-react'
+import {Card, CardContent, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card'
+import {Command, CommandEmpty, CommandInput, CommandItem, CommandList,} from '@/components/ui/command'
+import {Popover, PopoverContent, PopoverTrigger,} from '@/components/ui/popover'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select'
+import {Button} from '@/components/ui/button'
+import {Field, FieldFilter, Operator, operators} from "@/model/filters.ts";
+import {useSchema} from "@/services/schemas.ts";
+import {useProjectId} from "@/hooks/use-project-id.tsx";
 
 interface Props {
     initialFilter?: FieldFilter
     onSave: (filter: FieldFilter) => void
     onDiscard: () => void
-    availableFields: Field[]
-    propertyValues: Record<string, string[]>
-    eventTypes: string[]
 }
 
-export function FilterSelectorCard({
-                                       initialFilter,
-                                       onSave,
-                                       onDiscard,
-                                       availableFields,
-                                       propertyValues,
-                                       eventTypes,
-                                   }: Props) {
+export function FilterSelectorCard
+({
+     initialFilter,
+     onSave,
+     onDiscard,
+ }: Props) {
     const [currentField, setCurrentField] = useState<Field | null>(null)
     const [currentOperator, setCurrentOperator] = useState<Operator>('=')
     const [currentValue, setCurrentValue] = useState('')
     const [openField, setOpenField] = useState(false)
     const [openValue, setOpenValue] = useState(false)
+
+    const project = useProjectId()
+    const schema = useSchema(project)
 
     useEffect(() => {
         if (initialFilter) {
@@ -62,6 +38,16 @@ export function FilterSelectorCard({
             setCurrentValue(initialFilter.value)
         }
     }, [initialFilter])
+
+    if (schema.isLoading || schema.isPending || schema.error) return null
+    const availableFields = [
+        {name: 'event_type', type: 'string'},
+        ...schema.data.uniqueProperties,
+    ] satisfies Field[]
+    // const availableFields = ['a', 'b']
+
+    const eventTypes = Object.keys(schema.data.events)
+    const propertyValues = schema.data.propertyValues
 
     const handleSave = () => {
         if (currentField && currentValue) {
@@ -101,38 +87,42 @@ export function FilterSelectorCard({
                                 ) : (
                                     'Select field...'
                                 )}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50"/>
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="p-0">
-                            <Command>
-                                <CommandInput placeholder="Search field..." />
-                                <CommandEmpty>No field found.</CommandEmpty>
-                                <CommandGroup>
-                                    {availableFields.map((field) => (
-                                        <CommandItem
-                                            key={field.name}
-                                            onSelect={() => {
-                                                setCurrentField(field)
-                                                setOpenField(false)
-                                            }}
-                                        >
-                                            <Check
-                                                className={`mr-2 h-4 w-4 ${
-                                                    currentField?.name === field.name
-                                                        ? 'opacity-100'
-                                                        : 'opacity-0'
-                                                }`}
-                                            />
-                                            {field.name}
-                                            <span className="ml-2 text-xs text-muted-foreground">
-                                                {field.type}
-                                            </span>
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            </Command>
-                        </PopoverContent>
+                        {availableFields.length > 0 && (
+                            <PopoverContent className="p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search field..."/>
+                                    <CommandEmpty>No field found.
+                                        {Array.isArray(availableFields)}
+                                    </CommandEmpty>
+                                    <CommandList>
+                                        {availableFields.map((field) => (
+                                            <CommandItem
+                                                key={field.name}
+                                                onSelect={() => {
+                                                    setCurrentField(field)
+                                                    setOpenField(false)
+                                                }}
+                                            >
+                                                <Check
+                                                    className={`mr-2 h-4 w-4 ${
+                                                        currentField?.name === field.name
+                                                            ? 'opacity-100'
+                                                            : 'opacity-0'
+                                                    }`}
+                                                />
+                                                {field.name}
+                                                <span className="ml-2 text-xs text-muted-foreground">
+                                                    {field.type}
+                                                </span>
+                                            </CommandItem>
+                                        ))}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        )}
                     </Popover>
                 </div>
 
@@ -144,10 +134,10 @@ export function FilterSelectorCard({
                         onValueChange={(value) => setCurrentOperator(value as Operator)}
                     >
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select operator" />
+                            <SelectValue placeholder="Select operator"/>
                         </SelectTrigger>
                         <SelectContent>
-                            {ALL_OPERATORS.map((op) => (
+                            {operators.map((op) => (
                                 <SelectItem key={op} value={op}>
                                     {op}
                                 </SelectItem>
@@ -167,7 +157,7 @@ export function FilterSelectorCard({
                                 className="w-full justify-between"
                             >
                                 {currentValue || 'Enter value...'}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50"/>
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="p-0">
@@ -178,7 +168,7 @@ export function FilterSelectorCard({
                                     onValueChange={setCurrentValue}
                                 />
                                 <CommandEmpty>No suggestion found.</CommandEmpty>
-                                <CommandGroup className="max-h-[300px] overflow-y-auto">
+                                <CommandList className="max-h-[300px] overflow-y-auto">
                                     {currentField?.name === 'event_type'
                                         ? eventTypes.map((type) => (
                                             <CommandItem
@@ -218,7 +208,7 @@ export function FilterSelectorCard({
                                                 </CommandItem>
                                             )
                                         )}
-                                </CommandGroup>
+                                </CommandList>
                             </Command>
                         </PopoverContent>
                     </Popover>

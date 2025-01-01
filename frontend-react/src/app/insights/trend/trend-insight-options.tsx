@@ -37,9 +37,6 @@ export function TrendInsightOptions() {
                             </PopoverTrigger>
                             <PopoverContent className="w-80 p-0">
                                 <FilterSelectorCard
-                                    availableFields={[]}
-                                    eventTypes={[]}
-                                    propertyValues={{}}
                                     onSave={() => {
                                         // handleFilterChange(i, undefined, filter)
                                         // const newOpenStates = [...addFilterOpen]

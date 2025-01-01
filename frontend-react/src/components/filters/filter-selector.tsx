@@ -2,25 +2,19 @@
 import {X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Popover, PopoverContent, PopoverTrigger,} from '@/components/ui/popover'
-import {Field, FieldFilter} from "@/model/filters.ts";
+import {FieldFilter} from "@/model/filters.ts";
 import {FilterSelectorCard} from "@/components/filters/filter-selector-card.tsx";
 
 interface Props {
     filter: FieldFilter
     onSave: (filter: FieldFilter) => void
     onRemove: () => void
-    availableFields: Field[]
-    propertyValues: Record<string, string[]>
-    eventTypes: string[]
 }
 
 export function FilterSelector({
                                    filter,
                                    onSave,
                                    onRemove,
-                                   availableFields,
-                                   propertyValues,
-                                   eventTypes,
                                }: Props) {
     return (
         <div className="flex">
@@ -42,9 +36,6 @@ export function FilterSelector({
                         onSave={onSave}
                         onDiscard={() => {
                         }}
-                        availableFields={availableFields}
-                        propertyValues={propertyValues}
-                        eventTypes={eventTypes}
                     />
                 </PopoverContent>
             </Popover>
