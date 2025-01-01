@@ -4,6 +4,8 @@ import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import { FilterSelectorCard } from "@/components/filters/filter-selector-card";
 import {Plus} from "lucide-react";
+import {FieldFilter} from "@/model/filters.ts";
+import {FilterSelector} from "@/components/filters/filter-selector.tsx";
 
 export function TrendInsightOptions() {
     const {data, update} = useContext(TrendInsightContext)
@@ -11,21 +13,41 @@ export function TrendInsightOptions() {
 
     if (!data) return <></>
 
+    const handleAddFilter = (filter: FieldFilter, seriesIndex: number) => {
+        update?.((insight) => {
+            insight.series?.[seriesIndex]?.query?.filters.push(filter)
+        })
+    }
+
+    const handleRemoveFilter = (seriesIndex: number, filterIndex: number) => {
+        update?.((insight) => {
+            insight.series?.[seriesIndex]?.query?.filters.splice(filterIndex, 1)
+        })
+    }
+
+    const closeAddFilter = (seriesIndex: number) => {
+        const newOpenStates = [...addFilterOpen]
+        newOpenStates[seriesIndex] = false
+        setAddFilterOpen(newOpenStates)
+    }
+
     return (
         <div className="flex flex-col items-start gap-2">
             {
-                data.series?.map((series, i) => {
+                data.series?.map((series, seriesIndex) => {
                     return <div
-                        key={i}
+                        key={seriesIndex}
                         className="flex items-center gap-2"
                     >
                         ({series.name})
-                        {series.query?.filters.map(() => <div>Filter</div>)}
+                        {series.query?.filters.map((filter, filterIndex) => (
+                            <FilterSelector filter={filter} onSave={() => {}} onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}/>
+                        ))}
                         <Popover
-                            open={addFilterOpen[i]}
-                            onOpenChange={(open) => {
+                            open={addFilterOpen[seriesIndex]}
+                            onOpenChange={(isOpen) => {
                                 const newOpenStates = [...addFilterOpen]
-                                newOpenStates[i] = open
+                                newOpenStates[seriesIndex] = isOpen
                                 setAddFilterOpen(newOpenStates)
                             }}
                         >
@@ -37,17 +59,12 @@ export function TrendInsightOptions() {
                             </PopoverTrigger>
                             <PopoverContent className="w-80 p-0">
                                 <FilterSelectorCard
-                                    onSave={() => {
-                                        // handleFilterChange(i, undefined, filter)
-                                        // const newOpenStates = [...addFilterOpen]
-                                        // newOpenStates[i] = false
-                                        // setAddFilterOpen(newOpenStates)
+                                    onSave={(filter) => {
+                                        handleAddFilter(filter, seriesIndex)
+                                        closeAddFilter(seriesIndex)
                                     }}
                                     onDiscard={() => {
-                                        // handleFilterChange(i, undefined, undefined)
-                                        // const newOpenStates = [...addFilterOpen]
-                                        // newOpenStates[i] = false
-                                        // setAddFilterOpen(newOpenStates)
+                                        closeAddFilter(seriesIndex)
                                     }}
                                 />
                             </PopoverContent>
