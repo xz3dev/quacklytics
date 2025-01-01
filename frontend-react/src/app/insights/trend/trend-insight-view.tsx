@@ -21,6 +21,11 @@ export function TrendInsightView({readOnly}: Props) {
         updateWorkingCopy?.(newInsight)
     }
 
+    const handleDiscard = () => {
+        if(!original) return
+        update?.(original)
+    }
+
     return (
         <>
             {!readOnly && <div className="flex items-center gap-2">
@@ -30,11 +35,8 @@ export function TrendInsightView({readOnly}: Props) {
                     className={isChanged ? 'visible' : 'invisible'}
                 >
                     <InsightSaveControls
-                        save={() => handleSave()}
-                        discard={() => {
-                            if(!original) return
-                            update?.(original)
-                        }}
+                        save={handleSave}
+                        discard={handleDiscard}
                     />
                 </div>
             </div>}
