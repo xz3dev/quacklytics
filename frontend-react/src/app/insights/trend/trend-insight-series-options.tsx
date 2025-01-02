@@ -2,12 +2,12 @@ import {useContext, useState} from "react";
 import {TrendInsightContext} from "@app/insights/insight-context.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import { FilterSelectorCard } from "@/components/filters/filter-selector-card";
+import {FilterSelectorCard} from "@/components/filters/filter-selector-card";
 import {Plus, TrendingUp, X} from "lucide-react";
 import {FieldFilter} from "@/model/filters.ts";
 import {FilterSelector} from "@/components/filters/filter-selector.tsx";
 
-export function TrendInsightOptions() {
+export function TrendInsightSeriesOptions() {
     const {data, updateFn} = useContext(TrendInsightContext)
     const [addFilterOpen, setAddFilterOpen] = useState<boolean[]>([])
 
@@ -94,7 +94,7 @@ export function TrendInsightOptions() {
                             variant="ghost"
                             onClick={() => handleRemoveSeries(seriesIndex)}
                         >
-                            <X className="w-5 h-5"></X>
+                            <X className="w-5 h-5" />
                         </Button>
                     </div>
                 })

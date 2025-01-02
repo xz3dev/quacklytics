@@ -5,6 +5,12 @@ import {Field, FieldFilter} from "@/model/filters.ts";
 export interface TrendInsight extends Insight {
     type: 'Trend'
     series?: TrendSeries[]
+    config: TrendInsightConfig
+}
+
+export interface TrendInsightConfig {
+    timeBucket: TimeBucket
+    duration: string
 }
 
 export const trendSeriesTypes = ['line', 'bar'] as const
@@ -36,3 +42,13 @@ export interface TrendAggregation {
     alias: 'result_value'
     distinct?: boolean
 }
+
+export const timeBuckets = ['Daily', 'Weekly', 'Monthly'] as const;
+export type TimeBucket = (typeof timeBuckets)[number];
+export const timeBucketLabels: {
+    [key in TimeBucket]: string;
+} = {
+    Daily: 'Day',
+    Weekly: 'Week',
+    Monthly: 'Month',
+};

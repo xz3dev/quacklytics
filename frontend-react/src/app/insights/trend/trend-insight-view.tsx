@@ -1,9 +1,11 @@
-import {TrendInsightOptions} from "@app/insights/trend/trend-insight-options.tsx";
+import {TrendInsightSeriesOptions} from "@app/insights/trend/trend-insight-series-options.tsx";
 import {InsightSaveControls} from "@app/insights/insight-save-controls.tsx";
 import {BaseInsightContext, TrendInsightContext} from "@app/insights/insight-context.ts";
 import {useContext} from "react";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useUpdateInsight} from "@/services/insights.ts";
+import {TrendInsightChart} from "@app/insights/trend/trend-insight-chart.tsx";
+import {TrendInsightChartOptions} from "@app/insights/trend/trend-insight-chart-options.tsx";
 
 interface Props {
     readOnly?: boolean
@@ -16,13 +18,13 @@ export function TrendInsightView({readOnly}: Props) {
     const updater = useUpdateInsight(useProjectId())
 
     const handleSave = async () => {
-        if(!data) return
+        if (!data) return
         const newInsight = await updater.mutateAsync(data)
         updateWorkingCopy?.(newInsight)
     }
 
     const handleDiscard = () => {
-        if(!original) return
+        if (!original) return
         update?.(original)
     }
 
@@ -40,7 +42,9 @@ export function TrendInsightView({readOnly}: Props) {
                     />
                 </div>
             </div>}
-            {!readOnly && <TrendInsightOptions/>}
+            {!readOnly && <TrendInsightSeriesOptions/>}
+            {!readOnly && <TrendInsightChartOptions/>}
+            {data && <TrendInsightChart insight={data}/>}
         </>
     )
 }

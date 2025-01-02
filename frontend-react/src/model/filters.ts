@@ -1,6 +1,7 @@
 export interface Field {
     name: string
     type: string
+    isProperty?: boolean
 }
 
 export interface FieldFilter {
