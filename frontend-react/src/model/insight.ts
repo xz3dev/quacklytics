@@ -1,3 +1,5 @@
+import {TrendInsight} from "@/model/trend-insight.ts";
+
 export type InsightType = 'Trend';
 
 export interface Insight {
@@ -7,3 +9,6 @@ export interface Insight {
     updatedAt?: string;
     type: InsightType;
 }
+
+export type UsableInsight = TrendInsight
+export type UsableInsightInput = Omit<UsableInsight, 'id'>

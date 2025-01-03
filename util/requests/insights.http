@@ -8,7 +8,14 @@ Content-Type: application/json
   "name": "New Insight 11",
 
   "description": "This is a new insight",
-  "series": []
+  "series": [],
+  "config": {
+    "type": "Trend",
+    "data": {
+      "timeBucket": "Daily",
+      "duration": "4weeks"
+    }
+  }
 }
 
 ###

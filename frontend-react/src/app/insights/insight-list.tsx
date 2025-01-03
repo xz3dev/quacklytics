@@ -18,7 +18,7 @@ import {ProjectLink} from "@/components/project-link.tsx";
 
 export function InsightsList() {
     const projectId = useProjectId()
-    const { data: insights = [], isLoading, error } = useInsights(projectId)
+    const {data: insights = [], isLoading, error} = useInsights(projectId)
     const createInsightMutation = useCreateInsight(projectId)
     const updateInsightMutation = useUpdateInsight(projectId)
     const deleteInsightMutation = useDeleteInsight(projectId)
@@ -33,7 +33,15 @@ export function InsightsList() {
 
     const handleCreate = async () => {
         if (newInsightName.trim()) {
-            await createInsightMutation.mutateAsync(newInsightName)
+            await createInsightMutation.mutateAsync({
+                name: newInsightName.trim(),
+                type: 'Trend',
+                series: [],
+                config: {
+                    timeBucket: 'Daily',
+                    duration: 'P4W',
+                },
+            })
             setNewInsightName("")
             setIsCreateOpen(false)
         }
@@ -41,7 +49,7 @@ export function InsightsList() {
 
     const handleStartEdit = (insight: Insight) => {
         setEditingId(insight.id)
-        if(insight.name) setEditingName(insight.name)
+        if (insight.name) setEditingName(insight.name)
     }
 
     const handleSaveEdit = async (insight: Insight) => {
@@ -127,7 +135,7 @@ export function InsightsList() {
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" className="h-8 w-8 p-0">
                                                 <span className="sr-only">Open menu</span>
-                                                <MoreHorizontal className="h-4 w-4" />
+                                                <MoreHorizontal className="h-4 w-4"/>
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">

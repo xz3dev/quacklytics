@@ -31,12 +31,12 @@ export function InsightView() {
             case 'Trend':
                 return (
                     <TrendInsightContext.Provider value={{
-                        data: localWorkingCopy,
+                        data: localWorkingCopy as TrendInsight,
                         update: updateWorkingCopy,
                         updateFn: (fn: (i: TrendInsight) => void) => {
                             if (!localWorkingCopy) return
                             const copy = structuredClone(localWorkingCopy)
-                            fn(copy)
+                            fn(copy as TrendInsight)
                             updateWorkingCopy(copy);
                         },
                     }}>

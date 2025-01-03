@@ -1,6 +1,7 @@
 import {useQuery, useMutation, useQueryClient, type UseQueryOptions} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
-import {Insight} from '@/model/insight'
+import {Insight, UsableInsightInput} from '@/model/insight'
+import {TrendInsight} from "@/model/trend-insight.ts";
 
 export const INSIGHTS_KEY = (project: string) => ['insights', project] as const
 export const INSIGHT_KEY = (project: string, id: number) =>
@@ -12,13 +13,8 @@ const insightsApi = {
         return response ?? []
     },
 
-    createInsight: async (params: { project: string, name: string }): Promise<Insight> => {
-        return http.post<Insight>(`${params.project}/insights`, {
-            type: 'Trend',
-            name: params.name,
-            description: '',
-            series: [],
-        })
+    createInsight: async (params: { project: string, data: UsableInsightInput }): Promise<Insight> => {
+        return http.post<TrendInsight>(`${params.project}/insights`, params.data)
     },
 
     deleteInsight: async (params: { project: string, insightId: number }): Promise<void> => {
@@ -53,15 +49,15 @@ export function useCreateInsight(project: string) {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: (name: string) => insightsApi.createInsight({project, name}),
+        mutationFn: (data: UsableInsightInput) => insightsApi.createInsight({project, data}),
         onSuccess: (newInsight) => {
             queryClient.setQueryData<Insight[]>(
                 INSIGHTS_KEY(project),
                 (old = []) => [...old, newInsight]
             )
-            queryClient.setQueryData<Insight[]>(
+            queryClient.setQueryData<Insight>(
                 INSIGHT_KEY(project, newInsight.id),
-                (old = []) => [...old, newInsight]
+                () => newInsight
             )
         },
     })
@@ -107,7 +103,7 @@ export function useInsight(
         queryFn: () => insightsApi.getInsight({project, id}),
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: true,
-        initialData: () => {
+        placeholderData: () => {
             const insights = queryClient.getQueryData<Insight[]>(INSIGHTS_KEY(project))
             return insights?.find(insight => insight.id === id)
         },

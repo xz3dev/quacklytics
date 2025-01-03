@@ -6,10 +6,10 @@ import (
 )
 
 type InsightInput struct {
-	Name   string       `json:"name" gorm:"size:255;not null"`
-	Type   string       `json:"type" gorm:"size:255;not null;default:'Trend'"`
-	Series *[]Series    `json:"series"`
-	Meta   *InsightMeta `json:"meta" gorm:"foreignKey:InsightID"`
+	Name   string    `json:"name" gorm:"size:255;not null"`
+	Type   string    `json:"type" gorm:"size:255;not null;default:'Trend'"`
+	Series *[]Series `json:"series"`
+	Config JSON      `json:"config" gorm:"type:json;not null"`
 }
 
 type Insight struct {
@@ -43,7 +43,3 @@ func (i *Insight) UpdateSeries(db *gorm.DB) error {
 	}
 	return nil
 }
-
-//func (i *Insight) UpdateMeta(db *gorm.DB) (*InsightMeta, error) {
-//
-//}

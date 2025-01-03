@@ -1,7 +1,6 @@
 import {Insight} from "@/model/insight.ts";
 import {Field, FieldFilter} from "@/model/filters.ts";
 
-
 export interface TrendInsight extends Insight {
     type: 'Trend'
     series?: TrendSeries[]
