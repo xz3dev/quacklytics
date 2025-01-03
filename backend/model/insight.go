@@ -22,6 +22,9 @@ func (i *Insight) ApplyInput(input InsightInput) {
 	if input.Series != nil {
 		i.Series = input.Series
 	}
+	if input.Config != nil {
+		i.Config = input.Config
+	}
 }
 
 func (i *Insight) UpdateSeries(db *gorm.DB) error {
