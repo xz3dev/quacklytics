@@ -19,3 +19,15 @@ export interface Aggregation {
     alias?: string
     distinct?: boolean
 }
+
+
+export type ExtractAliases<T extends Aggregation[]> = {
+    [K in keyof T]: T[K] extends { alias: string }
+        ? T[K]['alias']
+        : T[K]['field']['name']
+}[number]
+
+// Result type for a query with aggregations
+export type AggregationResult<T extends Aggregation[]> = {
+    [K in ExtractAliases<T>]: string
+}[]

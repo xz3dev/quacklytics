@@ -1,11 +1,12 @@
 // src/app/insights/trend/trend-insight-chart.tsx
 import {useDuckDBQueries} from "@/services/duck-db-queries"
 import {Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card"
-import {TrendInsight} from "@/model/trend-insight.ts";
+import {TrendAggregation, TrendInsight} from "@/model/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
 import {renderQuery} from "@lib/renderQuery.tsx";
 import {useMemo} from "react";
 import {Query} from "@lib/queries.ts";
+import {AggregationResult} from "@lib/aggregations.ts";
 
 interface Props {
     insight: TrendInsight
@@ -41,15 +42,12 @@ export function TrendInsightChart({insight}: Props) {
         [results, queries],
     )
 
-    function toObject(val: any) {
-        return JSON.stringify(val, (key, value) =>
-            typeof value === 'bigint'
-                ? value.toString()
-                : value // return everything else unchanged
-        );
-    }
-    const renderChart = (query: any, index: number) => {
-        return <div key={index}>{toObject(query)}</div>
+    function renderSeries(data: AggregationResult<TrendAggregation[]>, index: number) {
+        return data.map((row, i) => {
+            return <div className="flex flex-row items-center gap-2" key={`${index}-${i}`}>
+                <div >{i}:{row.result_value.toString()}</div>
+            </div>
+        })
     }
 
     return (
@@ -62,7 +60,7 @@ export function TrendInsightChart({insight}: Props) {
                     {seriesQueries.map((query, index) => (
                         renderQuery(
                             query,
-                            (data) => renderChart(data, index),
+                            (data) => renderSeries(data, index),
                             index,
                         )
                     ))}
