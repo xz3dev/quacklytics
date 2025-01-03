@@ -80,3 +80,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+.dark {
+  input {
+    color-scheme: dark;
+  }
+}

@@ -16,7 +16,7 @@ export const trendSeriesTypes = ['line', 'bar'] as const
 export type TrendSeriesType = (typeof trendSeriesTypes)[number]
 
 export interface TrendSeries {
-    visualisation: 'line' | 'bar'
+    visualisation: TrendSeriesType
     name: string
     query?: {
         aggregations: TrendAggregation[]
