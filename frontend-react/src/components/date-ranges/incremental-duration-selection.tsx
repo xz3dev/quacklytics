@@ -1,24 +1,24 @@
-import {DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx";
-import {Label} from "@/components/ui/label.tsx";
-import {Button} from "@/components/ui/button.tsx";
-import {Minus, Plus} from "lucide-react";
-import {Input} from "@/components/ui/input.tsx";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {useState} from "react";
-import {SelectedDateRange} from "@/components/date-ranges/data-range-picker.tsx";
-import {Duration, formatDuration} from "date-fns";
+import {DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog.tsx"
+import {Label} from "@/components/ui/label.tsx"
+import {Button} from "@/components/ui/button.tsx"
+import {Minus, Plus} from "lucide-react"
+import {Input} from "@/components/ui/input.tsx"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx"
+import {useState} from "react"
+import {Duration} from "date-fns"
+import {determineLabel, InsightDateRange} from "@/model/InsightDateRange.ts"
 
 const units = ['days', 'months', 'years'] as const
 type Unit = typeof units[number]
 
 type Props = {
-    onChange: (range: SelectedDateRange) => void
+    onChange: (range: InsightDateRange) => void
     onCancel: () => void
 }
 
 export function IncrementalDurationSelection({onChange, onCancel}: Props) {
-    const [incrementValue, setIncrementValue] = useState(1);
-    const [incrementUnit, setIncrementUnit] = useState<Unit>('days');
+    const [incrementValue, setIncrementValue] = useState(1)
+    const [incrementUnit, setIncrementUnit] = useState<Unit>('days')
 
 
     const unitMap: Record<Unit, string> = {
@@ -31,7 +31,7 @@ export function IncrementalDurationSelection({onChange, onCancel}: Props) {
         const value = 'P' + incrementValue + unitMap[incrementUnit]
         const duration: Duration = {}
         duration[incrementUnit] = incrementValue
-        const label = 'Last ' + formatDuration(duration)
+        const label = determineLabel(value)
         onChange({label, value})
     }
 

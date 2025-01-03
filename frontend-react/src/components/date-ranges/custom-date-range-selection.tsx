@@ -5,10 +5,11 @@ import {Input} from "@/components/ui/input.tsx";
 import {format} from "date-fns";
 import {Button} from "@/components/ui/button.tsx";
 import {useState} from "react";
-import {SelectedDateRange} from "@/components/date-ranges/data-range-picker.tsx";
+
+import {InsightDateRange} from "@/model/InsightDateRange.ts";
 
 type Props = {
-    onChange: (range: SelectedDateRange) => void
+    onChange: (range: InsightDateRange) => void
     onCancel: () => void
 }
 
@@ -30,7 +31,7 @@ export function CustomDateRangeSelection({onChange, onCancel}: Props) {
         if (customEndDate) {
             value += ` ${customEndDate}`
         }
-        const range: SelectedDateRange = {
+        const range: InsightDateRange = {
             label: value,
             value,
         }
