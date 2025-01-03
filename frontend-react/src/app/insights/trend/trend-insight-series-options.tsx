@@ -28,7 +28,7 @@ export function TrendInsightSeriesOptions() {
     const handleFilterUpdate = (seriesIndex: number, filterIndex: number, filter: FieldFilter) => {
         console.log(`update`, filter)
         updateFn?.((insight) => {
-            if(insight.series?.[seriesIndex]?.query?.filters[filterIndex]) {
+            if (insight.series?.[seriesIndex]?.query?.filters[filterIndex]) {
                 insight.series[seriesIndex].query.filters[filterIndex] = filter
             }
         })
@@ -73,7 +73,7 @@ export function TrendInsightSeriesOptions() {
                         >
                             <PopoverTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-8">
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="h-4 w-4 mr-2"/>
                                     Add Filter
                                 </Button>
                             </PopoverTrigger>
@@ -89,12 +89,13 @@ export function TrendInsightSeriesOptions() {
                                 />
                             </PopoverContent>
                         </Popover>
+
                         <div className="flex-1"></div>
                         <Button
                             variant="ghost"
                             onClick={() => handleRemoveSeries(seriesIndex)}
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-5 h-5"/>
                         </Button>
                     </div>
                 })
