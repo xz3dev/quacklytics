@@ -7,7 +7,7 @@ import {useMemo} from "react";
 import {mergeQueries} from "@lib/queries.ts";
 import {buildGroupByFilter, buildRangeFilters} from "@/model/filters.ts";
 import {Spinner} from "@/components/spinner.tsx";
-import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/ui/chart"
+import {ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/ui/chart"
 import {Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis} from "recharts";
 import {format} from "date-fns";
 import {simpleHash} from "@lib/checksums.ts";
@@ -151,11 +151,6 @@ export function TrendInsightChart({insight}: Props) {
                         })}
                     </ComposedChart>
                 </ChartContainer>
-                <div className="w-8 h-8" style={{backgroundColor: "hsl(var(--chart-1))"}}></div>
-                <div className="w-8 h-8 bg-chart-2"></div>
-                <div className="w-8 h-8 bg-chart-3"></div>
-                <div className="w-8 h-8 bg-chart-4"></div>
-                <div className="w-8 h-8 bg-chart-5"></div>
             </CardContent>
         </Card>
     )
