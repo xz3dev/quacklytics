@@ -2,6 +2,7 @@ import {createDb} from "@lib/duckdb.ts";
 import type {DataType} from '@apache-arrow/ts'
 import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
 import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
+import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 
 export class DuckDbManager {
     private db = createDb()
@@ -53,21 +54,17 @@ export class DuckDbManager {
         await Promise.all(queries)
     }
 
-    async runQuery<
-        T extends {
-            [key: string]: DataType
-            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        } = any,
-    >(query: string, params: unknown[]) {
+    async runQuery<T extends Query>(query: Query) {
+        const {sql, params} = buildQuery(query)
         const conn = await this.conn
         if (!conn) return
-        const preparedQuery = await conn.prepare<T>(query)
+        const preparedQuery = await conn.prepare(sql)
         const results = await preparedQuery.query(...params)
         await preparedQuery.close()
         console.log(`Returned ${results.toArray().length} rows`)
         return results
             .toArray()
-            .map((i: { toJSON(): T }) => i.toJSON())
+            .map((i: { toJSON(): QueryResult<T> }) => i.toJSON())
     }
 
     async runEventsQuery<

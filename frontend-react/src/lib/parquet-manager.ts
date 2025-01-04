@@ -1,5 +1,5 @@
 import {ParquetDownloader} from "@lib/parquet-downloader.ts";
-import {calculateChecksum} from "@lib/checksums.ts";
+import {sha1Blob} from "@lib/checksums.ts";
 import {IndexedDBManager} from "@lib/index-db-manager.ts";
 
 export class ParquetManager {
@@ -59,7 +59,7 @@ export class ParquetManager {
     ): Promise<Record<string, string>> {
         const checksums: Record<string, string> = {};
         for (const file of files) {
-            checksums[file.filename] = await calculateChecksum(file.blob);
+            checksums[file.filename] = await sha1Blob(file.blob);
         }
         return checksums;
     }

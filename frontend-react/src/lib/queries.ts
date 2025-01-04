@@ -76,7 +76,7 @@ export function buildQuery(query: Query): {
     // Add group by as alias to select
     if (query.groupBy && query.groupBy.length > 0) {
         const groupByParts = query.groupBy.map(
-            (field, index) => `${getFieldExpression(field)} as bucket_${index}`,
+            (field, index) => `${getFieldExpression(field)} as ${field.alias ?? `bucket_${index}`}`,
         )
         selectParts.push(...groupByParts)
     }
@@ -110,7 +110,7 @@ export function buildQuery(query: Query): {
     // Construct GROUP BY clause
     if (query.groupBy && query.groupBy.length > 0) {
         const groupByParts = query.groupBy.map(
-            (_, index) => `bucket_${index}`,
+            (f, index) => f.alias ?? `bucket_${index}`,
         )
         sql += ` GROUP BY ${groupByParts.join(', ')}`
     }
@@ -137,3 +137,41 @@ export function buildQuery(query: Query): {
 
     return {sql, params}
 }
+
+
+export type ExtractFieldAliases<T extends Field[]> = {
+    [K in keyof T]: T[K] extends { alias: string }
+        ? T[K]['alias']
+        : T[K]['name']
+}[number]
+
+// Rename and modify to work with Field[]
+export type FieldResult<T extends Field[]> = {
+    [K in ExtractFieldAliases<T>]: string
+}[]
+
+
+export type ExtractAliases<T extends Aggregation[]> = {
+    [K in keyof T]: T[K] extends { alias: string }
+        ? T[K]['alias']
+        : T[K]['field']['name']
+}[number]
+
+// Result type for a query with aggregations
+export type AggregationResult<T extends Aggregation[]> = {
+    [K in ExtractAliases<T>]: string
+}[]
+
+
+// Final QueryResult type
+export type QueryResult<T extends Query> = {
+    [K in (
+        T['aggregations'] extends Aggregation[]
+            ? ExtractAliases<T['aggregations']>
+            : never
+        ) | (
+        T['groupBy'] extends Field[]
+            ? ExtractFieldAliases<T['groupBy']>
+            : never
+        )]: string
+}[];

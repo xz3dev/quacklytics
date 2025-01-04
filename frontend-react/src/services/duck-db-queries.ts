@@ -1,28 +1,22 @@
 import {useQueries, useQuery, type UseQueryOptions} from "@tanstack/react-query";
 import {useDB} from "@app/duckdb/duckdb.tsx";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
-import {buildQuery, Query} from "@lib/queries.ts";
-import {Aggregation, AggregationResult} from "@lib/aggregations.ts";
+import {Query, QueryResult} from "@lib/queries.ts";
 
 export const DUCKDB_INSIGHT_QUERY_KEY = (project: string, uniqId: string) => ['duckdb', project, uniqId] as const
-
-type QueryResult<T extends Query> = T['aggregations'] extends Aggregation[]
-    ? AggregationResult<T['aggregations']>
-    : any[]
 
 const duckdbApi = {
     query: async <T extends Query>(db: DuckDbManager, query: T): Promise<
         QueryResult<T>
     > => {
-        const q = buildQuery(query)
-        return db.runQuery(q.sql, q.params).then((results) => results) as Promise<QueryResult<T>>
+        return db.runQuery(query).then((results) => results) as Promise<QueryResult<T>>
     }
 }
 
 export function useDuckDBQuery<T extends Query>(
     project: string,
     uniqId: string,
-    query: Query,
+    query: T,
     options?: Partial<UseQueryOptions<QueryResult<T>, Error>>,
 ) {
     const db = useDB()

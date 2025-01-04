@@ -3,7 +3,7 @@ import {TrendInsightContext} from "@app/insights/insight-context.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {FilterSelectorCard} from "@/components/filters/filter-selector-card";
-import {Plus, TrendingUp, X} from "lucide-react";
+import {ChartNoAxesColumnIncreasing, Plus, TrendingUp, X} from "lucide-react";
 import {FieldFilter} from "@/model/filters.ts";
 import {FilterSelector} from "@/components/filters/filter-selector.tsx";
 
@@ -46,6 +46,13 @@ export function TrendInsightSeriesOptions() {
         })
     }
 
+    function toggleVisualization(seriesIndex: number) {
+        updateFn?.((insight) => {
+            if(!insight.series?.[seriesIndex]) return
+            insight.series[seriesIndex].visualisation = insight.series[seriesIndex].visualisation === 'line' ? 'bar' : 'line'
+        })
+    }
+
     return (
         <div className="flex flex-col items-stretch gap-2">
             {
@@ -54,7 +61,13 @@ export function TrendInsightSeriesOptions() {
                         key={seriesIndex}
                         className="flex items-center gap-2 p-2 bg-muted/40 border border-border rounded-md"
                     >
-                        <TrendingUp className="w-5 h-5 text-muted-foreground mx-1"></TrendingUp>
+                        <Button
+                            variant="ghost"
+                            onClick={() => toggleVisualization(seriesIndex)}
+                        >
+                            {series.visualisation === 'line' && <TrendingUp className="w-5 h-5 text-muted-foreground mx-1"></TrendingUp>}
+                            {series.visualisation === 'bar' && <ChartNoAxesColumnIncreasing className="w-5 h-5 text-muted-foreground mx-1"></ChartNoAxesColumnIncreasing>}
+                        </Button>
                         {series.query?.filters.map((filter, filterIndex) => (
                             <FilterSelector
                                 key={filterIndex}

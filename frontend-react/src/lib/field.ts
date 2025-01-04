@@ -4,7 +4,7 @@ import { Field } from "@/model/filters"
 export function getFieldExpression(field: Field, castType?: string): string {
     let expression = ''
     const isJsonField = field.name.startsWith('$.') || field.isProperty
-    const nameCleaned = field.name.replace(/\$\./g, '')
+    const nameCleaned = (field.alias ?? field.name).replace(/\$\./g, '')
     if (isJsonField) {
         const jsonPath = `$.${nameCleaned}`
         expression = `CAST(json_extract(properties, '${jsonPath}') AS ${castType ?? 'VARCHAR'})`
@@ -17,14 +17,4 @@ export function getFieldExpression(field: Field, castType?: string): string {
     }
 
     return expression
-}
-
-export const idField: Field = {
-    name: 'id',
-    type: 'string',
-}
-
-export const userField: Field = {
-    name: 'user_id',
-    type: 'string',
 }

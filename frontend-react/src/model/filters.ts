@@ -6,6 +6,7 @@ export interface Field {
     name: string
     type: string
     isProperty?: boolean
+    alias?: string
 }
 
 export interface FieldFilter {
@@ -50,7 +51,7 @@ export const buildRangeFilters = (range: string | undefined): FieldFilter[] => {
 
 
 export const buildGroupByFilter = (timeBucket: TimeBucket): Required<Pick<Query, 'groupBy' | 'orderBy'>> => {
-    const alias = "bucket_0"
+    const alias = "trend_bucket"
     const dateTruncate =
         timeBucket === 'Daily'
             ? 'day'
@@ -64,6 +65,7 @@ export const buildGroupByFilter = (timeBucket: TimeBucket): Required<Pick<Query,
             {
                 name: filterString,
                 type: 'string',
+                alias,
             }
         ],
         orderBy: [
@@ -72,6 +74,7 @@ export const buildGroupByFilter = (timeBucket: TimeBucket): Required<Pick<Query,
                 field: {
                     name: alias,
                     type: 'number',
+                    alias,
                 }
             }
         ]

@@ -1,13 +1,16 @@
 // src/app/insights/trend/trend-insight-chart.tsx
 import {useDuckDBQueries} from "@/services/duck-db-queries"
 import {Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card"
-import {TrendAggregation, TrendInsight} from "@/model/trend-insight.ts";
+import {TrendInsight, TrendSeriesType} from "@/model/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
-import {renderQuery} from "@lib/renderQuery.tsx";
 import {useMemo} from "react";
 import {mergeQueries} from "@lib/queries.ts";
-import {AggregationResult} from "@lib/aggregations.ts";
 import {buildGroupByFilter, buildRangeFilters} from "@/model/filters.ts";
+import {Spinner} from "@/components/spinner.tsx";
+import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/ui/chart"
+import {Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis} from "recharts";
+import {format} from "date-fns";
+import {simpleHash} from "@lib/checksums.ts";
 
 interface Props {
     insight: TrendInsight
@@ -22,8 +25,7 @@ export function TrendInsightChart({insight}: Props) {
 
     // Create a query for each series
     const queries = useMemo(() =>
-            insight?.series?.map((series, index) => {
-
+            insight?.series?.map((series) => {
                 const query = mergeQueries(
                     series.query ?? {},
                     {
@@ -32,8 +34,9 @@ export function TrendInsightChart({insight}: Props) {
                         orderBy: [...bucketFilter.orderBy],
                     },
                 )
+                const hash = simpleHash(JSON.stringify(series) + JSON.stringify(insight.config))
                 return ({
-                    uniqId: `trend-${insight.id}-${index}`,
+                    uniqId: `trend-${hash}`,
                     query,
                     metadata: {
                         visualisation: series.visualisation,
@@ -41,7 +44,7 @@ export function TrendInsightChart({insight}: Props) {
                     },
                 });
             }) ?? []
-        , [insight?.series, insight?.id])
+        , [insight])
 
     const results = useDuckDBQueries(projectId, queries)
 
@@ -54,30 +57,155 @@ export function TrendInsightChart({insight}: Props) {
         [results, queries],
     )
 
-    function renderSeries(data: AggregationResult<TrendAggregation[]>, index: number) {
-        return data.map((row, i) => {
-            return <div className="flex flex-row items-center gap-2" key={`${index}-${i}`}>
-                <div>{i}:{row.result_value.toString()}</div>
-            </div>
-        })
+    // const chartConfig = useMemo(() => {
+    //     const c: ChartConfig = {}
+    //     for (let i = 0; i < seriesQueries.length; i++) {
+    //         c[i] = {
+    //             color: 'red',
+    //
+    //         }
+    //     }
+    //     return c
+    // }, [seriesQueries]);
+
+
+    const seriesData = useMemo(() => {
+        return seriesQueries
+            .map((q, index) => ({
+                rows: (q.data ?? []) as ResultRow[],
+                visualization: q.visualisation,
+                index,
+            } satisfies Series))
+    }, [seriesQueries])
+
+    const chartData: ChartData[] = useMemo(
+        () => buildChartData(seriesData),
+        [seriesData],
+    );
+
+    if (seriesQueries.some(q => q.status === 'error')) {
+        return <div>Error</div>
     }
 
+    if (seriesQueries.some(q => q.status === 'pending')) {
+        return <Spinner/>
+    }
     return (
         <Card>
             <CardHeader>
                 <CardTitle>{insight?.name}</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col">
-                    {seriesQueries.map((query, index) => (
-                        renderQuery(
-                            query,
-                            (data) => renderSeries(data, index),
-                            index,
-                        )
-                    ))}
-                </div>
+                <ChartContainer config={{}} className="aspect-auto w-full h-[400px]">
+                    <ComposedChart
+                        data={chartData}
+                        margin={{
+                            left: 12,
+                            right: 12,
+                            top: 12,
+                            bottom: 12,
+                        }}
+                    >
+                        <CartesianGrid vertical={false}/>
+                        <XAxis
+                            dataKey="date"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => format(new Date(value), 'yyyy-MM-dd')}
+                        />
+                        <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                        />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent indicator="dot"/>}
+                        />
+                        {seriesQueries.map((q, index) => {
+                            if(q.visualisation === 'bar') {
+                                return (
+                                    <Bar
+                                        key={`series-${index}`}
+                                        dataKey={`values.${index}`}
+                                        name={seriesQueries[index].name}
+                                        fillOpacity={0.2}
+                                        stroke={`hsl(var(--chart-${index+1}))`}
+                                        strokeOpacity={0.8}
+                                        fill={`hsl(var(--chart-${index+1}))`}
+                                    />
+                                )
+                            }
+                            return (
+                                q.visualisation === 'line' && <Line
+                                    key={`series-${index}`}
+                                    dataKey={`values.${index}`}
+                                    name={seriesQueries[index].name}
+                                    type="linear"
+                                    stroke={`hsl(var(--chart-${index+1}))`}
+                                    fillOpacity={0.4}
+                                />
+
+                            );
+                        })}
+                    </ComposedChart>
+                </ChartContainer>
+                <div className="w-8 h-8" style={{backgroundColor: "hsl(var(--chart-1))"}}></div>
+                <div className="w-8 h-8 bg-chart-2"></div>
+                <div className="w-8 h-8 bg-chart-3"></div>
+                <div className="w-8 h-8 bg-chart-4"></div>
+                <div className="w-8 h-8 bg-chart-5"></div>
             </CardContent>
         </Card>
     )
+}
+
+
+interface ResultRow {
+    trend_bucket: string
+    result_value: BigInt
+}
+
+interface Series {
+    rows: ResultRow[]
+    visualization: TrendSeriesType
+    index: number
+}
+
+interface ChartData {
+    date: string
+    values: Record<number, number> // Map series index to their values
+}
+
+
+function buildChartData(data: Series[]): ChartData[] {
+    const map = new Map<string, Record<number, number>>()
+    const seriesCount = data.length
+
+    // First pass: collect all dates and initialize with zeros for all series
+    data.forEach(({rows}) => {
+        rows.forEach(row => {
+            if (!map.has(row.trend_bucket)) {
+                const values: Record<number, number> = {}
+                // Initialize all series indices with 0
+                for (let i = 0; i < seriesCount; i++) {
+                    values[i] = 0
+                }
+                map.set(row.trend_bucket, values)
+            }
+        })
+    })
+
+    // Second pass: fill in actual values
+    data.forEach(({rows}, seriesIndex) => {
+        rows.forEach(row => {
+            map.get(row.trend_bucket)![seriesIndex] = Number(row.result_value)
+        })
+    })
+
+    return Array.from(map.entries()).map(([date, values]) => ({
+        date,
+        values,
+    }))
 }
