@@ -131,9 +131,9 @@ export function TrendInsightChart({insight}: Props) {
                                         dataKey={`values.${index}`}
                                         name={seriesQueries[index].name}
                                         fillOpacity={0.2}
-                                        stroke={`hsl(var(--chart-${index+1}))`}
+                                        stroke={`hsl(var(--chart-${(index+1) % 5}))`}
                                         strokeOpacity={0.8}
-                                        fill={`hsl(var(--chart-${index+1}))`}
+                                        fill={`hsl(var(--chart-${(index+1) % 5}))`}
                                     />
                                 )
                             }
@@ -143,7 +143,7 @@ export function TrendInsightChart({insight}: Props) {
                                     dataKey={`values.${index}`}
                                     name={seriesQueries[index].name}
                                     type="linear"
-                                    stroke={`hsl(var(--chart-${index+1}))`}
+                                    stroke={`hsl(var(--chart-${(index+1) % 5}))`}
                                     fillOpacity={0.4}
                                 />
 
