@@ -1,4 +1,4 @@
-import { Field, FieldFilter } from "@/model/filters"
+import {Field, FieldFilter} from "@/model/filters"
 import {Aggregation} from "@lib/aggregations.ts";
 import {getFieldExpression} from "@lib/field.ts";
 
@@ -27,6 +27,23 @@ export interface Query {
     aggregations?: Aggregation[]
     limit?: number
     offset?: number
+}
+
+export function mergeQueries(query: Query, other: Partial<Omit<Query, 'offset' | 'limit'>>): Query {
+    const merged: Query = {...query}
+
+    merged.select = mergeNullableArray(merged.select, other.select)
+    merged.filters = mergeNullableArray(merged.filters, other.filters)
+    merged.groupBy = mergeNullableArray(merged.groupBy, other.groupBy)
+    merged.orderBy = mergeNullableArray(merged.orderBy, other.orderBy)
+    merged.aggregations = mergeNullableArray(merged.aggregations, other.aggregations)
+    return merged
+}
+
+const mergeNullableArray = <T>(a: T[] | undefined, b: T[] | undefined): T[] => {
+    if (!a) return b ?? []
+    if (!b) return a
+    return [...a, ...b]
 }
 
 // Function to build the SQL query and parameters from a Query object
@@ -77,8 +94,14 @@ export function buildQuery(query: Query): {
 
         for (const filter of query.filters) {
             const fieldExpr = getFieldExpression(filter.field)
-            whereClauses.push(`${fieldExpr} ${filter.operator} ?`)
-            params.push(filter.value)
+            let valuePlaceholder = '?'
+            if (typeof filter.value === 'number') {
+                valuePlaceholder = '?::double'
+            } else if (filter.value instanceof Date) {
+                valuePlaceholder = 'epoch_ms(?::BIGINT)'
+            }
+            whereClauses.push(`${fieldExpr} ${filter.operator} ${valuePlaceholder}`)
+            params.push(filter.value instanceof Date ? filter.value.getTime() : filter.value)
         }
 
         sql += ` WHERE ${whereClauses.join(' AND ')}`
@@ -110,5 +133,7 @@ export function buildQuery(query: Query): {
         sql += ` OFFSET ${query.offset}`
     }
 
-    return { sql, params }
+    console.log(sql, params)
+
+    return {sql, params}
 }

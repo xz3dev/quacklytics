@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@apache-arrow/ts": "^18.1.0",
-    "@duckdb/duckdb-wasm": "^1.29.0",
+    "@duckdb/duckdb-wasm": "1.29.0",
     "@radix-ui/react-avatar": "^1.1.2",
     "@radix-ui/react-collapsible": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.4",

@@ -5,6 +5,7 @@ import {TimeBucket, timeBucketLabels} from "@/model/trend-insight.ts";
 import DateRangePicker from "@/components/date-ranges/data-range-picker.tsx";
 import {determineDateRange} from "@/model/InsightDateRange.ts";
 import {format} from "date-fns";
+import {CalendarRange} from "lucide-react";
 
 export function TrendInsightChartOptions() {
     const {data, updateFn} = useContext(TrendInsightContext)
@@ -24,13 +25,16 @@ export function TrendInsightChartOptions() {
     const renderRange = (range: string | undefined) => {
         if(!range) return <div>All time</div>
         const {start, end} = determineDateRange(range)
-        return <span>{format(start, 'LLL d, yyyy')} - {format(end, 'LLL d, yyyy')}</span>
+        return <span>{format(start, 'yyyy-MM-dd HH:mm')} - {format(end, 'yyyy-MM-dd HH:mm')}</span>
     }
 
     return (
         <>
             <div className="flex items-center gap-2">
-                <DateRangePicker onChange={(range) => handleDateRangeChange(range.value)}/>
+                <DateRangePicker
+                    onChange={(range) => handleDateRangeChange(range.value)}
+                    value={data?.config.duration}
+                />
 
                 <div className="text-sm text-muted-foreground">grouped by</div>
 
@@ -50,7 +54,8 @@ export function TrendInsightChartOptions() {
                     </SelectContent>
                 </Select>
 
-                <div className="pl-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 pl-4 text-xs text-muted-foreground">
+                    <CalendarRange className="w-4 h-4 text-muted-foreground"></CalendarRange>
                     {renderRange(data?.config.duration)}
                 </div>
 

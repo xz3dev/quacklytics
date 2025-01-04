@@ -15,12 +15,10 @@ import * as iso from "iso8601-duration"
 export const predefinedRanges = [
     {label: 'Today', value: 'today'},
     {label: 'Yesterday', value: 'yesterday'},
-    {label: 'Last 24 hours', value: 'P24H'},
+    {label: 'Last 24 hours', value: 'PT24H'},
     {label: 'Last 7 days', value: 'P7D'},
     {label: 'Last 14 days', value: 'P14D'},
     {label: 'Last 30 days', value: 'P30D'},
-    {label: 'Last 90 days', value: 'P90D'},
-    {label: 'Last 180 days', value: 'P180D'},
     {label: 'This month', value: 'thisMonth'},
     {label: 'Last month', value: 'lastMonth'},
     {label: 'Year to date', value: 'yearToDate'},
@@ -57,7 +55,7 @@ export const determineDateRange = (range: string | undefined): {
         }
     }
     if (range.startsWith('P')) {
-        const end = endOfDay(new Date())
+        const end = new Date()
         const duration = iso.parse(range)
         if (!duration) throw Error('Invalid duration')
         const seconds = iso.toSeconds(duration, end)
@@ -110,8 +108,8 @@ export const determineDateRange = (range: string | undefined): {
         // custom date range like this '2023-01-01 - 2023-01-10'
         const [start, end] = range.split(' - ')
         return {
-            start: new Date(start),
-            end: new Date(end),
+            start: startOfDay(new Date(start)),
+            end: endOfDay(new Date(end)),
         }
     }
     throw Error('Invalid date range')

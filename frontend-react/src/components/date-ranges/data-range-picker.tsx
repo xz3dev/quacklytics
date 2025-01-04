@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {ChevronDown} from 'lucide-react'
 import {
     DropdownMenu,
@@ -10,16 +10,28 @@ import {Dialog} from "@/components/ui/dialog.tsx"
 import {Button} from "@/components/ui/button.tsx"
 import {CustomDateRangeSelection} from "@/components/date-ranges/custom-date-range-selection.tsx"
 import {IncrementalDurationSelection} from "@/components/date-ranges/incremental-duration-selection.tsx"
-import {InsightDateRange, predefinedRanges} from "@/model/InsightDateRange.ts"
+import {determineLabel, InsightDateRange, predefinedRanges} from "@/model/InsightDateRange.ts"
 
 type Props = {
     onChange: (range: InsightDateRange) => void
+    value?: string
 }
 
-const DateRangePicker = ({onChange}: Props) => {
+const DateRangePicker = ({onChange, value}: Props) => {
     const [selectedRange, setSelectedRange] = useState<InsightDateRange | undefined>(undefined)
     const [isIncrementalModalOpen, setIsIncrementalModalOpen] = useState(false)
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false)
+
+    useEffect(() => {
+        if (value) {
+            setSelectedRange({
+                value,
+                label: determineLabel(value)
+            })
+        } else {
+            setSelectedRange(undefined)
+        }
+    }, [value])
 
 
     const handleSelection = (range: InsightDateRange) => {

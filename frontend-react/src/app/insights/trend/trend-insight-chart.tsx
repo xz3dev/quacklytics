@@ -5,8 +5,9 @@ import {TrendAggregation, TrendInsight} from "@/model/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
 import {renderQuery} from "@lib/renderQuery.tsx";
 import {useMemo} from "react";
-import {Query} from "@lib/queries.ts";
+import {mergeQueries} from "@lib/queries.ts";
 import {AggregationResult} from "@lib/aggregations.ts";
+import {buildGroupByFilter, buildRangeFilters} from "@/model/filters.ts";
 
 interface Props {
     insight: TrendInsight
@@ -15,20 +16,31 @@ interface Props {
 export function TrendInsightChart({insight}: Props) {
     const projectId = useProjectId()
 
+
+    const dateRangeFilter = buildRangeFilters(insight.config.duration)
+    const bucketFilter = buildGroupByFilter(insight.config.timeBucket)
+
     // Create a query for each series
     const queries = useMemo(() =>
-            insight?.series?.map((series, index) => ({
-                uniqId: `trend-${insight.id}-${index}`,
-                query: {
-                    filters: [],
-                    aggregations: [],
-                    ...(series.query ?? {}),
-                } satisfies Query,
-                metadata: {
-                    visualisation: series.visualisation,
-                    name: series.name
-                },
-            })) ?? []
+            insight?.series?.map((series, index) => {
+
+                const query = mergeQueries(
+                    series.query ?? {},
+                    {
+                        filters: [...dateRangeFilter],
+                        groupBy: [...bucketFilter.groupBy],
+                        orderBy: [...bucketFilter.orderBy],
+                    },
+                )
+                return ({
+                    uniqId: `trend-${insight.id}-${index}`,
+                    query,
+                    metadata: {
+                        visualisation: series.visualisation,
+                        name: series.name
+                    },
+                });
+            }) ?? []
         , [insight?.series, insight?.id])
 
     const results = useDuckDBQueries(projectId, queries)
@@ -45,7 +57,7 @@ export function TrendInsightChart({insight}: Props) {
     function renderSeries(data: AggregationResult<TrendAggregation[]>, index: number) {
         return data.map((row, i) => {
             return <div className="flex flex-row items-center gap-2" key={`${index}-${i}`}>
-                <div >{i}:{row.result_value.toString()}</div>
+                <div>{i}:{row.result_value.toString()}</div>
             </div>
         })
     }
