@@ -4,7 +4,7 @@ import {
     format,
     formatDuration,
     startOfDay,
-    startOfMonth,
+    startOfMonth, startOfYear,
     subDays,
     subMonths,
     subSeconds
@@ -96,7 +96,7 @@ export const determineDateRange = (range: string | undefined): {
     }
     if (range === 'yearToDate') {
         return {
-            start: endOfDay(new Date()),
+            start: startOfYear(new Date()),
             end: endOfDay(new Date()),
         }
     }
