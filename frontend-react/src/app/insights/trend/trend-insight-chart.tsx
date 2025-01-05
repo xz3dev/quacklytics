@@ -145,6 +145,7 @@ export function TrendInsightChart({insight}: Props) {
                                     type="linear"
                                     stroke={`hsl(var(--chart-${(index+1) % 5}))`}
                                     fillOpacity={0.4}
+                                    strokeWidth={2}
                                 />
 
                             );
