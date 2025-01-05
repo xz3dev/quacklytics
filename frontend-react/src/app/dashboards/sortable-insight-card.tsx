@@ -1,6 +1,5 @@
 import {useSortable} from '@dnd-kit/sortable'
 import {CSS} from '@dnd-kit/utilities'
-import {GripVertical} from "lucide-react"
 import {InsightCard} from "@app/insights/insight-card.tsx";
 
 interface Props {
@@ -35,9 +34,8 @@ export function SortableInsightCard({insight}: Props) {
             <div
                 {...attributes}
                 {...listeners}
-                className="absolute left-2 top-2 cursor-move opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute left-2 top-2 right-2 h-4 cursor-move opacity-0 group-hover:opacity-100 transition-opacity z-10"
             >
-                <GripVertical className="h-5 w-5 text-muted-foreground" />
             </div>
             <InsightCard insightId={insight.id} />
         </div>

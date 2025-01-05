@@ -71,7 +71,7 @@ export function DashboardManageInsights({dashboard}: Props) {
                     <DialogTitle>Manage Dashboard Insights</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="h-[400px] pr-4">
-                    <div className="space-y-4">
+                    <div>
                         <div className="font-medium text-sm text-muted-foreground mb-2">
                             Selected Insights ({selectedInsights.size})
                         </div>
@@ -82,7 +82,7 @@ export function DashboardManageInsights({dashboard}: Props) {
                             return (
                                 <div
                                     key={insight.id}
-                                    className={`flex items-center space-x-2 p-2 hover:bg-accent rounded-lg`}
+                                    className={`flex items-center space-x-2 py-3`}
                                 >
                                     <Checkbox
                                         id={`insight-${insight.id}`}
