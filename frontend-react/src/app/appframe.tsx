@@ -1,4 +1,4 @@
-import {Outlet} from "react-router";
+import {Link, Outlet} from "react-router";
 import {AppSidebar} from "@/components/app-sidebar.tsx";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.tsx";
 import {Separator} from "@/components/ui/separator.tsx";
@@ -35,15 +35,29 @@ export function AppFrame() {
                         <Separator orientation="vertical" className="mr-2 h-4"/>
                         <Breadcrumb>
                             <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">
-                                        Building Your Application
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block"/>
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                                </BreadcrumbItem>
+                                {sidebarData.breadcrumbs.map((item, index) => (
+                                    <div
+                                        key={item.url}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <BreadcrumbItem className="hidden md:block">
+                                            {index === sidebarData.breadcrumbs.length - 1 ? (
+                                                <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                            ) : (
+                                                <BreadcrumbLink
+                                                    asChild={true}
+                                                >
+                                                    <Link to={item.url}>
+                                                        {item.title}
+                                                    </Link>
+                                                </BreadcrumbLink>
+                                            )}
+                                        </BreadcrumbItem>
+                                        {index < sidebarData.breadcrumbs.length - 1 && (
+                                            <BreadcrumbSeparator />
+                                        )}
+                                    </div>
+                                ))}
                             </BreadcrumbList>
                         </Breadcrumb>
                     </header>

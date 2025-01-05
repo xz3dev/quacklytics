@@ -8,7 +8,7 @@ import {SidebarData} from "@/hooks/use-sidebar-data.tsx";
 
 
 export function AppSidebar(
-    data: SidebarData & {
+    data: Pick<SidebarData, 'navMain'> & {
         user: {
             name: string
             email: string
