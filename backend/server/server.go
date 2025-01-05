@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/remember"
 	"gorm.io/gorm"
@@ -43,23 +42,25 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	}
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: setupMux(config, appDb, projectDbs),
+		Handler: setupMux(appDb, projectDbs),
 	}
 
 	log.Printf("Starting server on port %d", port)
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func setupMux(c Config, db *gorm.DB, dbs appdb.ProjectDBLookup) *chi.Mux {
+func setupMux(db *gorm.DB, dbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
 	//setupCORS(mux, c)
 	setupMiddleware(mux)
 
-	mux.Mount("/api", http.StripPrefix("/api", buildRouter(db, dbs)))
+	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
 	return mux
 }
 
-func buildRouter(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) *chi.Mux {
+func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
 
 	// Mount Authboss
@@ -118,16 +119,16 @@ func setupMiddleware(r *chi.Mux) {
 	r.Use(sv_mw.AuthbossMW(ab))
 }
 
-func setupCORS(mux *chi.Mux, c Config) {
-	mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{
-			c.FrontendUrl,
-			c.Url,
-		},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "Set-Cookie"},
-		ExposedHeaders:   []string{"Set-Cookie"},
-		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
-	}))
-}
+//func setupCORS(mux *chi.Mux, c Config) {
+//	mux.Use(cors.Handler(cors.Options{
+//		AllowedOrigins: []string{
+//			c.FrontendUrl,
+//			c.Url,
+//		},
+//		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+//		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "Set-Cookie"},
+//		ExposedHeaders:   []string{"Set-Cookie"},
+//		AllowCredentials: true,
+//		MaxAge:           300, // Maximum value not ignored by any of major browsers
+//	}))
+//}
