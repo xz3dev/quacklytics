@@ -40,7 +40,9 @@ func listDashboards(w http.ResponseWriter, r *http.Request) {
 	loadDashboards(db).Find(&dashboards)
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(dashboards)
+	if err := json.NewEncoder(w).Encode(dashboards); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func createDashboard(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +64,9 @@ func createDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(dashboard)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func getDashboard(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +80,9 @@ func getDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(dashboard)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func updateDashboard(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +109,9 @@ func updateDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(dashboard)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func deleteDashboard(w http.ResponseWriter, r *http.Request) {
@@ -151,5 +159,7 @@ func setDashboardInsights(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(dashboard)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

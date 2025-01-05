@@ -42,7 +42,7 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	}
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: setupMux(appDb, projectDbs),
+		Handler: setupMux(projectDbs),
 	}
 
 	log.Printf("Starting server on port %d", port)
@@ -51,9 +51,8 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	}
 }
 
-func setupMux(db *gorm.DB, dbs appdb.ProjectDBLookup) *chi.Mux {
+func setupMux(dbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
-	//setupCORS(mux, c)
 	setupMiddleware(mux)
 
 	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
