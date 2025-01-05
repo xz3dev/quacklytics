@@ -35,5 +35,5 @@ PUT {{baseUrl}}/dashboards/1/insights
 Content-Type: application/json
 
 {
-  "insight_ids": [2, 3]
+  "insight_ids": [3,2]
 }

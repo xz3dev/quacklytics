@@ -23,6 +23,7 @@ var ProjectDBs ProjectDBLookup = make(ProjectDBLookup)
 
 var projectTables = []interface{}{
 	&model.Dashboard{},
+	&model.DashboardInsight{},
 	&model.Insight{},
 	&model.Series{},
 	&schema.EventSchema{},

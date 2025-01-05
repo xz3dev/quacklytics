@@ -4,8 +4,10 @@ import (
 	"analytics/model"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -20,56 +22,74 @@ func SetupDashoardRoutes(mux chi.Router) {
 	mux.Put("/dashboards/{id}/home", setHomeDashboard)
 }
 
-func setHomeDashboard(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	db := sv_mw.GetProjectDB(r, w)
-
-	// First, set home=false for all dashboards
-	if result := db.Model(&model.Dashboard{}).
-		Where("home = true").
-		Update("home", false); result.Error != nil {
-		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
-		return
+func parseDashboardId(id string) (int, error) {
+	intId, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, err
 	}
-
-	// Then set home=true for the specified dashboard
-	var dashboard model.Dashboard
-	if result := db.First(&dashboard, id); result.Error != nil {
-		http.Error(w, "Dashboard not found", http.StatusNotFound)
-		return
-	}
-
-	dashboard.Home = true
-	if result := db.Save(&dashboard); result.Error != nil {
-		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Return the updated dashboard
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(dashboard)
-}
-
-func loadDashboards(db *gorm.DB) *gorm.DB {
-	return db.Preload("Insights.Series")
+	return intId, nil
 }
 
 func loadDashboard(db *gorm.DB, id string) (*model.Dashboard, error) {
-	intId, err := strconv.Atoi(id)
+	var dashboard model.Dashboard
+	dashboardId, err := parseDashboardId(id)
 	if err != nil {
 		return nil, err
 	}
-	var dashboard model.Dashboard
-	result := db.Preload("Insights.Series").First(&dashboard, intId)
-	return &dashboard, result.Error
+
+	// First get the dashboard
+	if err := db.First(&dashboard, dashboardId).Error; err != nil {
+		return nil, err
+	}
+
+	// Then get insights with order
+	var insights []model.Insight
+	err = db.Table("insights").
+		Select("insights.*").
+		Joins("JOIN dashboard_insights ON dashboard_insights.insight_id = insights.id").
+		Where("dashboard_insights.dashboard_id = ?", dashboardId).
+		Order("dashboard_insights.sort ASC").
+		Find(&insights).Error
+
+	dashboard.Insights = insights
+	return &dashboard, err
+}
+
+func loadDashboards(db *gorm.DB) ([]model.Dashboard, error) {
+	var dashboards []model.Dashboard
+
+	// First get all dashboards
+	if err := db.Find(&dashboards).Error; err != nil {
+		return nil, err
+	}
+
+	// For each dashboard, load its insights
+	for i := range dashboards {
+		var insights []model.Insight
+		err := db.Table("insights").
+			Select("insights.*").
+			Joins("JOIN dashboard_insights ON dashboard_insights.insight_id = insights.id").
+			Where("dashboard_insights.dashboard_id = ?", dashboards[i].ID).
+			Order("dashboard_insights.sort ASC").
+			Find(&insights).Error
+
+		if err != nil {
+			return nil, err
+		}
+
+		dashboards[i].Insights = insights
+	}
+
+	return dashboards, nil
 }
 
 func listDashboards(w http.ResponseWriter, r *http.Request) {
-	var dashboards []model.Dashboard
 	db := sv_mw.GetProjectDB(r, w)
 
-	loadDashboards(db).Find(&dashboards)
-
+	dashboards, err := loadDashboards(db)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(dashboards); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -171,25 +191,78 @@ func setDashboardInsights(w http.ResponseWriter, r *http.Request) {
 
 	db := sv_mw.GetProjectDB(r, w)
 
-	dashboard, err := loadDashboard(db, id)
-	if err != nil {
-		http.Error(w, "Dashboard not loaded: "+err.Error(), http.StatusNotFound)
+	var dashboard model.Dashboard
+	if result := db.First(&dashboard, id); result.Error != nil {
+		http.Error(w, "Dashboard not found", http.StatusNotFound)
 		return
 	}
 
-	var insights []model.Insight
-	if result := db.Find(&insights, input.IDs); result.Error != nil {
+	// Begin transaction
+	tx := db.Begin()
+
+	// Clear existing associations
+	if err := tx.Model(&dashboard).Association("Insights").Clear(); err != nil {
+		tx.Rollback()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Create new associations with sort
+	for sort, insightID := range input.IDs {
+		if err := tx.Exec(`
+            INSERT INTO dashboard_insights (dashboard_id, insight_id, sort)
+            VALUES (?, ?, ?)
+        `, dashboard.ID, insightID, sort).Error; err != nil {
+			tx.Rollback()
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	log.Printf("Updated dashboard %d with %d insights", dashboard.ID, len(input.IDs))
+	dashboardUpdated, err := loadDashboard(tx, fmt.Sprintf("%d", dashboard.ID))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dashboardUpdated)
+}
+
+func setHomeDashboard(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	db := sv_mw.GetProjectDB(r, w)
+
+	// First, set home=false for all dashboards
+	if result := db.Model(&model.Dashboard{}).
+		Where("home = true").
+		Update("home", false); result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := db.Model(dashboard).Association("Insights").Replace(insights); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Then set home=true for the specified dashboard
+	var dashboard model.Dashboard
+	if result := db.First(&dashboard, id); result.Error != nil {
+		http.Error(w, "Dashboard not found", http.StatusNotFound)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	dashboard.Home = true
+	if result := db.Save(&dashboard); result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	// Return the updated dashboard
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dashboard)
 }
