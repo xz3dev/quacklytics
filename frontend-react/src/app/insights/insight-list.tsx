@@ -101,7 +101,7 @@ export function InsightsList({filter, sort, title}: Props) {
                 <TableHeader>
                     <TableRow>
                         <TableHead className="w-10"></TableHead>
-                        <TableHead>Name</TableHead>
+                        <TableHead className="w-full">Name</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead>Updated</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -138,10 +138,10 @@ export function InsightsList({filter, sort, title}: Props) {
                                     <ProjectLink to={`/insights/${insight.id}`}>{insight.name}</ProjectLink>
                                 )}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="whitespace-nowrap">
                                 {insight.createdAt && formatDistance(new Date(insight.createdAt), new Date(), {addSuffix: true})}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="whitespace-nowrap">
                                 {insight.updatedAt && formatDistance(new Date(insight.updatedAt), new Date(), {addSuffix: true})}
                             </TableCell>
                             <TableCell className="text-right">
