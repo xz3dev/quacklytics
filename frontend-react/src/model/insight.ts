@@ -8,6 +8,7 @@ export interface Insight {
     createdAt?: string;
     updatedAt?: string;
     type: InsightType;
+    favorite: boolean
 }
 
 export type UsableInsight = TrendInsight

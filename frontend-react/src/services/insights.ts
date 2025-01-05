@@ -83,6 +83,10 @@ export function useUpdateInsight(project: string) {
     return useMutation({
         mutationFn: (insight: Insight) => insightsApi.updateInsight({project, insight}),
         onSuccess: (updatedInsight) => {
+            queryClient.setQueryData<Insight[]>(
+                INSIGHTS_KEY(project),
+                (old) => old?.map((o) => o.id === updatedInsight.id ? updatedInsight : o),
+            )
             queryClient.setQueryData<Insight>(
                 INSIGHT_KEY(project, updatedInsight.id),
                 () => updatedInsight,

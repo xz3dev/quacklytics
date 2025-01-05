@@ -12,9 +12,10 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
-import {MoreHorizontal} from "lucide-react"
+import {MoreHorizontal, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
+import {cn} from "@lib/utils.ts";
 
 export function InsightsList() {
     const projectId = useProjectId()
@@ -41,6 +42,7 @@ export function InsightsList() {
                     timeBucket: 'Daily',
                     duration: 'P4W',
                 },
+                favorite: false,
             })
             setNewInsightName("")
             setIsCreateOpen(false)
@@ -55,6 +57,10 @@ export function InsightsList() {
     const handleSaveEdit = async (insight: Insight) => {
         await updateInsightMutation.mutateAsync({...insight, name: editingName})
         setEditingId(null)
+    }
+
+    const toggleFavorite = async (insight: Insight) => {
+        await updateInsightMutation.mutateAsync({...insight, favorite: !insight.favorite})
     }
 
     return (
@@ -84,7 +90,7 @@ export function InsightsList() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>ID</TableHead>
+                        <TableHead className="w-10"></TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead>Updated</TableHead>
@@ -94,7 +100,23 @@ export function InsightsList() {
                 <TableBody>
                     {insights.map((insight) => (
                         <TableRow key={insight.id}>
-                            <TableCell>{insight.id}</TableCell>
+                            <TableCell>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => toggleFavorite(insight)}
+                                >
+                                    <Star
+                                        className={cn(
+                                            "h-4 w-4",
+                                            insight.favorite
+                                                ? "fill-current text-yellow-400"
+                                                : "text-muted-foreground"
+                                        )}
+                                    />
+                                </Button>
+                            </TableCell>
                             <TableCell>
                                 {editingId === insight.id ? (
                                     <Input

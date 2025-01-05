@@ -6,10 +6,11 @@ import (
 )
 
 type InsightInput struct {
-	Name   string    `json:"name" gorm:"size:255;not null"`
-	Type   string    `json:"type" gorm:"size:255;not null;default:'Trend'"`
-	Series *[]Series `json:"series"`
-	Config JSON      `json:"config" gorm:"type:json;not null"`
+	Name     string    `json:"name" gorm:"size:255;not null"`
+	Type     string    `json:"type" gorm:"size:255;not null;default:'Trend'"`
+	Favorite bool      `json:"favorite" gorm:"default:false"`
+	Series   *[]Series `json:"series"`
+	Config   JSON      `json:"config" gorm:"type:json;not null"`
 }
 
 type Insight struct {
@@ -19,6 +20,7 @@ type Insight struct {
 
 func (i *Insight) ApplyInput(input InsightInput) {
 	i.Name = input.Name
+	i.Favorite = input.Favorite
 	if input.Series != nil {
 		i.Series = input.Series
 	}
