@@ -6,20 +6,24 @@ import {useMemo} from "react";
 export function useSidebarData(): SidebarData {
     const projectId = useProjectId()
     const isInsights = useMatch('/app/:projectid/insights')
+    const isInsight = useMatch('/app/:projectid/insights/:insightid')
     const isEvents = useMatch('/app/:projectid/events')
-    const isAnalytics = !!isEvents || !!isInsights
+    const isAnalytics = !!isEvents || !!isInsights || !!isInsight
 
     const breadcrumbs = useMemo(() => {
         const items: BreadcrumbItem[] = [
-            { title: 'Home', url: `/app/${projectId}` }
         ]
 
         if (isAnalytics) {
-            items.push({ title: 'Analytics', url: '#' })
+            items.push({ title: 'Analytics', url: `/app/${projectId}` })
         }
 
-        if (isInsights) {
-            items.push({ title: 'Insights', url: `/app/${projectId}/insights`, isActive: true })
+        if (isInsights || isInsight) {
+            items.push({ title: 'Insights', url: `/app/${projectId}/insights`, isActive: !isInsight })
+        }
+
+        if(isInsight) {
+            items.push({ title: 'Insight', url: `/app/${projectId}/insights/${isInsight.params.insightid}`, isActive: true })
         }
 
         if (isEvents) {
@@ -34,7 +38,7 @@ export function useSidebarData(): SidebarData {
         navMain: [
             {
                 title: "Analytics",
-                url: "#",
+                url: `/app/${projectId}`,
                 icon: ChartLine,
                 isActive: isAnalytics,
                 items: [

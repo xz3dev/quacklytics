@@ -41,10 +41,14 @@ export function NavMain({
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title} isActive={item.isActive}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                <SidebarMenuButton tooltip={item.title} isActive={item.isActive} className="flex items-stretch gap-2">
+                  {/*<div className="flex items-stretch gap-2">*/}
+                    <Link to={item.url} className="flex items-stretch gap-2 flex-shrink-0">
+                      {item.icon && <item.icon className="w-4 h-4"/>}
+                      <span>{item.title}</span>
+                    </Link>
+                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  {/*</div>*/}
                 </SidebarMenuButton>
               </CollapsibleTrigger>
               <CollapsibleContent>
