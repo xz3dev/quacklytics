@@ -7,14 +7,12 @@ import {useUpdateInsight} from "@/services/insights.ts";
 import {TrendInsightChart} from "@app/insights/trend/trend-insight-chart.tsx";
 import {TrendInsightChartOptions} from "@app/insights/trend/trend-insight-chart-options.tsx";
 import {TrendInsight} from "@/model/trend-insight.ts";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 
-interface Props {
-    readOnly?: boolean
-}
 
-export function TrendInsightView({readOnly}: Props) {
+export function TrendInsightView() {
     const {data, update} = useContext(TrendInsightContext)
-    const {isChanged, original, updateWorkingCopy} = useContext(BaseInsightContext)
+    const {isChanged, original, updateWorkingCopy, readOnly} = useContext(BaseInsightContext)
 
     const updater = useUpdateInsight(useProjectId())
 
@@ -45,7 +43,16 @@ export function TrendInsightView({readOnly}: Props) {
             </div>}
             {!readOnly && <TrendInsightSeriesOptions/>}
             {!readOnly && <TrendInsightChartOptions/>}
-            {data && <TrendInsightChart insight={data}/>}
+            {data && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{data?.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <TrendInsightChart insight={data}/>
+                    </CardContent>
+                </Card>
+            )}
         </>
     )
 }

@@ -4,12 +4,15 @@ import {Spinner} from "@/components/spinner.tsx";
 import {Insight} from "@/model/insight.ts";
 import {BaseInsightContext, TrendInsightContext} from "@app/insights/insight-context";
 import {TrendInsightView} from "@app/insights/trend/trend-insight-view.tsx";
-import {useInsightId} from "@/hooks/use-insight-id.tsx";
 import {useEffect, useState} from "react";
 import {TrendInsight} from "@/model/trend-insight.ts";
 
-export function InsightView() {
-    const insightId = useInsightId()
+interface Props {
+    insightId: number
+    readOnly?: boolean
+}
+
+export function InsightView({insightId, readOnly}: Props) {
     const projectId = useProjectId()
 
     const insightData = useInsight(projectId, insightId)
@@ -49,7 +52,7 @@ export function InsightView() {
     }
 
     return (<>
-        <BaseInsightContext.Provider value={{isChanged, original: insightData.data, updateWorkingCopy}}>
+        <BaseInsightContext.Provider value={{isChanged, original: insightData.data, updateWorkingCopy, readOnly}}>
             {renderInsight(insightData.data)}
         </BaseInsightContext.Provider>
     </>)

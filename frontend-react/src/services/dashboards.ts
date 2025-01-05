@@ -116,19 +116,19 @@ export function useUpdateDashboard(project: string) {
 
 export function useDashboard(
     project: string,
-    id: number,
+    dashboardId: number,
     options?: Partial<UseQueryOptions<Dashboard, Error>>
 ) {
     const queryClient = useQueryClient()
 
     return useQuery<Dashboard, Error>({
-        queryKey: DASHBOARD_KEY(project, id),
-        queryFn: () => dashboardsApi.getDashboard({project, id}),
+        queryKey: DASHBOARD_KEY(project, dashboardId),
+        queryFn: () => dashboardsApi.getDashboard({project, id: dashboardId}),
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: true,
         placeholderData: () => {
             const dashboards = queryClient.getQueryData<Dashboard[]>(DASHBOARDS_KEY(project))
-            return dashboards?.find(dashboard => dashboard.id === id)
+            return dashboards?.find(dashboard => dashboard.id === dashboardId)
         },
         ...options,
     })

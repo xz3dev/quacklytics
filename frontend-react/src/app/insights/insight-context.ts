@@ -13,6 +13,7 @@ export const BaseInsightContext = createContext<{
     original?: Insight,
     updateWorkingCopy?: (insight: Insight) => void,
     isChanged: boolean,
+    readOnly?: boolean
 }>({
     isChanged: false,
 })

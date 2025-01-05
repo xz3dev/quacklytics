@@ -1,6 +1,5 @@
 // src/app/insights/trend/trend-insight-chart.tsx
 import {useDuckDBQueries} from "@/services/duck-db-queries"
-import {Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card"
 import {TrendInsight, TrendSeriesType} from "@/model/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
 import {useMemo} from "react";
@@ -57,17 +56,6 @@ export function TrendInsightChart({insight}: Props) {
         [results, queries],
     )
 
-    // const chartConfig = useMemo(() => {
-    //     const c: ChartConfig = {}
-    //     for (let i = 0; i < seriesQueries.length; i++) {
-    //         c[i] = {
-    //             color: 'red',
-    //
-    //         }
-    //     }
-    //     return c
-    // }, [seriesQueries]);
-
 
     const seriesData = useMemo(() => {
         return seriesQueries
@@ -91,69 +79,67 @@ export function TrendInsightChart({insight}: Props) {
         return <Spinner/>
     }
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{insight?.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ChartContainer config={{}} className="aspect-auto w-full h-[400px]">
-                    <ComposedChart
-                        data={chartData}
-                        margin={{
-                            left: 12,
-                            right: 12,
-                            top: 12,
-                            bottom: 12,
-                        }}
-                    >
-                        <CartesianGrid vertical={false}/>
-                        <XAxis
-                            dataKey="date"
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                            tickFormatter={(value) => format(new Date(value), 'yyyy-MM-dd')}
+        <ChartContainer config={{}} className="aspect-auto w-full h-[400px]">
+            <ComposedChart
+                data={chartData}
+                margin={{
+                    left: 12,
+                    right: 12,
+                    top: 12,
+                    bottom: 12,
+                }}
+            >
+                <CartesianGrid vertical={false}/>
+                <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    padding={{left: 0, right: 0}}
+                    tickFormatter={(value) => format(new Date(value), 'yyyy-MM-dd')}
+                />
+                <YAxis
+                    orientation="left"
+                    tickLine={false}
+                    axisLine={false}
+                    tickCount={2}
+                    width={5}
+                />
+                <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot"/>}
+                />
+                {seriesQueries.map((q, index) => {
+                    if (q.visualisation === 'bar') {
+                        return (
+                            <Bar
+                                key={`series-${index}`}
+                                dataKey={`values.${index}`}
+                                name={seriesQueries[index].name}
+                                fillOpacity={0.2}
+                                stroke={`hsl(var(--chart-${(index + 1) % 5}))`}
+                                strokeOpacity={0.8}
+                                fill={`hsl(var(--chart-${(index + 1) % 5}))`}
+                                isAnimationActive={false}
+                            />
+                        )
+                    }
+                    return (
+                        q.visualisation === 'line' && <Line
+                            key={`series-${index}`}
+                            dataKey={`values.${index}`}
+                            name={seriesQueries[index].name}
+                            type="linear"
+                            stroke={`hsl(var(--chart-${(index + 1) % 5}))`}
+                            fillOpacity={0.4}
+                            strokeWidth={2}
+                            isAnimationActive={false}
                         />
-                        <YAxis
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                        />
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent indicator="dot"/>}
-                        />
-                        {seriesQueries.map((q, index) => {
-                            if(q.visualisation === 'bar') {
-                                return (
-                                    <Bar
-                                        key={`series-${index}`}
-                                        dataKey={`values.${index}`}
-                                        name={seriesQueries[index].name}
-                                        fillOpacity={0.2}
-                                        stroke={`hsl(var(--chart-${(index+1) % 5}))`}
-                                        strokeOpacity={0.8}
-                                        fill={`hsl(var(--chart-${(index+1) % 5}))`}
-                                    />
-                                )
-                            }
-                            return (
-                                q.visualisation === 'line' && <Line
-                                    key={`series-${index}`}
-                                    dataKey={`values.${index}`}
-                                    name={seriesQueries[index].name}
-                                    type="linear"
-                                    stroke={`hsl(var(--chart-${(index+1) % 5}))`}
-                                    fillOpacity={0.4}
-                                    strokeWidth={2}
-                                />
 
-                            );
-                        })}
-                    </ComposedChart>
-                </ChartContainer>
-            </CardContent>
-        </Card>
+                    );
+                })}
+            </ComposedChart>
+        </ChartContainer>
     )
 }
 

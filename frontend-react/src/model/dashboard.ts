@@ -1,3 +1,4 @@
+import {Insight} from "@/model/insight.ts";
 
 
 export interface Dashboard {
@@ -7,6 +8,7 @@ export interface Dashboard {
     updatedAt?: string;
     favorite: boolean
     home: boolean
+    insights: Insight[]
 }
 
 export interface DashboardInput {
