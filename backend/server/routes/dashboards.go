@@ -17,6 +17,37 @@ func SetupDashoardRoutes(mux chi.Router) {
 	mux.Put("/dashboards/{id}", updateDashboard)
 	mux.Delete("/dashboards/{id}", deleteDashboard)
 	mux.Put("/dashboards/{id}/insights", setDashboardInsights)
+	mux.Put("/dashboards/{id}/home", setHomeDashboard)
+}
+
+func setHomeDashboard(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	db := sv_mw.GetProjectDB(r, w)
+
+	// First, set home=false for all dashboards
+	if result := db.Model(&model.Dashboard{}).
+		Where("home = true").
+		Update("home", false); result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Then set home=true for the specified dashboard
+	var dashboard model.Dashboard
+	if result := db.First(&dashboard, id); result.Error != nil {
+		http.Error(w, "Dashboard not found", http.StatusNotFound)
+		return
+	}
+
+	dashboard.Home = true
+	if result := db.Save(&dashboard); result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return the updated dashboard
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dashboard)
 }
 
 func loadDashboards(db *gorm.DB) *gorm.DB {
@@ -52,9 +83,8 @@ func createDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dashboard := model.Dashboard{
-		Name: input.Name,
-	}
+	dashboard := model.Dashboard{}
+	dashboard.ApplyInput(input)
 
 	db := sv_mw.GetProjectDB(r, w)
 
@@ -101,7 +131,7 @@ func updateDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dashboard.Name = input.Name
+	dashboard.ApplyInput(input)
 
 	if result := db.Save(dashboard); result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)

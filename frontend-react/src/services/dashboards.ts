@@ -38,6 +38,15 @@ const dashboardsApi = {
             { insight_ids: params.insightIds }
         )
     },
+
+    setHomeDashboard: async (params: {
+        project: string,
+        dashboardId: number
+    }): Promise<Dashboard> => {
+        return http.put<Dashboard>(
+            `${params.project}/dashboards/${params.dashboardId}/home`
+        )
+    },
 }
 
 // Query hook with options
@@ -148,6 +157,34 @@ export function useSetDashboardInsights(project: string) {
             queryClient.setQueryData<Dashboard>(
                 DASHBOARD_KEY(project, updatedDashboard.id),
                 () => updatedDashboard,
+            )
+        },
+    })
+}
+
+export function useSetHomeDashboard(project: string) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (dashboardId: number) =>
+            dashboardsApi.setHomeDashboard({
+                project,
+                dashboardId
+            }),
+        onSuccess: (updatedDashboard) => {
+            // Update the dashboards list, ensuring only one dashboard has home=true
+            queryClient.setQueryData<Dashboard[]>(
+                DASHBOARDS_KEY(project),
+                (old = []) => old.map((dashboard) => ({
+                    ...dashboard,
+                    home: dashboard.id === updatedDashboard.id
+                }))
+            )
+
+            // Update the individual dashboard cache
+            queryClient.setQueryData<Dashboard>(
+                DASHBOARD_KEY(project, updatedDashboard.id),
+                () => updatedDashboard
             )
         },
     })

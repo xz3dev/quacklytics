@@ -45,7 +45,7 @@ export function useSidebarData(): SidebarData {
                 items: [
                     {
                         title: "Dashboards",
-                        url: "/app/${projectId}/dashboards",
+                        url: `/app/${projectId}/dashboards`,
                     },
                     {
                         title: "Insights",

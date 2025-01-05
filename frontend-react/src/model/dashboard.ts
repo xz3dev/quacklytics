@@ -6,6 +6,7 @@ export interface Dashboard {
     createdAt?: string;
     updatedAt?: string;
     favorite: boolean
+    home: boolean
 }
 
 export interface DashboardInput {
