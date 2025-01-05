@@ -17,9 +17,15 @@ import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
 import {cn} from "@lib/utils.ts";
 
-export function InsightsList() {
+interface Props {
+    filter?: (i: Insight) => boolean
+    sort?: (i1: Insight, i2: Insight) => number
+    title?: string
+}
+
+export function InsightsList({filter, sort, title}: Props) {
     const projectId = useProjectId()
-    const {data: insights = [], isLoading, error} = useInsights(projectId)
+    const {data: allInsights = [], isLoading, error} = useInsights(projectId)
     const createInsightMutation = useCreateInsight(projectId)
     const updateInsightMutation = useUpdateInsight(projectId)
     const deleteInsightMutation = useDeleteInsight(projectId)
@@ -31,6 +37,10 @@ export function InsightsList() {
 
     if (isLoading) return <div>Loading...</div>
     if (error) return <div>Error: {error.message}</div>
+
+    const insights = allInsights.filter(filter ?? (() => true))
+    insights.sort(sort ?? ((i1, i2) => (i2.favorite ? 1 : 0) - (i1.favorite ? 1 : 0)))
+
 
     const handleCreate = async () => {
         if (newInsightName.trim()) {
@@ -66,7 +76,7 @@ export function InsightsList() {
     return (
         <div className="p-4">
             <div className="mb-4 flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Insights</h2>
+                <h2 className="text-2xl font-bold">{title ?? "Insights"}</h2>
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
                         <Button>Create New Insight</Button>

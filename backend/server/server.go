@@ -102,11 +102,10 @@ func setupPrivateEventRoutes(mux chi.Router) {
 }
 
 func setupAnalyticsRoutes(mux chi.Router) {
-	mux.Get("/dashboards", routes.Dashboards)
-	mux.Post("/dashboards", routes.CreateDashboard)
 	mux.Get("/schema", routes.Schema)
 	//mux.Get("/insights/", ListInsights)
 	routes.SetupInsightRoutes(mux)
+	routes.SetupDashoardRoutes(mux)
 }
 
 func setupMiddleware(r *chi.Mux) {

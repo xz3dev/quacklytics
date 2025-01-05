@@ -5,10 +5,11 @@ import {useMemo} from "react";
 
 export function useSidebarData(): SidebarData {
     const projectId = useProjectId()
+    const isHome = useMatch('/app/:projectid')
     const isInsights = useMatch('/app/:projectid/insights')
     const isInsight = useMatch('/app/:projectid/insights/:insightid')
     const isEvents = useMatch('/app/:projectid/events')
-    const isAnalytics = !!isEvents || !!isInsights || !!isInsight
+    const isAnalytics = !!isHome || !!isEvents || !!isInsights || !!isInsight
 
     const breadcrumbs = useMemo(() => {
         const items: BreadcrumbItem[] = [
@@ -44,7 +45,7 @@ export function useSidebarData(): SidebarData {
                 items: [
                     {
                         title: "Dashboards",
-                        url: "#",
+                        url: "/app/${projectId}/dashboards",
                     },
                     {
                         title: "Insights",

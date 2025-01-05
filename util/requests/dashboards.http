@@ -1,0 +1,39 @@
+### Variables
+@baseUrl = {{url}}/{{project}}
+
+### List all dashboards
+GET {{baseUrl}}/dashboards
+Content-Type: application/json
+
+### Get specific dashboard
+GET {{baseUrl}}/dashboards/1
+Content-Type: application/json
+
+### Create new dashboard
+POST {{baseUrl}}/dashboards
+Content-Type: application/json
+
+{
+  "name": "My New Dashboard",
+  "favorite": true
+}
+
+### Update dashboard
+PUT {{baseUrl}}/dashboards/1
+Content-Type: application/json
+
+{
+  "name": "Updated Dashboard Name"
+}
+
+### Delete dashboard
+DELETE {{baseUrl}}/dashboards/1
+Content-Type: application/json
+
+### Set dashboard insights
+PUT {{baseUrl}}/dashboards/1/insights
+Content-Type: application/json
+
+{
+  "insight_ids": [2, 3]
+}
