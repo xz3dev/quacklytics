@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDistance } from "date-fns"
 
-const DEFAULT_QUERY = 'SELECT * FROM events LIMIT 100'
+const DEFAULT_QUERY = 'SELECT * FROM events order by timestamp desc LIMIT 100 '
 
 export function EventsViewer() {
     const db = useDB()
