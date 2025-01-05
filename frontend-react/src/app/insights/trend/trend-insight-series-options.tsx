@@ -114,7 +114,7 @@ export function TrendInsightSeriesOptions() {
                 })
             }
             <Button
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
                     updateFn?.((data) => {
                         data.series = [...(data.series ?? []), {
