@@ -28,6 +28,7 @@ export function AppRouter() {
                 <Route path="insights" element={<InsightsList></InsightsList>}></Route>
                 <Route path="insights/:insightid" element={<InsightRoute></InsightRoute>}></Route>
                 <Route path="events" element={<EventsViewer></EventsViewer>}></Route>
+                <Route path="data" element={<div>Data</div>}></Route>
             </Route>
         </Routes>
     )
