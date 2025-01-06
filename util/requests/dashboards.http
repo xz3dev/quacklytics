@@ -6,7 +6,7 @@ GET {{baseUrl}}/dashboards
 Content-Type: application/json
 
 ### Get specific dashboard
-GET {{baseUrl}}/dashboards/1
+GET {{baseUrl}}/dashboards/3
 Content-Type: application/json
 
 ### Create new dashboard

@@ -107,14 +107,20 @@ func createDashboard(w http.ResponseWriter, r *http.Request) {
 	dashboard.ApplyInput(input)
 
 	db := sv_mw.GetProjectDB(r, w)
-
-	if result := db.Create(&dashboard); result.Error != nil {
+	result := db.Create(&dashboard)
+	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	fullDashboard, err := loadDashboard(db, fmt.Sprintf("%d", dashboard.ID))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+	if err := json.NewEncoder(w).Encode(fullDashboard); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
