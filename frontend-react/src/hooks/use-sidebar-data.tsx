@@ -1,5 +1,5 @@
 import {useProjectId} from "./use-project-id";
-import {ChartLine, HardDriveDownload, Home, LayoutDashboard, List, LucideIcon, Settings2} from "lucide-react";
+import {ChartLine, Database, Home, LayoutDashboard, ListTree, LucideIcon, Settings2} from "lucide-react";
 import {useMatch} from "react-router";
 import {useMemo} from "react";
 
@@ -75,13 +75,13 @@ export function useSidebarData(): SidebarData {
                 title: "Events",
                 url: `${projectUrl}/events`,
                 isActive: !!isEvents,
-                icon: List,
+                icon: ListTree,
                 items: [],
             },
             {
                 title: "Data Management",
                 url: `${projectUrl}/data`,
-                icon: HardDriveDownload,
+                icon: Database,
                 isActive: !!isData,
                 items: [
                     {
