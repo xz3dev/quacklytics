@@ -10,7 +10,7 @@ type InsightInput struct {
 	Type     string    `json:"type" gorm:"size:255;not null;default:'Trend'"`
 	Favorite bool      `json:"favorite" gorm:"default:false"`
 	Series   *[]Series `json:"series"`
-	Config   JSON      `json:"config" gorm:"type:json;not null"`
+	Config   JSON      `json:"config" gorm:"type:json;not null;default:'{}'"`
 }
 
 type Insight struct {
