@@ -10,6 +10,8 @@ import {DashboardList} from "@app/dashboards/dashboard-list.tsx";
 import {DashboardView} from "@app/dashboards/dashboard-view.tsx";
 import {useDashboardId} from "@/hooks/use-dashboard-id.tsx";
 import {useInsightId} from "@/hooks/use-insight-id.tsx";
+import { SchemaView } from "@/app/schema/schema-view";
+import {RealtimeEventsList} from "@app/realtime/realtime-events-list.tsx";
 
 
 export function AppRouter() {
@@ -29,6 +31,9 @@ export function AppRouter() {
                 <Route path="insights/:insightid" element={<InsightRoute></InsightRoute>}></Route>
                 <Route path="events" element={<EventsViewer></EventsViewer>}></Route>
                 <Route path="data" element={<div>Data</div>}></Route>
+                <Route path="data/realtime" element={<RealtimeEventsList></RealtimeEventsList>}></Route>
+                <Route path="data/schema" element={<SchemaView></SchemaView>}></Route>
+                <Route path="settings" element={<div>Settings</div>}></Route>
             </Route>
         </Routes>
     )

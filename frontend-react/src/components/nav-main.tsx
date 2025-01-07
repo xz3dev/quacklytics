@@ -1,13 +1,10 @@
 "use client"
 
-import {ChevronRight, type LucideIcon} from "lucide-react"
-
-import {Collapsible, CollapsibleContent, CollapsibleTrigger,} from "@/components/ui/collapsible"
+import {type LucideIcon} from "lucide-react"
 import {
     SidebarGroup,
     SidebarMenu,
     SidebarMenuButton,
-    SidebarMenuItem,
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
@@ -54,7 +51,7 @@ export function NavMain({
                         <span style={{lineHeight: '100%'}}>{item.title}</span>
                     </Link>
                 </SidebarMenuButton>
-                {item.isActive && (item.items?.length ?? 0) > 0 && <SidebarMenuSub>
+                {item.items?.some(i => i.isActive) && (item.items?.length ?? 0) > 0 && <SidebarMenuSub>
                     {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={subItem.isActive}>

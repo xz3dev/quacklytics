@@ -12,34 +12,44 @@ export function useSidebarData(): SidebarData {
     const isDashboard = useMatch('/app/:projectid/dashboards/:dashboardid')
     const isEvents = useMatch('/app/:projectid/events')
     const isData = useMatch('/app/:projectid/data')
+    const isSchema = useMatch('/app/:projectid/data/schema')
+    const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
     const isAnalytics = !!isHome || !!isEvents || !!isInsights || !!isInsight || !!isDashboards || !!isDashboard
+    const isSettings = useMatch('/app/:projectid/settings')
 
     const breadcrumbs = useMemo(() => {
-        const items: BreadcrumbItem[] = [
-        ]
+        const items: BreadcrumbItem[] = []
 
         if (isAnalytics) {
-            items.push({ title: 'Analytics', url: `/app/${projectId}` })
+            items.push({title: 'Analytics', url: `/app/${projectId}`})
         }
 
         if (isInsights || isInsight) {
-            items.push({ title: 'Insights', url: `/app/${projectId}/insights`, isActive: !isInsight })
+            items.push({title: 'Insights', url: `/app/${projectId}/insights`, isActive: !isInsight})
         }
 
-        if(isInsight) {
-            items.push({ title: 'Insight', url: `/app/${projectId}/insights/${isInsight.params.insightid}`, isActive: true })
+        if (isInsight) {
+            items.push({
+                title: 'Insight',
+                url: `/app/${projectId}/insights/${isInsight.params.insightid}`,
+                isActive: true
+            })
         }
 
         if (isDashboard || isDashboards) {
-            items.push({ title: 'Dashboards', url: `/app/${projectId}/dashboards`, isActive: !isInsight })
+            items.push({title: 'Dashboards', url: `/app/${projectId}/dashboards`, isActive: !isInsight})
         }
 
-        if(isDashboard) {
-            items.push({ title: 'Dashboard', url: `/app/${projectId}/dashboard/${isDashboard.params.dashboardid}`, isActive: true })
+        if (isDashboard) {
+            items.push({
+                title: 'Dashboard',
+                url: `/app/${projectId}/dashboard/${isDashboard.params.dashboardid}`,
+                isActive: true
+            })
         }
 
         if (isEvents) {
-            items.push({ title: 'Events', url: `/app/${projectId}/events`, isActive: true })
+            items.push({title: 'Events', url: `/app/${projectId}/events`, isActive: true})
         }
 
         return items
@@ -82,7 +92,6 @@ export function useSidebarData(): SidebarData {
                 title: "Data Management",
                 url: `${projectUrl}/data`,
                 icon: Database,
-                isActive: !!isData,
                 items: [
                     {
                         title: "Overview & Statistics",
@@ -92,31 +101,21 @@ export function useSidebarData(): SidebarData {
                     {
                         title: "Real Time",
                         url: `${projectUrl}/data/realtime`,
+                        isActive: !!isRealTimeEvents,
                     },
                     {
                         title: "Schema",
                         url: `${projectUrl}/data/schema`,
+                        isActive: !!isSchema,
                     },
                 ],
             },
             {
                 title: "Settings",
-                url: "#",
+                url: `${projectUrl}/settings`,
                 icon: Settings2,
-                items: [
-                    {
-                        title: "General",
-                        url: "#",
-                    },
-                    {
-                        title: "Data Ingestion",
-                        url: "#",
-                    },
-                    {
-                        title: "Project",
-                        url: "#",
-                    },
-                ],
+                isActive: !!isSettings,
+                items: [],
             },
         ],
     }) satisfies SidebarData
