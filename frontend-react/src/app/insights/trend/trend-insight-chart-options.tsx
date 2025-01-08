@@ -1,7 +1,7 @@
 import {useContext} from "react";
 import {TrendInsightContext} from "@app/insights/insight-context.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {TimeBucket, timeBucketLabels} from "@/model/trend-insight.ts";
+import {TimeBucket, timeBucketData} from "@/model/trend-insight.ts";
 import DateRangePicker from "@/components/date-ranges/data-range-picker.tsx";
 import {determineDateRange} from "@/model/InsightDateRange.ts";
 import {format} from "date-fns";
@@ -46,9 +46,13 @@ export function TrendInsightChartOptions() {
                         <SelectValue placeholder="Select time bucket"/>
                     </SelectTrigger>
                     <SelectContent>
-                        {Object.entries(timeBucketLabels).map(([bucket, label]) => (
-                            <SelectItem key={bucket} value={bucket}>
-                                {label}
+                        {Object.entries(timeBucketData).map(([bucket, bucketData]) => (
+                            <SelectItem
+                                key={bucket}
+                                value={bucket}
+                                disabled={!bucketData.canActivate(data?.config.duration ?? '')}
+                            >
+                                {bucketData.label}
                             </SelectItem>
                         ))}
                     </SelectContent>

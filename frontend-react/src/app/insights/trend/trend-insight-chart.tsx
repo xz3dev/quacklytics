@@ -1,6 +1,6 @@
 // src/app/insights/trend/trend-insight-chart.tsx
 import {useDuckDBQueries} from "@/services/duck-db-queries"
-import {TrendInsight, TrendSeriesType} from "@/model/trend-insight.ts";
+import {TimeBucket, timeBucketData, TrendInsight, TrendSeriesType} from "@/model/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
 import {useMemo} from "react";
 import {mergeQueries} from "@lib/queries.ts";
@@ -67,8 +67,8 @@ export function TrendInsightChart({insight}: Props) {
     }, [seriesQueries])
 
     const chartData: ChartData[] = useMemo(
-        () => buildChartData(seriesData),
-        [seriesData],
+        () => buildChartData(seriesData, insight.config.timeBucket),
+        [seriesData, insight.config],
     );
 
     if (seriesQueries.some(q => q.status === 'error')) {
@@ -106,7 +106,7 @@ export function TrendInsightChart({insight}: Props) {
                     width={5}
                 />
                 <ChartTooltip
-                    cursor={false}
+                    cursor={true}
                     content={<ChartTooltipContent indicator="dot"/>}
                 />
                 {seriesQueries.map((q, index) => {
@@ -161,9 +161,11 @@ interface ChartData {
 }
 
 
-function buildChartData(data: Series[]): ChartData[] {
+function buildChartData(data: Series[], bucket: TimeBucket): ChartData[] {
     const map = new Map<string, Record<number, number>>()
     const seriesCount = data.length
+
+    const stepSize = timeBucketData[bucket].duration
 
     // First pass: collect all dates and initialize with zeros for all series
     data.forEach(({rows}) => {

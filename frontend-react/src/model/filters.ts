@@ -49,15 +49,18 @@ export const buildRangeFilters = (range: string | undefined): FieldFilter[] => {
     return [startFilter, endFilter]
 }
 
+const dateTruncMap : {
+    [key in TimeBucket]: string
+}= {
+    Daily: 'day',
+    Weekly: 'week',
+    Monthly: 'month',
+    Hourly: 'hour'
+}
 
 export const buildGroupByFilter = (timeBucket: TimeBucket): Required<Pick<Query, 'groupBy' | 'orderBy'>> => {
     const alias = "trend_bucket"
-    const dateTruncate =
-        timeBucket === 'Daily'
-            ? 'day'
-            : timeBucket === 'Weekly'
-                ? 'week'
-                : 'month'
+    const dateTruncate = dateTruncMap[timeBucket]
     const filterString = `date_trunc('${dateTruncate}', timestamp)`
 
     return {
