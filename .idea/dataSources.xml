@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="data.db" single-connection="true" uuid="a623bca1-5942-493a-99d8-0e7e9cbdf35b">
+    <data-source source="LOCAL" name="analytics_test.db" single-connection="true" uuid="a623bca1-5942-493a-99d8-0e7e9cbdf35b">
       <driver-ref>duckdb</driver-ref>
       <synchronize>true</synchronize>
       <configured-by-url>true</configured-by-url>
       <jdbc-driver>org.duckdb.DuckDBDriver</jdbc-driver>
-      <jdbc-url>jdbc:duckdb:$PROJECT_DIR$/backend/_data/data.db</jdbc-url>
+      <jdbc-url>jdbc:duckdb:$PROJECT_DIR$/backend/_data/analytics_test.db</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
       </jdbc-additional-properties>
@@ -22,7 +22,7 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="test.db" uuid="f1b2b2a2-2ae6-400a-aa58-1fbb443e87f1">
+    <data-source source="LOCAL" name="project_test.db" uuid="f1b2b2a2-2ae6-400a-aa58-1fbb443e87f1">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>

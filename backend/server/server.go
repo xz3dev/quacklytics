@@ -102,7 +102,7 @@ func setupPrivateEventRoutes(mux chi.Router) {
 }
 
 func setupAnalyticsRoutes(mux chi.Router) {
-	mux.Get("/schema", routes.Schema)
+	routes.SetupSchemaRoutes(mux)
 	//mux.Get("/insights/", ListInsights)
 	routes.SetupInsightRoutes(mux)
 	routes.SetupDashoardRoutes(mux)

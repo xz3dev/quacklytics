@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"analytics/actions"
 	"analytics/schema"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 )
@@ -13,7 +15,28 @@ type PropertyDetails struct {
 	Values []string `json:"values"`
 }
 
-func Schema(w http.ResponseWriter, r *http.Request) {
+func SetupSchemaRoutes(mux chi.Router) {
+	mux.Get("/schema", getSchema)
+	mux.Patch("/schema", fixupSchema)
+}
+
+func fixupSchema(w http.ResponseWriter, r *http.Request) {
+	db := sv_mw.GetProjectDB(r, w)
+	projectId := chi.URLParam(r, "projectid")
+	if projectId == "" {
+		http.Error(w, "Project ID not found in path", http.StatusBadRequest)
+		return
+	}
+
+	if err := actions.FixupSchema(projectId, db); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func getSchema(w http.ResponseWriter, r *http.Request) {
 
 	db := sv_mw.GetProjectDB(r, w)
 	var ss []schema.EventSchema

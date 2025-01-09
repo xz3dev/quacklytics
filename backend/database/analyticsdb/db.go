@@ -22,10 +22,10 @@ type DBConnection struct {
 	connection driver.Conn
 }
 
-var I2 = make(map[string]*DBConnection)
+var LookupTable = make(map[string]*DBConnection)
 
 func Appender(projectID string, table string) *duckdb.Appender {
-	proj, exists := I2[projectID]
+	proj, exists := LookupTable[projectID]
 	if !exists {
 		log.Fatal("Project connection not found: ", projectID)
 	}
@@ -37,7 +37,7 @@ func Appender(projectID string, table string) *duckdb.Appender {
 }
 
 func Tx(projectID string) (*sql.Tx, error) {
-	proj, exists := I2[projectID]
+	proj, exists := LookupTable[projectID]
 	if !exists {
 		return nil, fmt.Errorf("project connection not found: %s", projectID)
 	}
@@ -67,7 +67,7 @@ func InitProjectDB(project projects.ProjectFiles) error {
 
 	projectDB := sql.OpenDB(connector)
 
-	I2[project.ID] = &DBConnection{
+	LookupTable[project.ID] = &DBConnection{
 		db:         projectDB,
 		connection: con,
 	}

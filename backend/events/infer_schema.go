@@ -19,7 +19,37 @@ func ApplySchemaChanges(events []*model.EventInput, db *gorm.DB) {
 	}
 
 	schemasByType := makeSchemaMap(schemas)
-	updateSchemasFromEvents(events, schemasByType, db)
+	updateSchemasFromEvents(events, schemasByType)
+	persistAllSchemas(schemasByType, db)
+}
+
+func persistAllSchemas(schemasByType map[string]*schema.EventSchema, db *gorm.DB) {
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// Persist each schema and its properties
+		for _, s := range schemasByType {
+			// Create or update the schema
+			if s.ID == 0 {
+				if err := tx.Create(s).Error; err != nil {
+					return err
+				}
+			}
+
+			// Persist properties
+			if err := persistPropertiesAndUpdateIDs(s, tx); err != nil {
+				return err
+			}
+
+			// Collect and persist all property values
+			if err := persistPropertyValues(s.Properties, tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Println("Error persisting schemas:", err)
+	}
 }
 
 func fetchExistingSchemas(eventTypes []string, db *gorm.DB) []schema.EventSchema {
@@ -55,23 +85,16 @@ func makeSchemaMap(schemas []schema.EventSchema) map[string]*schema.EventSchema 
 func updateSchemasFromEvents(
 	events []*model.EventInput,
 	schemasByType map[string]*schema.EventSchema,
-	db *gorm.DB,
 ) {
 	for _, event := range events {
-		schema := ensureSchemaExists(event.EventType, schemasByType, db)
-		if schema == nil {
-			continue
-		}
-
+		schema := ensureSchemaExistsInMemory(event.EventType, schemasByType)
 		updateSchemaProperties(event, schema)
-		persistSchemaChanges(schema, db)
 	}
 }
 
-func ensureSchemaExists(
+func ensureSchemaExistsInMemory(
 	eventType string,
 	schemasByType map[string]*schema.EventSchema,
-	db *gorm.DB,
 ) *schema.EventSchema {
 	s, exists := schemasByType[eventType]
 	if exists {
@@ -82,11 +105,6 @@ func ensureSchemaExists(
 		EventType:  eventType,
 		Properties: []schema.EventSchemaProperty{},
 	}
-	if err := db.Create(s).Error; err != nil {
-		log.Println("Error creating schema:", err)
-		return nil
-	}
-
 	schemasByType[eventType] = s
 	return s
 }
@@ -147,17 +165,25 @@ func convertMapToSlice(propMap map[string]*schema.EventSchemaProperty) []schema.
 }
 
 func persistSchemaChanges(s *schema.EventSchema, db *gorm.DB) {
-	// First persist the properties and get their IDs
-	if err := persistPropertiesAndUpdateIDs(s, db); err != nil {
-		log.Println("Error persisting properties:", err)
-		return
-	}
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// First persist the properties and get their IDs
+		if err := persistPropertiesAndUpdateIDs(s, db); err != nil {
+			log.Println("Error persisting properties:", err)
+		}
 
-	// Now persist values with the correct property IDs
-	persistPropertyValues(s.Properties, db)
+		// Now persist values with the correct property IDs
+		persistPropertyValues(s.Properties, db)
+		return nil
+	})
+	if err != nil {
+		log.Println("Error persisting schema:", err)
+	}
 }
 
 func persistPropertiesAndUpdateIDs(s *schema.EventSchema, db *gorm.DB) error {
+	if len(s.Properties) == 0 {
+		return nil
+	}
 	for i := range s.Properties {
 		prop := &s.Properties[i]
 		result := db.Where(schema.EventSchemaProperty{
@@ -174,16 +200,23 @@ func persistPropertiesAndUpdateIDs(s *schema.EventSchema, db *gorm.DB) error {
 	return nil
 }
 
-func persistPropertyValues(properties []schema.EventSchemaProperty, db *gorm.DB) {
+func persistPropertyValues(properties []schema.EventSchemaProperty, db *gorm.DB) error {
+	var allValues []schema.EventSchemaPropertyValue
+
+	// Collect all values from all properties
 	for _, prop := range properties {
-		// Now we can be sure prop.ID is set correctly
 		values := prepareValuesForPersistence(prop)
-		if len(values) > 0 {
-			if err := persistValues(values, db); err != nil {
-				log.Println("Error persisting property values:", err)
-			}
+		allValues = append(allValues, values...)
+	}
+
+	// Only persist if we have values
+	if len(allValues) > 0 {
+		if err := persistValues(allValues, db); err != nil {
+			log.Println("Error persisting property values:", err)
+			return err
 		}
 	}
+	return nil
 }
 
 func prepareValuesForPersistence(prop schema.EventSchemaProperty) []schema.EventSchemaPropertyValue {

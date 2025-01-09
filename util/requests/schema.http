@@ -2,3 +2,8 @@ GET {{url}}/{{project}}/schema
 Accept: application/json
 
 ###
+
+PATCH {{url}}/{{project}}/schema
+Accept: application/json
+
+###
