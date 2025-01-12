@@ -18,7 +18,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import {Home, MoreHorizontal, Star} from "lucide-react"
+import {Home, MoreHorizontal, Plus, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id"
 import {ProjectLink} from "@/components/project-link"
 import {cn} from "@lib/utils"
@@ -82,7 +82,10 @@ export function DashboardList({filter, sort, title}: Props) {
                 <h2 className="text-2xl font-bold">{title ?? "Dashboards"}</h2>
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
-                        <Button>Create New Dashboard</Button>
+                        <Button>
+                            <Plus className="h-4 w-4"/>
+                            Create New Dashboard
+                        </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>

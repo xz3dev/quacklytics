@@ -61,7 +61,7 @@ export function DashboardManageInsights({dashboard}: Props) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button>
                     <Settings2 className="h-4 w-4 mr-2" />
                     Manage Insights
                 </Button>

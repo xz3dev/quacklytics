@@ -8,12 +8,14 @@ import {SortableInsightCard} from './sortable-insight-card'
 import {useEffect, useState} from 'react'
 import {Insight} from "@/model/insight.ts";
 import { useDebounce } from "@uidotdev/usehooks"
+import { ProjectLink } from "@/components/project-link"
 
 interface Props {
     dashboardId: number
+    readOnly?: boolean
 }
 
-export function DashboardView({dashboardId}: Props) {
+export function DashboardView({dashboardId, readOnly}: Props) {
     const projectId = useProjectId()
     const {data: dashboard, isLoading, error} = useDashboard(projectId, dashboardId)
     const [insights, setInsights] = useState<Insight[]>([])
@@ -50,9 +52,13 @@ export function DashboardView({dashboardId}: Props) {
     return (
         <div className="flex flex-col gap-4 my-4">
             <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{dashboard.name}</h1>
+                <h1 className="text-2xl font-bold">
+                    <ProjectLink to={`/dashboards/${dashboard.id}`}>
+                        {dashboard.name}
+                    </ProjectLink>
+                </h1>
                 <div className="flex-1"/>
-                <DashboardManageInsights dashboard={dashboard}/>
+                {!readOnly && <DashboardManageInsights dashboard={dashboard}/>}
             </div>
             <DndContext onDragEnd={handleDragEnd}>
                 <SortableContext items={insights} strategy={rectSortingStrategy}>

@@ -12,7 +12,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.tsx";
-import {MoreHorizontal, Star} from "lucide-react"
+import {MoreHorizontal, Plus, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
 import {cn} from "@lib/utils.ts";
@@ -74,12 +74,15 @@ export function InsightsList({filter, sort, title}: Props) {
     }
 
     return (
-        <div className="p-4">
+        <div>
             <div className="mb-4 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">{title ?? "Insights"}</h2>
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
-                        <Button>Create New Insight</Button>
+                        <Button>
+                            <Plus className="h-4 w-4"/>
+                            Create New Insight
+                        </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
