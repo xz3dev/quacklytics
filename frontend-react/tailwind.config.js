@@ -4,15 +4,37 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
-		animation: {
-			'spin': 'spin 1s linear infinite'
-		},
-		keyframes: {
-			spin: {
-				'0%': { transform: 'rotate(0deg)' },
-				'100%': { transform: 'rotate(360deg)' }
-			}
-		},
+  		animation: {
+  			spin: 'spin 1s linear infinite',
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
+  		},
+  		keyframes: {
+  			spin: {
+  				'0%': {
+  					transform: 'rotate(0deg)'
+  				},
+  				'100%': {
+  					transform: 'rotate(360deg)'
+  				}
+  			},
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
