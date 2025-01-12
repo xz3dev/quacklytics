@@ -17,10 +17,13 @@ import {
 } from "@/components/ui/accordion"
 import {Badge} from "@/components/ui/badge"
 import {ScrollArea} from "@/components/ui/scroll-area"
+import {SchemaPropValueList} from "@app/schema/schema-prop-value-list.tsx";
+import {useState} from "react";
 
 export function SchemaView() {
     const projectId = useProjectId()
     const schemaQuery = useSchema(projectId)
+    const [selectedField, setSelectedField] = useState<string | null>(null)
 
     if(schemaQuery.isLoading || schemaQuery.isPending) return <Spinner/>
     if(schemaQuery.error) return <div>Error: {schemaQuery.error.message}</div>
@@ -80,14 +83,22 @@ export function SchemaView() {
                                                                                     </Badge>
                                                                                 ))}
                                                                             {schema.propertyValues[field.name].length > 5 && (
-                                                                                <Badge
-                                                                                    variant="secondary"
-                                                                                    className="text-xs"
-                                                                                >
-                                                                                    +{schema.propertyValues[field.name].length - 5} more
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
+                                                                                <>
+                                                                                    <Badge
+                                                                                        variant="secondary"
+                                                                                        className="text-xs cursor-pointer hover:bg-secondary/80"
+                                                                                        onClick={() => setSelectedField(field.name)}
+                                                                                    >
+                                                                                        +{schema.propertyValues[field.name].length - 5} more
+                                                                                    </Badge>
+                                                                                    <SchemaPropValueList
+                                                                                        values={schema.propertyValues[field.name]}
+                                                                                        isOpen={selectedField === field.name}
+                                                                                        onClose={() => setSelectedField(null)}
+                                                                                        fieldName={field.name}
+                                                                                    />
+                                                                                </>
+                                                                            )}                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
