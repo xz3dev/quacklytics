@@ -69,28 +69,28 @@ export const timeBucketData: {
     Hourly: {
         label: 'Hour',
         canActivate: requireMaxDays(2),
-        duration: {
+        interval: {
             hours: 1,
         },
     },
     Daily: {
         label: 'Day',
         canActivate: requireMinDays(2),
-        duration: {
+        interval: {
             days: 1,
         },
     },
     Weekly: {
         label: 'Week',
         canActivate: requireMinDays(2),
-        duration: {
+        interval: {
             weeks: 1,
         },
     },
     Monthly: {
         label: 'Month',
         canActivate: requireMinDays(2),
-        duration: {
+        interval: {
             months: 1,
         },
     },
@@ -99,5 +99,5 @@ export const timeBucketData: {
 interface TimeBucketData {
     label: string
     canActivate: (dateRange: string) => boolean
-    duration: Duration
+    interval: Duration
 }

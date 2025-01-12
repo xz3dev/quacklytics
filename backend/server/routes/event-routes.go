@@ -126,11 +126,12 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 
 	if _, err := os.Stat(path + filename); err == nil && weekCompleted {
-		log.Printf("File %s exists, serving it", filename)
+		log.Printf("File %s exists, serving it.", filename)
 		w.WriteHeader(http.StatusOK)
 		http.ServeFile(w, r, path+filename)
 		return
 	}
+	log.Printf("File %s does not exist, creating it.", filename)
 
 	var conditions []queries.QueryCondition
 	if len(eventType) > 0 {
@@ -196,7 +197,7 @@ func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
 
 		checksum, err := calculateFileChecksum(filepath)
-		if err != nil {
+		if err != nil || week == currentWeek {
 			// If file doesn't exist or there's an error, set checksum to empty string
 			checksums[filename] = ""
 		} else {

@@ -1,6 +1,7 @@
-import {TimeBucket} from "@/model/trend-insight.ts";
+import {TimeBucket, timeBucketData} from "@/model/trend-insight.ts";
 import {determineDateRange} from "@/model/InsightDateRange.ts";
 import {Query} from "@lib/queries.ts";
+import {formatDuration} from "date-fns";
 
 export interface Field {
     name: string
@@ -49,19 +50,13 @@ export const buildRangeFilters = (range: string | undefined): FieldFilter[] => {
     return [startFilter, endFilter]
 }
 
-const dateTruncMap : {
-    [key in TimeBucket]: string
-}= {
-    Daily: 'day',
-    Weekly: 'week',
-    Monthly: 'month',
-    Hourly: 'hour'
-}
-
-export const buildGroupByFilter = (timeBucket: TimeBucket): Required<Pick<Query, 'groupBy' | 'orderBy'>> => {
+export const buildGroupByFilter = (timeBucket: TimeBucket, duration: string): Required<Pick<Query, 'groupBy' | 'orderBy'>> => {
     const alias = "trend_bucket"
-    const dateTruncate = dateTruncMap[timeBucket]
-    const filterString = `date_trunc('${dateTruncate}', timestamp)`
+    const dateRange = determineDateRange(duration)
+    const origin = dateRange.start
+    const bucketData = timeBucketData[timeBucket]
+    const interval = formatDuration(bucketData.interval)
+    const filterString = `time_bucket(INTERVAL '${interval}', timestamp, epoch_ms(${origin.getTime()}::bigint))`
 
     return {
         groupBy: [

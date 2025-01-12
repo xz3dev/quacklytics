@@ -4,13 +4,15 @@ import {
     format,
     formatDuration,
     startOfDay,
-    startOfMonth, startOfYear,
+    startOfMonth,
+    startOfYear,
     subDays,
     subMonths,
     subSeconds
 } from "date-fns"
 
 import * as iso from "iso8601-duration"
+import {UTCDate} from "@date-fns/utc";
 
 export const predefinedRanges = [
     {label: 'Today', value: 'today'},
@@ -44,22 +46,33 @@ export const determineLabel = (range: string | undefined): string => {
     return `${format(start, 'LLL d, yyyy')} - ${format(end, 'LLL d, yyyy')}`
 }
 
-export const determineDateRange = (range: string | undefined): {
-    start: Date
-    end: Date
-} => {
+interface DateRange {
+    start: UTCDate
+    end: UTCDate
+}
+
+export const determineDateRange = (range: string | undefined): DateRange => {
     if (!range) {
         return {
-            start: startOfMonth(new Date(1000, 0, 1)),
-            end: endOfDay(new Date()),
+            start: startOfMonth(new UTCDate(1000, 0, 1)),
+            end: endOfDay(new UTCDate()),
         }
     }
     if (range.startsWith('P')) {
-        const end = new Date()
+        const end = new UTCDate()
         const duration = iso.parse(range)
         if (!duration) throw Error('Invalid duration')
         const seconds = iso.toSeconds(duration, end)
         const start = subSeconds(end, seconds)
+
+        const secondsPerDay = 24 * 60 * 60
+        const days = Math.floor(seconds / secondsPerDay)
+        if (days > 0) {
+            return {
+                start: startOfDay(start),
+                end: endOfDay(end),
+            }
+        }
 
         return {
             start,
@@ -68,12 +81,12 @@ export const determineDateRange = (range: string | undefined): {
     }
     if (range === 'today') {
         return {
-            start: startOfDay(new Date()),
-            end: endOfDay(new Date()),
+            start: startOfDay(new UTCDate()),
+            end: endOfDay(new UTCDate()),
         }
     }
     if (range === 'yesterday') {
-        const yesterday = subDays(new Date(), 1)
+        const yesterday = subDays(new UTCDate(), 1)
         return {
             start: startOfDay(yesterday),
             end: endOfDay(yesterday),
@@ -81,35 +94,35 @@ export const determineDateRange = (range: string | undefined): {
     }
     if (range === 'thisMonth') {
         return {
-            start: startOfMonth(new Date()),
-            end: endOfDay(new Date()),
+            start: startOfMonth(new UTCDate()),
+            end: endOfDay(new UTCDate()),
         }
     }
     if (range === 'lastMonth') {
-        const lastMonth = subMonths(new Date(), 1)
+        const lastMonth = subMonths(new UTCDate(), 1)
         return {
-            start: startOfMonth(lastMonth),
-            end: endOfMonth(lastMonth),
+            start: startOfDay(startOfMonth(lastMonth)),
+            end: endOfDay(endOfMonth(lastMonth)),
         }
     }
     if (range === 'yearToDate') {
         return {
-            start: startOfYear(new Date()),
-            end: endOfDay(new Date()),
+            start: startOfDay(startOfYear(new UTCDate())),
+            end: endOfDay(endOfDay(new UTCDate())),
         }
     }
     if (range === 'allTime') {
         return {
-            start: startOfMonth(new Date(1000, 0, 1)),
-            end: endOfDay(new Date()),
+            start: startOfDay(startOfMonth(new UTCDate(1000, 0, 1))),
+            end: endOfDay(new UTCDate()),
         }
     }
     if (range.includes(' - ')) {
         // custom date range like this '2023-01-01 - 2023-01-10'
         const [start, end] = range.split(' - ')
         return {
-            start: startOfDay(new Date(start)),
-            end: endOfDay(new Date(end)),
+            start: startOfDay(new UTCDate(start)),
+            end: endOfDay(new UTCDate(end)),
         }
     }
     throw Error('Invalid date range')

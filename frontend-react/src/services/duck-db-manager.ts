@@ -6,7 +6,11 @@ import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 
 export class DuckDbManager {
     private db = createDb()
-    private conn = this.db.then((db) => db?.connect())
+    private conn = this.db.then(async (db) => {
+        const conn =  await db?.connect();
+        await conn?.query(`SET TimeZone='UTC';`);
+        return conn
+    })
 
     async setupTable(conn: AsyncDuckDBConnection) {
         await conn.query(`
@@ -31,6 +35,8 @@ export class DuckDbManager {
             return
         }
 
+        await this.queryTimeZone()
+
         await this.setupTable(conn)
 
         const queries = []
@@ -52,6 +58,18 @@ export class DuckDbManager {
             queries.push(query)
         }
         await Promise.all(queries)
+    }
+
+    async queryTimeZone() {
+        const conn = await this.conn
+        const db = await this.db
+        if (!db || !conn) {
+            console.error('Database connection not available')
+            return ''
+        }
+        const results = await conn.query(`select * from duckdb_settings() where name='TimeZone';`)
+        const result = results.toArray().map(r => r.toJSON())[0]['value']
+        console.log(`Current DB TimeZone:`, result)
     }
 
     async runQuery<T extends Query>(query: Query) {

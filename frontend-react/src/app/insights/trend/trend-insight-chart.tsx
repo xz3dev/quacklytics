@@ -8,8 +8,10 @@ import {buildGroupByFilter, buildRangeFilters} from "@/model/filters.ts";
 import {Spinner} from "@/components/spinner.tsx";
 import {ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/ui/chart"
 import {Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis} from "recharts";
-import {format} from "date-fns";
+import {add, format} from "date-fns";
 import {simpleHash} from "@lib/checksums.ts";
+import {determineDateRange} from "@/model/InsightDateRange.ts";
+import {UTCDate} from "@date-fns/utc";
 
 interface Props {
     insight: TrendInsight
@@ -20,7 +22,7 @@ export function TrendInsightChart({insight}: Props) {
 
 
     const dateRangeFilter = buildRangeFilters(insight.config.duration)
-    const bucketFilter = buildGroupByFilter(insight.config.timeBucket)
+    const bucketFilter = buildGroupByFilter(insight.config.timeBucket, insight.config.duration)
 
     // Create a query for each series
     const queries = useMemo(() =>
@@ -67,7 +69,7 @@ export function TrendInsightChart({insight}: Props) {
     }, [seriesQueries])
 
     const chartData: ChartData[] = useMemo(
-        () => buildChartData(seriesData, insight.config.timeBucket),
+        () => buildChartData(seriesData, insight.config.timeBucket, determineDateRange(insight.config.duration)),
         [seriesData, insight.config],
     );
 
@@ -161,35 +163,94 @@ interface ChartData {
 }
 
 
-function buildChartData(data: Series[], bucket: TimeBucket): ChartData[] {
-    const map = new Map<string, Record<number, number>>()
+function buildChartData(
+    data: Series[],
+    bucket: TimeBucket,
+    dateRange: {
+        start: UTCDate
+        end: UTCDate
+    },
+): ChartData[] {
+    if(data.length === 0 || data.every(s => s.rows.length === 0)) return []
     const seriesCount = data.length
+    console.log(`Building chart data for ${seriesCount} series`)
+    for (const el of data) {
+        for (const row of el.rows) {
+            console.log(`Row: ${format(new UTCDate(row.trend_bucket), 'yyyy-MM-dd HH:mm:ss')}, ${row.result_value}`)
+        }
+    }
 
-    const stepSize = timeBucketData[bucket].duration
+    const emptyValues: Record<number, number> = {}
+    for (let i = 0; i < seriesCount; i++) {
+        emptyValues[i] = 0
+    }
 
-    // First pass: collect all dates and initialize with zeros for all series
-    data.forEach(({rows}) => {
+    const stepSize = timeBucketData[bucket].interval
+    const dataMap = new Map<number, Record<number, number>>()
+    const steps: {
+        key: number
+    }[] = []
+
+    const start = dateRange.start
+    dataMap.set(start.getTime(), {...emptyValues})
+    steps.push({
+        key: start.getTime(),
+    })
+
+    let lastStep = start
+    while (lastStep.getTime() < dateRange.end.getTime()) {
+        const step = add(lastStep, stepSize)
+        if (step.getTime() <= dateRange.end.getTime()) {
+            dataMap.set(step.getTime(), {...emptyValues})
+            steps.push({
+                key: step.getTime(),
+            })
+        }
+        console.log(`Added step: ${format(lastStep, 'yyyy-MM-dd HH:mm:ss')} - ${format(step, 'yyyy-MM-dd HH:mm:ss')}`)
+        lastStep = step
+    }
+
+    const getBucketKey = (date: UTCDate) => {
+        // First step is handled specially since it doesn't have a previous step
+        if (date.getTime() <= steps[0].key) {
+            return steps[0].key
+        }
+
+        const bucket = steps.find(step =>
+            step.key === date.getTime()
+        )
+
+        if (!bucket) {
+            console.log(`No bucket found for ${format(date, 'yyyy-MM-dd HH:mm:ss')}`)
+            // Don't default to first bucket, this might hide data issues
+            return null
+        }
+
+        console.log(`Found bucket for ${format(date, 'yyyy-MM-dd HH:mm:ss')}: ${format(new UTCDate(bucket.key), 'yyyy-MM-dd HH:mm:ss')}`)
+
+        return bucket.key
+    }
+
+    // Fill in actual values
+    data.forEach(({rows}, seriesIndex) => {
         rows.forEach(row => {
-            if (!map.has(row.trend_bucket)) {
-                const values: Record<number, number> = {}
-                // Initialize all series indices with 0
-                for (let i = 0; i < seriesCount; i++) {
-                    values[i] = 0
-                }
-                map.set(row.trend_bucket, values)
+            const date = new UTCDate(row.trend_bucket)
+            const key = getBucketKey(date)
+            if (key && dataMap.has(key)) {
+                const values = dataMap.get(key)!
+                values[seriesIndex] = Number(row.result_value)
+            } else {
+                console.log(`No data bucket found for ${format(date, 'yyyy-MM-dd HH:mm:ss')}`)
             }
         })
     })
 
-    // Second pass: fill in actual values
-    data.forEach(({rows}, seriesIndex) => {
-        rows.forEach(row => {
-            map.get(row.trend_bucket)![seriesIndex] = Number(row.result_value)
-        })
-    })
+    console.log(data, dataMap)
 
-    return Array.from(map.entries()).map(([date, values]) => ({
-        date,
-        values,
-    }))
+    return Array.from(dataMap.entries())
+        .sort(([a], [b]) => a - b)  // Sort by timestamp
+        .map(([date, values]) => ({
+            date: new Date(date).toISOString(),  // Or format as needed
+            values,
+        }))
 }

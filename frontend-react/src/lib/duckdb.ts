@@ -28,5 +28,8 @@ export const createDb = async () => {
     const logger = new duckdb.ConsoleLogger();
     const db = new duckdb.AsyncDuckDB(logger, worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    const conn = await db.connect();
+    await conn.query(`SET TimeZone='UTC';`);
+    await conn.close();
     return db;
 };
