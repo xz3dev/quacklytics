@@ -24,6 +24,7 @@ rsync --progress -e ssh root@ph.fmennen.de:/events.csv.gz .
 echo "Download complete. Importing..."
 
 QUERY2="
+    delete from events;
     copy events from 'events.csv.gz';
 "
 
