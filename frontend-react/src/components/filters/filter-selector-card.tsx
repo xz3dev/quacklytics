@@ -1,5 +1,5 @@
 // src/components/filters/FilterSelectorCard.tsx
-import {useEffect, useState} from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import {Check, ChevronsUpDown} from 'lucide-react'
 import {Card, CardContent, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Command, CommandEmpty, CommandInput, CommandItem, CommandList,} from '@/components/ui/command'
@@ -7,7 +7,7 @@ import {Popover, PopoverContent, PopoverTrigger,} from '@/components/ui/popover'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from '@/components/ui/select'
 import {Button} from '@/components/ui/button'
 import {Field, FieldFilter, Operator, operators} from "@/model/filters.ts";
-import {useSchema} from "@/services/schemas.ts";
+import {usePropValues, useSchema} from "@/services/schemas.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 
 interface Props {
@@ -24,7 +24,7 @@ export function FilterSelectorCard
  }: Props) {
     const [currentField, setCurrentField] = useState<Field | null>(null)
     const [currentOperator, setCurrentOperator] = useState<Operator>('=')
-    const [currentValue, setCurrentValue] = useState('')
+    const [currentValue, setCurrentValue] = useState<string>('')
     const [openField, setOpenField] = useState(false)
     const [openValue, setOpenValue] = useState(false)
 
@@ -35,7 +35,7 @@ export function FilterSelectorCard
         if (initialFilter) {
             setCurrentField(initialFilter.field)
             setCurrentOperator(initialFilter.operator)
-            setCurrentValue(initialFilter.value)
+            setCurrentValue(initialFilter.value.toString())
         }
     }, [initialFilter])
 
@@ -47,7 +47,16 @@ export function FilterSelectorCard
     // const availableFields = ['a', 'b']
 
     const eventTypes = Object.keys(schema.data.events)
-    const propertyValues = schema.data.propertyValues
+
+    const fieldId = useMemo(() =>
+            schema.data.uniqueProperties
+                .find(f => f.name === currentField?.name)?.id ?? 0,
+        [currentField],
+    )
+    const projectId = useProjectId()
+    const propValuesQuery = usePropValues(projectId, fieldId)
+
+    const propertyValues: string[] = propValuesQuery.data ?? []
 
     const handleSave = () => {
         if (currentField && currentValue) {
@@ -188,7 +197,7 @@ export function FilterSelectorCard
                                                 {type}
                                             </CommandItem>
                                         ))
-                                        : propertyValues[currentField?.name ?? '']?.map(
+                                        : propertyValues?.map(
                                             (val) => (
                                                 <CommandItem
                                                     key={val}

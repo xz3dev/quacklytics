@@ -7,3 +7,6 @@ PATCH {{url}}/{{project}}/schema
 Accept: application/json
 
 ###
+
+GET {{url}}/{{project}}/schema/prop/2103
+Accept: application/json

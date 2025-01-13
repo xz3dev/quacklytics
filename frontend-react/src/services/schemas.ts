@@ -8,67 +8,59 @@ export interface Field {
     isProperty?: boolean
 }
 
+type FieldWithId = Field & { id: number }
 const fieldTypes = ['string', 'number', 'boolean'] as const
 export type FieldType = (typeof fieldTypes)[number]
 
 export interface Schema {
-    uniqueProperties: Field[]
-    all: Field[]
-    events: Record<string, Field[]>
-    propertyValues: Record<string, string[]>
+    uniqueProperties: FieldWithId[]
+    events: Record<string, FieldWithId[]>
 }
 
 type SchemaResponse = Record<
     string,
-    Record<string, { type: string; values: string[] }>
+    Record<string, { type: string, id: number }>
 >
 
 export const SCHEMA_KEY = (project: string) => ['schema', project] as const
+export const SCHEMA_PROP_KEY = (project: string, propId: number) => ['schema', project, propId] as const
 
 const schemaApi = {
     getSchema: async (project: string): Promise<Schema> => {
         const response = await http.get<SchemaResponse>(`${project}/schema`)
         return parseSchema(response ?? {})
+    },
+    getPropValues: async (project: string, id: number): Promise<string[]> => {
+        const response = await http.get<string[]>(`${project}/schema/prop/${id}`)
+        return response ?? []
     }
 }
 
 function parseSchema(schema: SchemaResponse): Schema {
-    const uniqueProperties: Field[] = []
-    const all: Field[] = []
-    const events: Record<string, Field[]> = {}
-    const propertyValues: Record<string, string[]> = {}
+    const uniqueProperties: FieldWithId[] = []
+    const events: Record<string, FieldWithId[]> = {}
 
     for (const [eventType, properties] of Object.entries(schema)) {
         events[eventType] = []
         for (const [key, details] of Object.entries(properties)) {
-            const field: Field = {
+            const field: FieldWithId = {
                 name: key,
                 type: details.type as FieldType,
                 isProperty: true,
+                id: details.id,
             }
 
             // Add field to collections
-            all.push(field)
             events[eventType].push(field)
             if (!uniqueProperties.find((p) => p.name === key)) {
                 uniqueProperties.push(field)
             }
-
-            // Merge values for this property across all event types
-            if (!propertyValues[key]) {
-                propertyValues[key] = []
-            }
-            propertyValues[key] = [
-                ...new Set([...propertyValues[key], ...details.values]),
-            ]
         }
     }
 
     return {
-        all,
         uniqueProperties,
         events,
-        propertyValues,
     }
 }
 
@@ -84,10 +76,19 @@ export function useSchema(
         refetchOnWindowFocus: false, // Schema doesn't change often
         placeholderData: {
             uniqueProperties: [],
-            all: [],
             events: {},
-            propertyValues: {},
         },
         ...options,
+    })
+}
+
+export function usePropValues(project: string, id: number, enabled: boolean = true) {
+    return useQuery<string[], Error>({
+        queryKey: SCHEMA_PROP_KEY(project, id),
+        queryFn: () => schemaApi.getPropValues(project, id),
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false, // Schema doesn't change often
+        placeholderData: [],
+        enabled,
     })
 }

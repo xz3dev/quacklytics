@@ -2,8 +2,4 @@ POST {{url}}/{{project}}/dummy
 
 ###
 
-GET {{url}}/{{project}}/schema
-
-###
-
 GET {{url}}/{{project}}/events/parquet/checksums
