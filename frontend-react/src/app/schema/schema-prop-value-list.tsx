@@ -1,10 +1,9 @@
-import {useState} from "react"
+import {useEffect, useRef, useState} from "react"
 import {Input} from "@/components/ui/input"
 import {Dialog, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
 import {usePropValues} from "@/services/schemas.ts"
 import {useProjectId} from "@/hooks/use-project-id.tsx"
 import {useVirtualizer} from '@tanstack/react-virtual'
-import {useRef} from "react"
 import {cn} from "@/lib/utils"
 
 export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
@@ -16,7 +15,9 @@ export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
     const [search, setSearch] = useState("")
     const projectId = useProjectId()
     const parentRef = useRef<HTMLDivElement>(null)
-
+    useEffect(() => {
+        setSearch("")
+    }, [propId, isOpen])
     const propQuery = usePropValues(projectId, propId, isOpen)
     const values = propQuery.data ?? []
 
@@ -25,6 +26,8 @@ export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
         value.toLowerCase().includes(search.toLowerCase())
     )
 
+    console.log(search, values, filteredValues)
+
     const virtualizer = useVirtualizer({
         count: filteredValues.length,
         getScrollElement: () => parentRef.current,
@@ -32,8 +35,17 @@ export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
         overscan: 5,
     })
 
+    useEffect(() => {
+        virtualizer.measure() // hack to force virtualizer to update
+    }, [propId, isOpen]);
+
+
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <Dialog
+            open={isOpen}
+            onOpenChange={(open) => !open && onClose()}
+            key={propId}
+        >
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Values for {fieldName}</DialogTitle>
@@ -44,10 +56,13 @@ export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full"
+                        autoFocus
                     />
                     <div className="rounded-md border border-input">
                         {filteredValues.length === 0 ? (
-                            <p className="p-4 text-sm text-muted-foreground text-center">
+                            <p
+                                className="p-4 text-sm text-muted-foreground text-center h-[400px]"
+                            >
                                 No results found.
                             </p>
                         ) : (
@@ -68,8 +83,6 @@ export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
                                             className={cn(
                                                 "absolute top-0 left-0 w-full",
                                                 "px-2 py-1.5 text-sm",
-                                                "hover:bg-accent hover:text-accent-foreground",
-                                                "cursor-default select-none"
                                             )}
                                             style={{
                                                 height: `${virtualRow.size}px`,

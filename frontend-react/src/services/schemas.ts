@@ -8,7 +8,7 @@ export interface Field {
     isProperty?: boolean
 }
 
-type FieldWithId = Field & { id: number }
+export type FieldWithId = Field & { id: number }
 const fieldTypes = ['string', 'number', 'boolean'] as const
 export type FieldType = (typeof fieldTypes)[number]
 
