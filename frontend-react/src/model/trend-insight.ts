@@ -35,7 +35,8 @@ export const trendSeriesDefaults: TrendSeries = {
     },
 }
 
-export type TrendAggregationFunction = 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX'
+export const trendAggregationFunctions = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'] as const
+export type TrendAggregationFunction = (typeof trendAggregationFunctions)[number]
 
 export interface TrendAggregation {
     function: TrendAggregationFunction
@@ -44,7 +45,7 @@ export interface TrendAggregation {
     distinct?: boolean
 }
 
-export const requireMinDays = (minDays: number): ((range: string) => boolean )=>  {
+export const requireMinDays = (minDays: number): ((range: string) => boolean) => {
     return (range: string) => {
         const dateRange = determineDateRange(range)
         const duration = intervalToDuration({start: dateRange.start, end: dateRange.end})
@@ -52,7 +53,7 @@ export const requireMinDays = (minDays: number): ((range: string) => boolean )=>
     }
 }
 
-export const requireMaxDays = (maxDays: number): ((range: string) => boolean )=>  {
+export const requireMaxDays = (maxDays: number): ((range: string) => boolean) => {
     return (range: string) => {
         const dateRange = determineDateRange(range)
         const duration = intervalToDuration({start: dateRange.start, end: dateRange.end})

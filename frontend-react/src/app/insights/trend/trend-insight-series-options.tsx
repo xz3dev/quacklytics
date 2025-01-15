@@ -4,8 +4,12 @@ import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {FilterSelectorCard} from "@/components/filters/filter-selector-card";
 import {ChartNoAxesColumnIncreasing, Plus, TrendingUp, X} from "lucide-react";
-import {FieldFilter} from "@/model/filters.ts";
+import {Field, FieldFilter} from "@/model/filters.ts";
 import {FilterSelector} from "@/components/filters/filter-selector.tsx";
+import {
+    TrendInsightSeriesAggregationSelection
+} from "@app/insights/trend/trend-insight-series-aggregation-selection.tsx";
+import {AggregationFunction} from "@lib/aggregations.ts";
 
 export function TrendInsightSeriesOptions() {
     const {data, updateFn} = useContext(TrendInsightContext)
@@ -53,6 +57,25 @@ export function TrendInsightSeriesOptions() {
         })
     }
 
+    function handleAggregationChange(
+        seriesIndex: number,
+        func: AggregationFunction,
+        field?: Field,
+        distinct?: boolean
+    ) {
+        console.log(`update`, func, field, distinct)
+        updateFn?.((insight) => {
+            if (!insight.series?.[seriesIndex]?.query?.aggregations?.[0]) return
+            insight.series[seriesIndex].query.aggregations[0] = {
+                function: func,
+                alias: 'result_value',
+                field: field ?? {name: 'id', type: 'string'},
+                distinct
+            }
+        })
+    }
+
+
     return (
         <div className="flex flex-col items-stretch gap-2">
             {
@@ -76,6 +99,13 @@ export function TrendInsightSeriesOptions() {
                                 onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}
                             />
                         ))}
+                        <TrendInsightSeriesAggregationSelection
+                            currentFunction={series.query?.aggregations[0]?.function ?? 'COUNT'}
+                            selectedField={series.query?.aggregations[0]?.field}
+                            onSelect={(func, field, distinct) =>
+                                handleAggregationChange(seriesIndex, func, field, distinct)
+                            }
+                        />
                         <Popover
                             open={addFilterOpen[seriesIndex]}
                             onOpenChange={(isOpen) => {
