@@ -14,18 +14,21 @@ interface TrendAggregationOptions {
     name: string
     func: AggregationFunction
     distinct?: Field
+    resetField?: boolean
 }
 
 const TREND_AGGREGATION_OPTIONS: TrendAggregationOptions[] = [
     {
         name: 'Count',
         func: 'COUNT',
-        distinct: { name: 'id', type: 'string' }
+        distinct: { name: 'id', type: 'string' },
+        resetField: true
     },
     {
         name: 'Distinct Users',
         func: 'COUNT',
-        distinct: { name: 'user_id', type: 'string' }
+        distinct: { name: 'user_id', type: 'string' },
+        resetField: true
     },
     {
         name: 'Sum',
@@ -69,6 +72,8 @@ export function TrendInsightSeriesAggregationSelection({
 
     const needsFieldSelection = AGGREGATIONS_REQUIRING_FIELD.includes(currentFunction)
 
+    const isDistinctUsers = currentFunction === 'COUNT' && selectedField?.name === 'user_id'
+
     return (
         <div className="flex items-center gap-2">
             <DropdownMenu>
@@ -78,7 +83,7 @@ export function TrendInsightSeriesAggregationSelection({
                         size="sm"
                         className="flex items-center gap-2"
                     >
-                        {currentFunction}
+                        {isDistinctUsers ? 'Distinct Users' : currentFunction}
                         <ChevronDown className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -89,9 +94,14 @@ export function TrendInsightSeriesAggregationSelection({
                             onClick={() => {
                                 const needsNumberField = AGGREGATIONS_REQUIRING_FIELD.includes(option.func)
                                 const firstNumberField = availableFields.find(f => f.type === 'number')
+
+                                const field = option.resetField
+                                    ? option.distinct
+                                    : selectedField?.type === 'number' || !needsNumberField ? selectedField : firstNumberField
+
                                 onSelect(
                                     option.func,
-                                    selectedField?.type === 'number' || !needsNumberField ? selectedField : firstNumberField,
+                                    field,
                                     !!option.distinct
                                 );
                             }}

@@ -63,6 +63,7 @@ export function TrendInsightSeriesOptions() {
         field?: Field,
         distinct?: boolean
     ) {
+        console.log(`update`, func, field, distinct)
         updateFn?.((insight) => {
             if (!insight.series?.[seriesIndex]?.query?.aggregations?.[0]) return
             insight.series[seriesIndex].query.aggregations[0] = {

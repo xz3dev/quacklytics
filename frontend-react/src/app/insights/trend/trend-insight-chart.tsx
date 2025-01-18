@@ -85,7 +85,7 @@ export function TrendInsightChart({insight}: Props) {
             <ComposedChart
                 data={chartData}
                 margin={{
-                    left: 12,
+                    left: 0,
                     right: 12,
                     top: 12,
                     bottom: 12,
@@ -102,10 +102,10 @@ export function TrendInsightChart({insight}: Props) {
                 />
                 <YAxis
                     orientation="left"
-                    tickLine={false}
-                    axisLine={false}
-                    tickCount={2}
-                    width={5}
+                    tickLine={true}
+                    axisLine={true}
+                    tickCount={4}
+                    width={30}
                 />
                 <ChartTooltip
                     cursor={true}
@@ -173,12 +173,6 @@ function buildChartData(
 ): ChartData[] {
     if(data.length === 0 || data.every(s => s.rows.length === 0)) return []
     const seriesCount = data.length
-    console.log(`Building chart data for ${seriesCount} series`)
-    for (const el of data) {
-        for (const row of el.rows) {
-            console.log(`Row: ${format(new UTCDate(row.trend_bucket), 'yyyy-MM-dd HH:mm:ss')}, ${row.result_value}`)
-        }
-    }
 
     const emptyValues: Record<number, number> = {}
     for (let i = 0; i < seriesCount; i++) {
@@ -206,7 +200,6 @@ function buildChartData(
                 key: step.getTime(),
             })
         }
-        console.log(`Added step: ${format(lastStep, 'yyyy-MM-dd HH:mm:ss')} - ${format(step, 'yyyy-MM-dd HH:mm:ss')}`)
         lastStep = step
     }
 
@@ -226,7 +219,6 @@ function buildChartData(
             return null
         }
 
-        console.log(`Found bucket for ${format(date, 'yyyy-MM-dd HH:mm:ss')}: ${format(new UTCDate(bucket.key), 'yyyy-MM-dd HH:mm:ss')}`)
 
         return bucket.key
     }
