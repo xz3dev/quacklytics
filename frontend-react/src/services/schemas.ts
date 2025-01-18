@@ -9,7 +9,7 @@ export interface Field {
 }
 
 export type FieldWithId = Field & { id: number }
-const fieldTypes = ['string', 'number', 'boolean'] as const
+const fieldTypes = ['string', 'number', 'boolean', 'json', 'timestamp'] as const
 export type FieldType = (typeof fieldTypes)[number]
 
 export interface Schema {

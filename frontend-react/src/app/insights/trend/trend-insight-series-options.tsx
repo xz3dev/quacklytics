@@ -63,7 +63,6 @@ export function TrendInsightSeriesOptions() {
         field?: Field,
         distinct?: boolean
     ) {
-        console.log(`update`, func, field, distinct)
         updateFn?.((insight) => {
             if (!insight.series?.[seriesIndex]?.query?.aggregations?.[0]) return
             insight.series[seriesIndex].query.aggregations[0] = {
@@ -74,10 +73,11 @@ export function TrendInsightSeriesOptions() {
             }
         })
     }
-
+1
 
     return (
         <div className="flex flex-col items-stretch gap-2">
+            {/*<div className="text-sm">{JSON.stringify(data?.series)}</div>*/}
             {
                 data.series?.map((series, seriesIndex) => {
                     return <div

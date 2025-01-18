@@ -8,5 +8,5 @@ Accept: application/json
 
 ###
 
-GET {{url}}/{{project}}/schema/prop/2103
+GET {{url}}/{{project}}/schema/prop/3710
 Accept: application/json

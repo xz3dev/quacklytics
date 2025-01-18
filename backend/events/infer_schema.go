@@ -8,7 +8,9 @@ import (
 	"gorm.io/gorm/clause"
 	"log"
 	"reflect"
+	"regexp"
 	"strings"
+	"time"
 )
 
 func ApplySchemaChanges(events []*model.EventInput, db *gorm.DB) {
@@ -128,7 +130,8 @@ func makePropertyMap(properties []schema.EventSchemaProperty) map[string]*schema
 }
 
 func updateProperty(key string, value interface{}, propsByKey map[string]*schema.EventSchemaProperty, schemaID int) {
-	observedType := normalizeType(reflect.TypeOf(value).String())
+	observedType := determineType(key, value)
+
 	strValue := fmt.Sprintf("%v", value)
 
 	prop, exists := propsByKey[key]
@@ -145,6 +148,34 @@ func updateProperty(key string, value interface{}, propsByKey map[string]*schema
 	}
 
 	addValueIfNotExists(prop, strValue)
+}
+
+func determineType(key string, value interface{}) string {
+	_, isMap := value.(map[string]interface{})
+	if isMap {
+		return "json"
+	}
+
+	timestamp := "2006-01-02 15:04:05.000"
+	if _, err := time.Parse(timestamp, fmt.Sprintf("%v", value)); err == nil {
+		return "timestamp"
+	}
+	if _, err := time.Parse(time.RFC3339, fmt.Sprintf("%v", value)); err == nil {
+		return "timestamp"
+	}
+
+	normalizedType := normalizeType(reflect.TypeOf(value).String())
+	// extra check to make really sure it's a number
+	if normalizedType == "number" {
+		isNumberRegex := regexp.MustCompile(`^[+-]?([0-9]*[.])?[0-9]+$`)
+		isReallyNumber := isNumberRegex.MatchString(fmt.Sprintf("%v", value))
+		if isReallyNumber {
+			return "number"
+		} else {
+			return "string"
+		}
+	}
+	return normalizedType
 }
 
 func addValueIfNotExists(prop *schema.EventSchemaProperty, value string) {

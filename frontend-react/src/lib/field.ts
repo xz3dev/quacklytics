@@ -10,7 +10,7 @@ export function getFieldExpression(field: Field, castType?: string): string {
         expression = `CAST(json_extract(properties, '${jsonPath}') AS ${castType ?? 'VARCHAR'})`
     } else {
         if (castType) {
-            expression = `CAST(${expression} AS ${castType})`
+            expression = `CAST(${nameCleaned} AS ${castType})`
         } else {
             expression = field.name
         }

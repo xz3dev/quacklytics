@@ -63,7 +63,7 @@ export function TrendInsightSeriesAggregationSelection({
 
     const availableFields = [
         { name: 'event_type', type: 'string' as const },
-        { name: 'timestamp', type: 'number' as const },
+        { name: 'timestamp', type: 'timestamp' as const },
         ...(schemaQuery.data?.uniqueProperties ?? [])
     ].filter(field => field.type === 'number')
 
