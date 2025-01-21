@@ -1,0 +1,14 @@
+
+create table persons
+(
+    id         uuid primary key,
+    first_seen timestamp,
+    properties json
+);
+
+create table person_distinct_ids
+(
+    person_id uuid primary key references persons(id),
+    distinct_id uuid not null,
+    primary key (person_id, distinct_id)
+);
