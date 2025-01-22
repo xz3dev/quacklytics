@@ -19,7 +19,8 @@ func convertToArrowRecord(events []model.Event) arrow.Record {
 	// Create builders for each field
 	idBuilder := array.NewFixedSizeBinaryBuilder(pool, &arrow.FixedSizeBinaryType{ByteWidth: 16})
 	eventTypeBuilder := array.NewStringBuilder(pool)
-	userIdBuilder := array.NewFixedSizeBinaryBuilder(pool, &arrow.FixedSizeBinaryType{ByteWidth: 16})
+	distinctIdBuilder := array.NewStringBuilder(pool)
+	personIdBuilder := array.NewFixedSizeBinaryBuilder(pool, &arrow.FixedSizeBinaryType{ByteWidth: 16})
 	timestampBuilder := array.NewTimestampBuilder(pool, &arrow.TimestampType{Unit: arrow.Millisecond})
 	propertiesBuilder := array.NewStringBuilder(pool)
 
@@ -27,7 +28,8 @@ func convertToArrowRecord(events []model.Event) arrow.Record {
 	for _, event := range events {
 		idBuilder.Append(event.Id[:])
 		eventTypeBuilder.Append(event.EventType)
-		userIdBuilder.Append(event.UserId[:])
+		distinctIdBuilder.Append(event.DistinctId[:])
+		personIdBuilder.Append(event.PersonId[:])
 		timestampBuilder.Append(arrow.Timestamp(event.Timestamp.UnixMilli()))
 		propertiesJSON, _ := json.Marshal(event.Properties)
 		propertiesBuilder.Append(string(propertiesJSON))
@@ -36,7 +38,8 @@ func convertToArrowRecord(events []model.Event) arrow.Record {
 	// Create arrays from builders
 	idArray := idBuilder.NewArray()
 	eventTypeArray := eventTypeBuilder.NewArray()
-	userIdArray := userIdBuilder.NewArray()
+	distinctIdArray := distinctIdBuilder.NewArray()
+	personIdArray := personIdBuilder.NewArray()
 	timestampArray := timestampBuilder.NewArray()
 	propertiesArray := propertiesBuilder.NewArray()
 
@@ -45,7 +48,8 @@ func convertToArrowRecord(events []model.Event) arrow.Record {
 		[]arrow.Field{
 			{Name: "id", Type: &arrow.FixedSizeBinaryType{ByteWidth: 16}},
 			{Name: "eventType", Type: arrow.BinaryTypes.String},
-			{Name: "userId", Type: &arrow.FixedSizeBinaryType{ByteWidth: 16}},
+			{Name: "distinctId", Type: arrow.BinaryTypes.String},
+			{Name: "personId", Type: &arrow.FixedSizeBinaryType{ByteWidth: 16}},
 			{Name: "timestamp", Type: &arrow.TimestampType{Unit: arrow.Millisecond}},
 			{Name: "properties", Type: arrow.BinaryTypes.String},
 		},
@@ -54,7 +58,7 @@ func convertToArrowRecord(events []model.Event) arrow.Record {
 
 	// Create record
 	record := array.NewRecord(schema, []arrow.Array{
-		idArray, eventTypeArray, userIdArray, timestampArray, propertiesArray,
+		idArray, eventTypeArray, distinctIdArray, personIdArray, timestampArray, propertiesArray,
 	}, int64(numEvents))
 	return record
 }

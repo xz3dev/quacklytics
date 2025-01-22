@@ -1,8 +1,9 @@
 create table events
 (
-    id         uuid primary key,
-    timestamp  timestamp,
-    event_type text,
-    user_id    uuid,
-    properties json
+    id          uuid primary key,
+    timestamp   timestamp not null,
+    event_type  text      not null,
+    distinct_id text      not null,
+    person_id   uuid,
+    properties  json
 );

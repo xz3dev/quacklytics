@@ -85,7 +85,7 @@ export function EventsViewer() {
                             <TableRow>
                                 <TableHead>Event Type</TableHead>
                                 <TableHead>Timestamp</TableHead>
-                                <TableHead>User ID</TableHead>
+                                <TableHead>Person ID</TableHead>
                                 <TableHead>Properties</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -104,7 +104,7 @@ export function EventsViewer() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <code className="text-xs">{event.userId}</code>
+                                        <code className="text-xs">{event.personId}</code>
                                     </TableCell>
                                     <TableCell>
                                         <pre className="text-xs whitespace-pre-wrap max-w-md">

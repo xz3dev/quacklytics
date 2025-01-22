@@ -27,7 +27,7 @@ const TREND_AGGREGATION_OPTIONS: TrendAggregationOptions[] = [
     {
         name: 'Distinct Users',
         func: 'COUNT',
-        distinct: { name: 'user_id', type: 'string' },
+        distinct: { name: 'person_id', type: 'string' },
         resetField: true
     },
     {
@@ -72,7 +72,7 @@ export function TrendInsightSeriesAggregationSelection({
 
     const needsFieldSelection = AGGREGATIONS_REQUIRING_FIELD.includes(currentFunction)
 
-    const isDistinctUsers = currentFunction === 'COUNT' && selectedField?.name === 'user_id'
+    const isDistinctUsers = currentFunction === 'COUNT' && selectedField?.name === 'person_id'
 
     return (
         <div className="flex items-center gap-2">

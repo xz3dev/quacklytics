@@ -5,7 +5,8 @@ QUERY="
         uuid as id,
         timestamp,
         event as event_type,
-        person_id as user_id,
+        distinct_id as distinct_id,
+        person_id as person_id,
         properties,
     from posthog.events
     into outfile '/events.csv.gz'

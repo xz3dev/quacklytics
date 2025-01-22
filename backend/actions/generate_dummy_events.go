@@ -40,7 +40,7 @@ func GenerateRandomEvents(projectId string, numEvents int, eventType string) {
 
 		eventInput := &model.EventInput{
 			EventType:  eventType,
-			UserId:     uuid.New(), // Example user ID
+			PersonId:   uuid.New(), // Example user ID
 			Timestamp:  timestamp,
 			Properties: randomProperties,
 		}

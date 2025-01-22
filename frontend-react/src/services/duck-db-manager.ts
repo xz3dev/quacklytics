@@ -16,11 +16,12 @@ export class DuckDbManager {
         await conn.query(`
             create table if not exists events
             (
-                id         UUID primary key,
-                timestamp  timestamp,
-                event_type text,
-                user_id    UUID,
-                properties json
+                id          UUID primary key,
+                timestamp   timestamp,
+                event_type  text,
+                distinct_id text,
+                person_id   UUID,
+                properties  json
             );
         `)
     }
@@ -48,11 +49,12 @@ export class DuckDbManager {
             // Import data from the Parquet file into the events table
             const query = conn.query(`
                 insert or ignore into events
-                select lpad(to_hex(id::bit::hugeint), 32, '0')     as id,
-                       timestamp::timestamp                        as timestamp,
-                       eventtype                                   as event_type,
-                       lpad(to_hex(userid::bit::hugeint), 32, '0') as user_id,
-                       properties::json                            as properties
+                select lpad(to_hex(id::bit::hugeint), 32, '0')       as id,
+                       timestamp::timestamp                          as timestamp,
+                       eventtype                                     as event_type,
+                       distinctid                                    as distinct_id,
+                       lpad(to_hex(personid::bit::hugeint), 32, '0') as person_id,
+                       properties::json                              as properties
                 from parquet_scan('${filename}')
             `)
             queries.push(query)
@@ -105,7 +107,8 @@ export class DuckDbManager {
             (row) =>
                 ({
                     id: row.id,
-                    userId: row.user_id,
+                    personId: row.person_id,
+                    distinctId: row.distinct_id,
                     timestamp: new Date(Number(row.timestamp)),
                     eventType: row.event_type,
                     properties: JSON.parse(row.properties),

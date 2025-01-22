@@ -7,7 +7,8 @@ import (
 
 type EventInput struct {
 	EventType  string         `json:"eventType"`
-	UserId     uuid.UUID      `json:"userId"`
+	PersonId   uuid.UUID      `json:"userId"`
+	DistinctId string         `json:"distinctId"`
 	Timestamp  time.Time      `json:"timestamp"`
 	Properties map[string]any `json:"properties"`
 }

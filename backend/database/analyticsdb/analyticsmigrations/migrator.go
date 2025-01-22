@@ -32,7 +32,6 @@ func MigrateDBIfNeeded(db *sql.DB) {
 	driver.ensureVersionTable()
 	log.Printf("Found %d migrations", len(files))
 	m, err := migrate.NewWithInstance("iofs", fs, "data", &driver)
-	log.Printf("Migrate DuckDB to newest version successfully.")
 
 	//err = m.Down()
 	//if err != nil && !errors.Is(err, migrate.ErrNoChange) {
@@ -43,7 +42,7 @@ func MigrateDBIfNeeded(db *sql.DB) {
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatal(err)
 	}
-
+	log.Printf("Migrated DuckDB to newest version successfully.")
 }
 
 func getAllFilenames(efs *embed.FS) (files []string, err error) {

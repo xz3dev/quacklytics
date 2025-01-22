@@ -75,7 +75,8 @@ func (p *ProjectProcessor) processBatch(events []*model.EventInput) {
 			mapUuid(uuid.New()),
 			event.Timestamp,
 			event.EventType,
-			mapUuid(event.UserId),
+			event.DistinctId,
+			mapUuid(event.PersonId),
 			propertiesJson,
 		)
 		if err != nil {
@@ -109,7 +110,7 @@ func (p *ProjectProcessor) processPeopleDataBatch(events []*model.EventInput) {
 	//	//	mapUuid(uuid.New()),
 	//	//	event.Timestamp,
 	//	//	event.EventType,
-	//	//	mapUuid(event.UserId),
+	//	//	mapUuid(event.PersonId),
 	//	//	propertiesJson,
 	//	//)
 	//	if err != nil {
