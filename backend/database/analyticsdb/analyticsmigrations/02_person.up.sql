@@ -9,6 +9,6 @@ create table persons
 create table person_distinct_ids
 (
     person_id uuid references persons(id),
-    distinct_id uuid not null,
+    distinct_id text not null,
     primary key (person_id, distinct_id)
 );

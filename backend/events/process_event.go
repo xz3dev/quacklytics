@@ -58,10 +58,9 @@ func (p *ProjectProcessor) processBatch(events []*model.EventInput) {
 	// Pass project-specific DB to schema inference
 	ApplySchemaChanges(events, p.db)
 
-	p.processPeopleDataBatch(events)
+	p.ProcessPeopleDataBatch(events)
 
 	appender := analyticsdb.Appender(p.projectID, "events")
-	defer appender.Flush()
 	defer appender.Close()
 
 	for _, event := range events {
@@ -84,40 +83,6 @@ func (p *ProjectProcessor) processBatch(events []*model.EventInput) {
 			continue
 		}
 	}
-
-	duration := time.Since(startTime)
-	log.Printf("Project %s: Processed batch of %d events in %v", p.projectID, len(events), duration)
-}
-
-func (p *ProjectProcessor) processPeopleDataBatch(events []*model.EventInput) {
-	startTime := time.Now()
-
-	appender := analyticsdb.Appender(p.projectID, "persons")
-	defer appender.Flush()
-	defer appender.Close()
-
-	// Pass project-specific DB to schema inference
-	//ApplySchemaChanges(events, p.db)
-
-	//for _, event := range events {
-	//	propertiesJson, err := json.Marshal(event.Properties)
-	//	if err != nil {
-	//		log.Printf("Project %s: Error marshaling properties: %v", p.projectID, err)
-	//		continue
-	//	}
-	//
-	//	//err = appender.AppendRow(
-	//	//	mapUuid(uuid.New()),
-	//	//	event.Timestamp,
-	//	//	event.EventType,
-	//	//	mapUuid(event.PersonId),
-	//	//	propertiesJson,
-	//	//)
-	//	if err != nil {
-	//		log.Printf("Project %s: Error appending row: %v", p.projectID, err)
-	//		continue
-	//	}
-	//}
 
 	duration := time.Since(startTime)
 	log.Printf("Project %s: Processed batch of %d events in %v", p.projectID, len(events), duration)

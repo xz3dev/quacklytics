@@ -79,6 +79,7 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 		mux.Post("/dummy", routes.GenerateDummyEvents)
 		setupPrivateEventRoutes(mux)
 		setupAnalyticsRoutes(mux)
+		routes.SetupPersonsRoutes(mux)
 	})
 
 	return mux
