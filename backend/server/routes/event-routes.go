@@ -103,6 +103,14 @@ func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	//actions.GenerateRandomEvents(100, "test_type4")
 	w.WriteHeader(http.StatusOK)
 }
+func EventsExport(w http.ResponseWriter, r *http.Request) {
+	projectId := sv_mw.GetProjectID(r)
+
+	if err := actions.ExportToParquet(projectId); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+}
 
 func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
