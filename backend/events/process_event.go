@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
 	"log"
+	"slices"
 	"time"
 )
 
@@ -52,8 +53,24 @@ func (p *ProjectProcessor) processEventQueue() {
 	}
 }
 
-func (p *ProjectProcessor) processBatch(events []*model.EventInput) {
+func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 	startTime := time.Now()
+
+	events := make([]*model.EventInput, len(input))
+	for i, event := range input {
+		events[i] = event
+	}
+
+	slices.SortFunc(events, func(i, j *model.EventInput) int {
+		if i.Timestamp.Equal(j.Timestamp) {
+			return 0
+		}
+		isBefore := i.Timestamp.Before(j.Timestamp)
+		if isBefore {
+			return -1
+		}
+		return 1
+	})
 
 	// Pass project-specific DB to schema inference
 	ApplySchemaChanges(events, p.db)

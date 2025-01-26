@@ -50,6 +50,7 @@ func InitProjects() {
 	for _, project := range projectList {
 		if err := InitProjectDB(project); err != nil {
 			log.Printf("Error initializing project DB %s: %v", project.ID, err)
+			panic(err)
 		}
 	}
 }

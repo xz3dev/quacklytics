@@ -30,11 +30,8 @@ func (p PersonProperties) ApplySetOnceProps(props PersonProperties) {
 	}
 }
 
-func (p *PersonProperties) Value() (driver.Value, error) {
-	if p == nil {
-		return "{}", nil
-	}
-	data, err := json.Marshal(*p)
+func (p PersonProperties) Value() (driver.Value, error) {
+	data, err := json.Marshal(p)
 	if err != nil {
 		return nil, err
 	}

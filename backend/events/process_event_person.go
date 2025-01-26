@@ -5,8 +5,10 @@ import (
 	db_ext "analytics/database/db-ext"
 	"analytics/model"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -116,8 +118,6 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 	}
 	personsAppender := analyticsdb.Appender(p.projectID, "persons")
 
-	//personsDistinctIdsAppender := analyticsdb.Appender(p.projectID, "person_distinct_ids")
-
 	if len(newPersons) > 0 {
 		for personId, person := range newPersons {
 			propJson, err := json.Marshal(person.Properties)
@@ -130,13 +130,34 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 				log.Printf("Error inserting person: %v", err)
 				continue
 			}
-			log.Printf("Inserted person: %s", personId)
-			//if _, err := stmt.Exec(personId, firstSeen); err != nil {
-			//	log.Printf("Error inserting person: %v", err)
-			//}
 		}
 	}
-	personsAppender.Close()
+	err = personsAppender.Close()
+	if err != nil {
+		log.Printf("Error closing person appender: %v", err)
+		return
+	}
+
+	// Insert distinct ID mappings
+	var values strings.Builder
+	var params []any
+	if len(distinctIdMappings) > 0 {
+		i := 1
+		for distinctId, personId := range distinctIdMappings {
+			if i > 1 {
+				values.WriteString(", ")
+			}
+			values.WriteString(fmt.Sprintf("($%d::UUID, $%d::TEXT)", i, i+1))
+			params = append(params, personId.String(), distinctId)
+			i += 2
+		}
+	}
+	expandedQuery := fmt.Sprintf("INSERT OR IGNORE INTO person_distinct_ids (person_id, distinct_id) VALUES %s", values.String())
+	_, err = tx.Exec(expandedQuery, params...)
+	if err != nil {
+		log.Printf("Error inserting person distinct IDs: %v", err)
+		return
+	}
 
 	if len(updatedPersons) > 0 {
 		for personId, person := range updatedPersons {
@@ -145,31 +166,8 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 				log.Printf("Error updating person: %v", err)
 				continue
 			}
-			log.Printf("UPSERTED person: %s", personId)
-			//if _, err := stmt.Exec(personId, firstSeen); err != nil {
-			//	log.Printf("Error inserting person: %v", err)
-			//}
 		}
 	}
-	// Insert distinct ID mappings
-	//if len(distinctIdMappings) > 0 {
-	//	stmt, err := tx.Prepare(`
-	//        INSERT INTO person_distinct_ids (person_id, distinct_id)
-	//        VALUES ($1, $2)
-	//        ON CONFLICT (person_id, distinct_id) DO NOTHING
-	//    `)
-	//	if err != nil {
-	//		log.Printf("Error preparing distinct_id mapping insert: %v", err)
-	//		return
-	//	}
-	//	defer stmt.Close()
-	//
-	//	for distinctId, personId := range distinctIdMappings {
-	//		if _, err := stmt.Exec(personId, distinctId); err != nil {
-	//			log.Printf("Error inserting distinct_id mapping: %v", err)
-	//		}
-	//	}
-	//}
 
 	duration := time.Since(startTime)
 	log.Printf("Project %s: Processed people data batch in %v (persons: %d, mappings: %d)",
