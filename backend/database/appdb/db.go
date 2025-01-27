@@ -30,6 +30,7 @@ var projectTables = []interface{}{
 	&schema.EventSchemaProperty{},
 	&schema.EventSchemaPropertyValue{},
 	&model.InsightMeta{},
+	&projects.ProjectSetting{},
 }
 
 var appTables = []interface{}{

@@ -7,3 +7,19 @@ Content-Type: application/json
 
 ###
 GET {{url}}/projects
+
+###
+
+POST {{url}}/{{project}}/settings
+Content-Type: application/json
+
+[
+  {
+    "key": "name",
+    "value": "updated name2"
+  },
+  {
+    "key": "partition",
+    "value": ""
+  }
+]

@@ -3,6 +3,7 @@ package actions
 import (
 	"analytics/database/analyticsdb"
 	"analytics/projects"
+	"fmt"
 	"log"
 )
 
@@ -14,7 +15,8 @@ func ExportToParquet(projectId string) error {
 		return err
 	}
 	path := projects.TmpDir + "/" + ParquetDir
-	resp, err := tx.Exec(" COPY events TO 'output.parquet' (FORMAT PARQUET, COMPRESSION 'zstd', PARTITION_BY(event_type)); ")
+	query := fmt.Sprintf("COPY events TO '%s' (FORMAT PARQUET, COMPRESSION 'zstd', PARTITION_BY(event_type))", path)
+	resp, err := tx.Exec(query)
 	if err != nil {
 		return err
 	}

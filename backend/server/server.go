@@ -53,7 +53,7 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 
 func setupMux(dbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
-	setupMiddleware(mux)
+	setupMiddleware(mux, dbs)
 
 	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
 	return mux
@@ -80,6 +80,7 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 		setupPrivateEventRoutes(mux)
 		setupAnalyticsRoutes(mux)
 		routes.SetupPersonsRoutes(mux)
+		setupProjectSpecificRoutes(mux)
 	})
 
 	return mux
@@ -88,6 +89,10 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 func setupProjectRoutes(mux chi.Router) {
 	mux.Get("/projects", routes.ListProjects)
 	mux.Post("/projects", routes.CreateProject)
+}
+
+func setupProjectSpecificRoutes(mux chi.Router) {
+	mux.Post("/settings", routes.UpdateProjectSettings)
 }
 
 func setupPublicEventRoutes(mux chi.Router) {
@@ -110,7 +115,7 @@ func setupAnalyticsRoutes(mux chi.Router) {
 	routes.SetupDashoardRoutes(mux)
 }
 
-func setupMiddleware(r *chi.Mux) {
+func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
@@ -118,6 +123,7 @@ func setupMiddleware(r *chi.Mux) {
 	r.Use(ab.LoadClientStateMiddleware)
 	r.Use(remember.Middleware(ab))
 	r.Use(sv_mw.AuthbossMW(ab))
+	r.Use(sv_mw.DbLookupMiddleware(projectDbs))
 }
 
 //func setupCORS(mux *chi.Mux, c Config) {
