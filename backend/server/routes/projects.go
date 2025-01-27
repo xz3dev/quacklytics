@@ -11,6 +11,7 @@ import (
 )
 
 type projectData struct {
+	Id        string                `json:"id"`
 	Name      string                `json:"name"`
 	Partition string                `json:"partition"`
 	Files     projects.ProjectFiles `json:"files"`
@@ -34,6 +35,7 @@ func ListProjects(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		data = append(data, projectData{
+			Id:        project.ID,
 			Name:      settings[projects.Name],
 			Partition: settings[projects.Partition],
 			Files:     project,

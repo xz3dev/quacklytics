@@ -65,11 +65,11 @@ export function ProjectSwitcher() {
                         >
                             <div
                                 className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                {activeProject.id?.[0]?.toUpperCase()}
+                                {activeProject.name?.[0]?.toUpperCase()}
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {activeProject.id}
+                  {activeProject.name}
                 </span>
                             </div>
                             <ChevronsUpDown className="ml-auto"/>
@@ -91,9 +91,9 @@ export function ProjectSwitcher() {
                                 className="gap-2 p-2"
                             >
                                 <div className="flex size-6 items-center justify-center rounded-sm border">
-                                    {project.id?.[0]?.toUpperCase()}
+                                    {project.name?.[0]?.toUpperCase()}
                                 </div>
-                                {project.id}
+                                {project.name}
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator/>
