@@ -92,6 +92,13 @@ export function TrendInsightSeriesOptions() {
                             {series.visualisation === 'line' && <TrendingUp className="w-5 h-5 text-muted-foreground mx-1"></TrendingUp>}
                             {series.visualisation === 'bar' && <ChartNoAxesColumnIncreasing className="w-5 h-5 text-muted-foreground mx-1"></ChartNoAxesColumnIncreasing>}
                         </Button>
+                        <TrendInsightSeriesAggregationSelection
+                            currentFunction={series.query?.aggregations[0]?.function ?? 'COUNT'}
+                            selectedField={series.query?.aggregations[0]?.field}
+                            onSelect={(func, field, distinct) =>
+                                handleAggregationChange(seriesIndex, func, field, distinct)
+                            }
+                        />
                         {series.query?.filters.map((filter, filterIndex) => (
                             <FilterSelector
                                 key={filterIndex}
@@ -100,13 +107,6 @@ export function TrendInsightSeriesOptions() {
                                 onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}
                             />
                         ))}
-                        <TrendInsightSeriesAggregationSelection
-                            currentFunction={series.query?.aggregations[0]?.function ?? 'COUNT'}
-                            selectedField={series.query?.aggregations[0]?.field}
-                            onSelect={(func, field, distinct) =>
-                                handleAggregationChange(seriesIndex, func, field, distinct)
-                            }
-                        />
                         <Popover
                             open={addFilterOpen[seriesIndex]}
                             onOpenChange={(isOpen) => {
