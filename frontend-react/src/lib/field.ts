@@ -7,7 +7,7 @@ export function getFieldExpression(field: Field, castType?: string): string {
     const nameCleaned = (field.alias ?? field.name).replace(/\$\./g, '')
     if (isJsonField) {
         const jsonPath = `$.${nameCleaned}`
-        expression = `CAST(json_extract(properties, '${jsonPath}') AS ${castType ?? 'VARCHAR'})`
+        expression = `CAST(properties->>'${jsonPath}' AS ${castType ?? 'VARCHAR'})`
     } else {
         if (castType) {
             expression = `CAST(${nameCleaned} AS ${castType})`
