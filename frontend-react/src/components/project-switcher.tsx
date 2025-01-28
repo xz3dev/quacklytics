@@ -68,9 +68,9 @@ export function ProjectSwitcher() {
                                 {activeProject.name?.[0]?.toUpperCase()}
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">
-                  {activeProject.name}
-                </span>
+                                <span className="truncate font-semibold">
+                                  {activeProject.name}
+                                </span>
                             </div>
                             <ChevronsUpDown className="ml-auto"/>
                         </SidebarMenuButton>
