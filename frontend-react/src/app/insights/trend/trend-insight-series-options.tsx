@@ -3,7 +3,7 @@ import {TrendInsightContext} from "@app/insights/insight-context.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {FilterSelectorCard} from "@/components/filters/filter-selector-card";
-import {ChartNoAxesColumnIncreasing, Plus, TrendingUp, X} from "lucide-react";
+import {ChartNoAxesColumnIncreasing, Copy, Plus, TrendingUp, X} from "lucide-react";
 import {Field, FieldFilter} from "@/model/filters.ts";
 import {FilterSelector} from "@/components/filters/filter-selector.tsx";
 import {
@@ -74,7 +74,18 @@ export function TrendInsightSeriesOptions() {
             }
         })
     }
-1
+
+    const handleDuplicateSeries = (seriesIndex: number) => {
+        updateFn?.((insight) => {
+            if (insight.series?.[seriesIndex]) {
+                const newSeries = structuredClone(insight.series[seriesIndex])
+                insight.series.push({
+                    ...newSeries,
+                    name: `${newSeries.name} (Copy)`, // Add a suffix to indicate duplication
+                });
+            }
+        });
+    };
 
     return (
         <div className="flex flex-col items-stretch gap-2">
@@ -83,7 +94,7 @@ export function TrendInsightSeriesOptions() {
                 data.series?.map((series, seriesIndex) => {
                     return <div
                         key={seriesIndex}
-                        className="flex items-center gap-2 p-2 bg-muted/40 border border-border rounded-md"
+                        className="flex gap-2 p-2 bg-muted/40 border border-border rounded-md"
                     >
                         <Button
                             variant="ghost"
@@ -92,49 +103,57 @@ export function TrendInsightSeriesOptions() {
                             {series.visualisation === 'line' && <TrendingUp className="w-5 h-5 text-muted-foreground mx-1"></TrendingUp>}
                             {series.visualisation === 'bar' && <ChartNoAxesColumnIncreasing className="w-5 h-5 text-muted-foreground mx-1"></ChartNoAxesColumnIncreasing>}
                         </Button>
-                        <TrendInsightSeriesAggregationSelection
-                            currentFunction={series.query?.aggregations[0]?.function ?? 'COUNT'}
-                            selectedField={series.query?.aggregations[0]?.field}
-                            onSelect={(func, field, distinct) =>
-                                handleAggregationChange(seriesIndex, func, field, distinct)
-                            }
-                        />
-                        {series.query?.filters.map((filter, filterIndex) => (
-                            <FilterSelector
-                                key={filterIndex}
-                                filter={filter}
-                                onSave={(filter) => handleFilterUpdate(seriesIndex, filterIndex, filter)}
-                                onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}
+                        <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                            <TrendInsightSeriesAggregationSelection
+                                currentFunction={series.query?.aggregations[0]?.function ?? 'COUNT'}
+                                selectedField={series.query?.aggregations[0]?.field}
+                                onSelect={(func, field, distinct) =>
+                                    handleAggregationChange(seriesIndex, func, field, distinct)
+                                }
                             />
-                        ))}
-                        <Popover
-                            open={addFilterOpen[seriesIndex]}
-                            onOpenChange={(isOpen) => {
-                                const newOpenStates = [...addFilterOpen]
-                                newOpenStates[seriesIndex] = isOpen
-                                setAddFilterOpen(newOpenStates)
-                            }}
-                        >
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8">
-                                    <Plus className="h-4 w-4 mr-2"/>
-                                    Add Filter
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-0">
-                                <FilterSelectorCard
-                                    onSave={(filter) => {
-                                        handleAddFilter(filter, seriesIndex)
-                                        closeAddFilter(seriesIndex)
-                                    }}
-                                    onDiscard={() => {
-                                        closeAddFilter(seriesIndex)
-                                    }}
+                            {series.query?.filters.map((filter, filterIndex) => (
+                                <FilterSelector
+                                    key={filterIndex}
+                                    filter={filter}
+                                    onSave={(filter) => handleFilterUpdate(seriesIndex, filterIndex, filter)}
+                                    onRemove={() => handleRemoveFilter(seriesIndex, filterIndex)}
                                 />
-                            </PopoverContent>
-                        </Popover>
+                            ))}
+                            <Popover
+                                open={addFilterOpen[seriesIndex]}
+                                onOpenChange={(isOpen) => {
+                                    const newOpenStates = [...addFilterOpen]
+                                    newOpenStates[seriesIndex] = isOpen
+                                    setAddFilterOpen(newOpenStates)
+                                }}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-8">
+                                        <Plus className="h-4 w-4 mr-2"/>
+                                        Add Filter
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-0">
+                                    <FilterSelectorCard
+                                        onSave={(filter) => {
+                                            handleAddFilter(filter, seriesIndex)
+                                            closeAddFilter(seriesIndex)
+                                        }}
+                                        onDiscard={() => {
+                                            closeAddFilter(seriesIndex)
+                                        }}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
 
                         <div className="flex-1"></div>
+                        <Button
+                            variant="ghost"
+                            onClick={() => handleDuplicateSeries(seriesIndex)}
+                        >
+                            <Copy className="w-5 h-5 text-muted-foreground mx-1"/>
+                        </Button>
                         <Button
                             variant="ghost"
                             onClick={() => handleRemoveSeries(seriesIndex)}
