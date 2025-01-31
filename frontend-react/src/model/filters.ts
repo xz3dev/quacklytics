@@ -2,6 +2,7 @@ import {TimeBucket, timeBucketData} from "@/model/trend-insight.ts";
 import {determineDateRange} from "@/model/InsightDateRange.ts";
 import {Query} from "@lib/queries.ts";
 import {formatDuration} from "date-fns";
+import {UTCDate} from "@date-fns/utc";
 
 export interface Field {
     name: string
@@ -28,9 +29,7 @@ export const operators = [
 ] as const
 export type Operator = (typeof operators)[number]
 
-export const buildRangeFilters = (range: string | undefined): FieldFilter[] => {
-    if(!range) return []
-    const {start, end} = determineDateRange(range)
+export const buildDateRangeFilters = (start: UTCDate, end: UTCDate): FieldFilter[] => {
     const startFilter = {
         field: {
             name: 'timestamp',
@@ -48,6 +47,12 @@ export const buildRangeFilters = (range: string | undefined): FieldFilter[] => {
         value: end,
     } satisfies FieldFilter
     return [startFilter, endFilter]
+}
+
+export const buildRangeFilters = (range: string | undefined): FieldFilter[] => {
+    if (!range) return []
+    const {start, end} = determineDateRange(range)
+    return buildDateRangeFilters(start, end)
 }
 
 export const buildGroupByFilter = (timeBucket: TimeBucket, duration: string): Required<Pick<Query, 'groupBy' | 'orderBy'>> => {

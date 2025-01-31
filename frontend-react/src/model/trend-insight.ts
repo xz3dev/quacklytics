@@ -1,7 +1,8 @@
 import {Insight} from "@/model/insight.ts";
-import {Field, FieldFilter} from "@/model/filters.ts";
+import {Field} from "@/model/filters.ts";
 import {determineDateRange} from "@/model/InsightDateRange.ts";
 import {Duration, intervalToDuration} from "date-fns";
+import {Query} from "@/lib/queries";
 
 export interface TrendInsight extends Insight {
     type: 'Trend'
@@ -20,19 +21,34 @@ export type TrendSeriesType = (typeof trendSeriesTypes)[number]
 export interface TrendSeries {
     visualisation: TrendSeriesType
     name: string
-    query?: {
-        aggregations: TrendAggregation[]
-        filters: FieldFilter[]
-    }
+    query?: Query
 }
 
-export const trendSeriesDefaults: TrendSeries = {
-    visualisation: 'line',
-    name: '',
-    query: {
-        aggregations: [],
-        filters: [],
+
+export const newTrendInsight: Omit<TrendInsight, 'id'> = {
+    type: 'Trend',
+    series: [
+        {
+            name: 'default',
+            visualisation: 'line',
+            query: {
+                filters: [],
+                aggregations: [{
+                    function: 'COUNT',
+                    alias: 'result_value',
+                    field: {
+                        name: 'id',
+                        type: 'string',
+                    }
+                }],
+            }
+        }
+    ],
+    config: {
+        duration: 'P4W',
+        timeBucket: 'Daily'
     },
+    favorite: false,
 }
 
 export const trendAggregationFunctions = ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'] as const

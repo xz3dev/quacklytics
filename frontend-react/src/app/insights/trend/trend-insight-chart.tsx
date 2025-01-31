@@ -45,7 +45,7 @@ export function TrendInsightChart({insight}: Props) {
                     },
                 });
             }) ?? []
-        , [insight])
+        , [projectId, insight])
 
     const results = useDuckDBQueries(projectId, queries)
 

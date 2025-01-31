@@ -5,8 +5,10 @@ import {Spinner} from "@/components/spinner.tsx";
 import {Insight} from "@/model/insight.ts";
 import {TrendInsightChart} from "@app/insights/trend/trend-insight-chart.tsx";
 import {TrendInsight} from "@/model/trend-insight.ts";
-import {TrendInsightContext} from "./insight-context";
+import {TrendInsightContext, ValueInsightContext} from "./insight-context";
 import {ProjectLink} from "@/components/project-link.tsx";
+import {ValueInsight} from "@/model/value-insight.ts";
+import {ValueInsightChart} from "@app/insights/value/value-insight-chart.tsx";
 
 interface Props {
     insightId: number
@@ -48,6 +50,16 @@ function renderInsight(insight: Insight) {
                 }}>
                     <TrendInsightChart insight={insight as TrendInsight}/>
                 </TrendInsightContext.Provider>
+            )
+        case 'Value':
+            return (
+                <ValueInsightContext.Provider value={{
+                    data: insight as ValueInsight,
+                    update: () => undefined,
+                    updateFn: () => undefined,
+                }}>
+                    <ValueInsightChart insight={insight as ValueInsight}/>
+                </ValueInsightContext.Provider>
             )
         default:
             return <div>Unknown insight type: {insight.type}</div>

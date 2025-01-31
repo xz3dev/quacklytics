@@ -2,10 +2,12 @@ import {useInsight} from "@/services/insights.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {Spinner} from "@/components/spinner.tsx";
 import {Insight} from "@/model/insight.ts";
-import {BaseInsightContext, TrendInsightContext} from "@app/insights/insight-context";
+import {BaseInsightContext, TrendInsightContext, ValueInsightContext} from "@app/insights/insight-context";
 import {TrendInsightView} from "@app/insights/trend/trend-insight-view.tsx";
 import {useEffect, useState} from "react";
 import {TrendInsight} from "@/model/trend-insight.ts";
+import {ValueInsight} from "@/model/value-insight.ts";
+import {ValueInsightView} from "@app/insights/value/value-insight-view.tsx";
 
 interface Props {
     insightId: number
@@ -45,6 +47,21 @@ export function InsightView({insightId, readOnly}: Props) {
                     }}>
                         <TrendInsightView/>
                     </TrendInsightContext.Provider>
+                )
+            case 'Value':
+                return (
+                    <ValueInsightContext.Provider value={{
+                        data: localWorkingCopy as ValueInsight,
+                        update: updateWorkingCopy,
+                        updateFn: (fn: (i: ValueInsight) => void) => {
+                            if (!localWorkingCopy) return
+                            const copy = structuredClone(localWorkingCopy)
+                            fn(copy as ValueInsight)
+                            updateWorkingCopy(copy);
+                        },
+                    }}>
+                        <ValueInsightView/>
+                    </ValueInsightContext.Provider>
                 )
             default:
                 return <div>Unknown insight type: {insight.type}</div>

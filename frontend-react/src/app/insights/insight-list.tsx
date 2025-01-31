@@ -5,7 +5,7 @@ import {Input} from "@/components/ui/input"
 import {useState} from "react"
 import {useCreateInsight, useDeleteInsight, useInsights, useUpdateInsight} from "@/services/insights"
 import {formatDistance} from "date-fns"
-import {Insight} from "@/model/insight.ts";
+import {Insight, InsightType} from "@/model/insight.ts";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,6 +16,9 @@ import {MoreHorizontal, Plus, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
 import {cn} from "@lib/utils.ts";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import {newValueInsight} from "@/model/value-insight.ts";
+import {newTrendInsight} from "@/model/trend-insight.ts";
 
 interface Props {
     filter?: (i: Insight) => boolean
@@ -34,6 +37,7 @@ export function InsightsList({filter, sort, title}: Props) {
     const [newInsightName, setNewInsightName] = useState("")
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editingName, setEditingName] = useState("")
+    const [selectedType, setSelectedType] = useState<InsightType>('Trend')
 
     if (isLoading) return <div>Loading...</div>
     if (error) return <div>Error: {error.message}</div>
@@ -44,15 +48,20 @@ export function InsightsList({filter, sort, title}: Props) {
 
     const handleCreate = async () => {
         if (newInsightName.trim()) {
+            let defaults;
+            switch (selectedType) {
+                case 'Trend':
+                    defaults = newTrendInsight
+                    break;
+                case 'Value':
+                    defaults = newValueInsight
+                    break;
+                default:
+                    defaults = newTrendInsight
+            }
             await createInsightMutation.mutateAsync({
+                ...defaults,
                 name: newInsightName.trim(),
-                type: 'Trend',
-                series: [],
-                config: {
-                    timeBucket: 'Daily',
-                    duration: 'P4W',
-                },
-                favorite: false,
             })
             setNewInsightName("")
             setIsCreateOpen(false)
@@ -88,12 +97,38 @@ export function InsightsList({filter, sort, title}: Props) {
                         <DialogHeader>
                             <DialogTitle>Create New Insight</DialogTitle>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <Input
-                                placeholder="Insight name"
-                                value={newInsightName}
-                                onChange={(e) => setNewInsightName(e.target.value)}
-                            />
+                        <div className="grid py-4 gap-4">
+                            <div>
+                                <label className="block text-xs text-muted-foreground mb-2">
+                                    Name
+                                </label>
+                                <Input
+                                    placeholder="Insight name"
+                                    value={newInsightName}
+                                    onChange={(e) => setNewInsightName(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs text-muted-foreground mb-2">
+                                    Insight Type
+                                </label>
+                                <Select
+                                    value={selectedType}
+                                    onValueChange={(value) => setSelectedType(value as InsightType)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select Type"/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Trend">Trend</SelectItem>
+                                        <SelectItem value="Value">Value</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div></div>
+
                             <Button onClick={handleCreate}>Create</Button>
                         </div>
                     </DialogContent>

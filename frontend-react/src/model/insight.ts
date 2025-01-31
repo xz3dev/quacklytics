@@ -1,6 +1,7 @@
 import {TrendInsight} from "@/model/trend-insight.ts";
+import {ValueInsight} from "@/model/value-insight.ts";
 
-export type InsightType = 'Trend';
+export type InsightType = 'Trend' | 'Value';
 
 export interface Insight {
     id: number;
@@ -11,5 +12,5 @@ export interface Insight {
     favorite: boolean
 }
 
-export type UsableInsight = TrendInsight
+export type UsableInsight = TrendInsight | ValueInsight
 export type UsableInsightInput = Omit<UsableInsight, 'id'>

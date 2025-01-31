@@ -77,18 +77,6 @@ func createInsight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create associated series if they exist
-	if insight.Series != nil {
-		for idx := range *insight.Series {
-			(*insight.Series)[idx].InsightID = insight.ID
-			if err := tx.Create(&(*insight.Series)[idx]).Error; err != nil {
-				tx.Rollback()
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-	}
-
 	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

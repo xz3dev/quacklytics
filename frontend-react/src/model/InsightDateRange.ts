@@ -51,6 +51,17 @@ interface DateRange {
     end: UTCDate
 }
 
+export const determinePreviousDateRange = (range: string | undefined): DateRange => {
+    const currentRange = determineDateRange(range)
+    const diffInMilliseconds = currentRange.end.getTime() - currentRange.start.getTime()
+    const newStart = new UTCDate()
+    newStart.setTime(currentRange.start.getTime() - diffInMilliseconds)
+    return {
+        start: newStart,
+        end: currentRange.start,
+    }
+}
+
 export const determineDateRange = (range: string | undefined): DateRange => {
     if (!range) {
         return {
