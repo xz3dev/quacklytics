@@ -12,6 +12,7 @@ import {useDashboardId} from "@/hooks/use-dashboard-id.tsx";
 import {useInsightId} from "@/hooks/use-insight-id.tsx";
 import { SchemaView } from "@/app/schema/schema-view";
 import {RealtimeEventsList} from "@app/realtime/realtime-events-list.tsx";
+import {ProjectsList} from "@app/projects/projects-list.tsx";
 
 
 export function AppRouter() {
@@ -22,6 +23,7 @@ export function AppRouter() {
             {/*Auth*/}
             <Route path="login" element={<LoginPage></LoginPage>}></Route>
 
+            <Route path="projects" element={<ProjectsList></ProjectsList>}></Route>
             {/*App*/}
             <Route path="app/:projectid" element={<AppFrame></AppFrame>}>
                 <Route path="" element={<Home></Home>}></Route>
