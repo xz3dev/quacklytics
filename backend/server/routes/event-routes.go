@@ -104,9 +104,11 @@ func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 func EventsExport(w http.ResponseWriter, r *http.Request) {
+	db := sv_mw.GetProjectDB(r, w)
 	projectId := sv_mw.GetProjectID(r)
 
-	if err := actions.ExportToParquet(projectId); err != nil {
+	if err := actions.ExportToParquet(projectId, db); err != nil {
+		log.Error(err.Error(), err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
