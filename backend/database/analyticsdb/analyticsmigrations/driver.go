@@ -1,6 +1,7 @@
 package analyticsmigrations
 
 import (
+	"analytics/log"
 	"database/sql"
 	"fmt"
 	"io"
@@ -122,6 +123,7 @@ func (d *DuckDB) SetVersion(version int, dirty bool) error {
 		return &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
+	log.Info("Upgraded to version: %d", version)
 	// Also re-write the schema version for nil dirty versions to prevent
 	// empty schema version for failed down migration on the first migration
 	// See: https://github.com/golang-migrate/migrate/issues/330
@@ -151,6 +153,7 @@ func (m *DuckDB) Version() (version int, dirty bool, err error) {
 	if err != nil {
 		return database.NilVersion, false, nil
 	}
+	log.Info("Current version: %d", version)
 	return version, dirty, nil
 }
 

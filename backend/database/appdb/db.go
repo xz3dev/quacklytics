@@ -55,9 +55,13 @@ func InitProjectDB(project projects.ProjectFiles) {
 	if err != nil {
 		log.Fatal("Error opening database: ", err)
 	}
-	log.Info("Opened DB for project: %s", project.ID)
-	ProjectDBs[project.ID].AutoMigrate(projectTables...)
+	log.Info("----- Initializing DB for project: %s -----", project.ID)
+	err = ProjectDBs[project.ID].AutoMigrate(projectTables...)
+	if err != nil {
+		log.Fatal("Error migrating database: ", err)
+	}
 	log.Info("Migrated DB for project: %s", project.ID)
+	log.Info("----- End initializing DB for project: %s -----", project.ID)
 }
 
 func Init() *gorm.DB {
@@ -71,7 +75,7 @@ func Init() *gorm.DB {
 	var err error
 	appDb, err := gorm.Open(sqlite.Open(DbFile), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Erxror opening database: ", err)
+		log.Fatal("Error opening database: ", err)
 	}
 
 	// Auto Migrate the schema
@@ -80,7 +84,7 @@ func Init() *gorm.DB {
 		log.Fatal("Error migrating database: ", err)
 	}
 
-	log.Info("Successfully connected to SQLite database and migrated schema")
+	log.Info("Successfully connected to non project-specific app database and migrated schema")
 
 	return appDb
 }

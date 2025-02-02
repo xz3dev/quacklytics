@@ -77,9 +77,8 @@ func InitProjectDB(project projects.ProjectFiles) error {
 		return err
 	}
 
-	analyticsmigrations.MigrateDBIfNeeded(projectDB)
+	analyticsmigrations.MigrateDBIfNeeded(project.ID, projectDB)
 
-	log.Info("Initialized DuckDB for project: %s", project.ID)
 	return nil
 }
 
