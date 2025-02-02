@@ -24,7 +24,7 @@ export function InsightCard({insightId}: Props) {
     const insight = insightData.data
 
     return (
-        <Card>
+        <Card className={"h-full"}>
             <CardHeader>
                 <CardTitle>
                     <ProjectLink to={`/insights/${insight.id}`}>
@@ -68,7 +68,7 @@ function renderInsight(insight: Insight) {
 
 function emptyCard(title: string, children: React.ReactNode) {
     return (
-        <Card>
+        <Card className={"h-full"}>
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
