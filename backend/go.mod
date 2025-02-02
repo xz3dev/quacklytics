@@ -4,6 +4,7 @@ go 1.23.1
 
 require (
 	github.com/apache/arrow/go/v17 v17.0.0
+	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/uuid v1.6.0
@@ -15,7 +16,6 @@ require (
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.12
-	moul.io/chizap v1.0.3
 )
 
 require (
@@ -23,7 +23,6 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/friendsofgo/errors v0.9.2 // indirect
-	github.com/go-chi/chi v1.5.4 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect

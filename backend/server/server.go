@@ -4,7 +4,7 @@ import (
 	"analytics/auth"
 	"analytics/database/appdb"
 	"analytics/log"
-	sv_mw "analytics/server/middlewares"
+	svmw "analytics/server/middlewares"
 	"analytics/server/routes"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -13,7 +13,6 @@ import (
 	"github.com/volatiletech/authboss/v3/remember"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"moul.io/chizap"
 	"net/http"
 )
 
@@ -78,7 +77,7 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 
 	// Use Authboss middleware for protected routes
 	mux.Route("/{projectid}", func(mux chi.Router) {
-		mux.Use(sv_mw.ProjectMiddleware(projectDbs))
+		mux.Use(svmw.ProjectMiddleware(projectDbs))
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
 		mux.Post("/dummy", routes.GenerateDummyEvents)
 		setupPrivateEventRoutes(mux)
@@ -120,17 +119,17 @@ func setupAnalyticsRoutes(mux chi.Router) {
 }
 
 func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
-	r.Use(chizap.New(log.Logger, &chizap.Opts{
+	r.Use(middleware.RequestID)
+	r.Use(svmw.Logger(log.Logger, &svmw.LoggerOpts{
 		WithReferer:   false,
 		WithUserAgent: false,
 	}))
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(ab.LoadClientStateMiddleware)
 	r.Use(remember.Middleware(ab))
-	r.Use(sv_mw.AuthbossMW(ab))
-	r.Use(sv_mw.DbLookupMiddleware(projectDbs, appdb))
+	r.Use(svmw.AuthbossMW(ab))
+	r.Use(svmw.DbLookupMiddleware(projectDbs, appdb))
 }
 
 //func setupCORS(mux *chi.Mux, c Config) {
