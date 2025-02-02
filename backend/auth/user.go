@@ -2,59 +2,11 @@ package auth
 
 import (
 	"analytics/model"
-	"database/sql/driver"
-	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"log"
 	"time"
 )
-
-// UUID is a custom type that wraps uuid.UUID
-type UUID struct {
-	uuid.UUID
-}
-
-// Value implements the driver.Valuer interface
-func (u UUID) Value() (driver.Value, error) {
-	return u.UUID.String(), nil
-}
-
-// Scan implements the sql.Scanner interface
-func (u *UUID) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-	s, ok := value.(string)
-	if !ok {
-		return fmt.Errorf("invalid UUID format")
-	}
-	uuid, err := uuid.Parse(s)
-	if err != nil {
-		return err
-	}
-	u.UUID = uuid
-	return nil
-}
-
-// MarshalJSON implements the json.Marshaler interface
-func (u UUID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(u.UUID.String())
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface
-func (u *UUID) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	uuid, err := uuid.Parse(s)
-	if err != nil {
-		return err
-	}
-	u.UUID = uuid
-	return nil
-}
 
 type User struct {
 	ID        UUID           `gorm:"type:varchar(36);primary_key;not null" json:"id"`
@@ -78,6 +30,11 @@ type RecoveryToken struct {
 	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Token     string    `gorm:"unique;not null"`
 	ExpiresAt time.Time `gorm:"not null"`
+}
+
+func (u *User) Validate() []error {
+	log.Printf("Validate %v", u)
+	return nil
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -109,4 +66,14 @@ func (u *User) GetPassword() string {
 
 func (u *User) PutPassword(password string) {
 	u.Password = password
+}
+
+func (u *User) PutArbitrary(arbitrary map[string]string) {
+	u.Email = arbitrary["email"]
+}
+
+func (u *User) GetArbitrary() map[string]string {
+	data := make(map[string]string)
+	data["email"] = u.Email
+	return data
 }

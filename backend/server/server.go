@@ -42,7 +42,7 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	}
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: setupMux(projectDbs),
+		Handler: setupMux(projectDbs, appDb),
 	}
 
 	log.Printf("Starting server on port %d", port)
@@ -51,9 +51,9 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	}
 }
 
-func setupMux(dbs appdb.ProjectDBLookup) *chi.Mux {
+func setupMux(dbs appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
 	mux := chi.NewMux()
-	setupMiddleware(mux, dbs)
+	setupMiddleware(mux, dbs, appdb)
 
 	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
 	return mux
@@ -64,6 +64,7 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 
 	// Mount Authboss
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
+	//mux.Post("/auth/register", routes.RegisterUser)
 	mux.Get("/auth/me", routes.CurrentUser)
 	setupPublicEventRoutes(mux)
 
@@ -115,7 +116,7 @@ func setupAnalyticsRoutes(mux chi.Router) {
 	routes.SetupDashoardRoutes(mux)
 }
 
-func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup) {
+func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
@@ -123,7 +124,7 @@ func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup) {
 	r.Use(ab.LoadClientStateMiddleware)
 	r.Use(remember.Middleware(ab))
 	r.Use(sv_mw.AuthbossMW(ab))
-	r.Use(sv_mw.DbLookupMiddleware(projectDbs))
+	r.Use(sv_mw.DbLookupMiddleware(projectDbs, appdb))
 }
 
 //func setupCORS(mux *chi.Mux, c Config) {

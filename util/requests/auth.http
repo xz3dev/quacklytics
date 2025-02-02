@@ -26,3 +26,14 @@ GET {{url}}/auth/me
 ###
 
 GET {{url}}/me
+
+###
+
+POST {{url}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@test.de",
+  "password": "a123ABCd2e!",
+  "confirm_password": "a123ABCd2e!"
+}

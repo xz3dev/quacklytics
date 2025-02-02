@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/volatiletech/authboss/v3"
 	"gorm.io/gorm"
@@ -59,9 +60,20 @@ func (a *ServerStore) UseRememberToken(ctx context.Context, pid string, token st
 
 // Additional required methods for authboss.ServerStorer interface
 
-func (a *ServerStore) Create(key string, user authboss.User) error {
+func (a *ServerStore) Create(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	return a.db.Create(u).Error
+	log.Printf("Creating user %v", u)
+	var existingUsers []User
+	a.db.Find(&existingUsers)
+	if len(existingUsers) > 0 {
+		return errors.New("only one user is allowed as of right now")
+	}
+	err := a.db.Create(u).Error
+	return err
+}
+
+func (a *ServerStore) New(ctx context.Context) authboss.User {
+	return &User{}
 }
 
 func (a *ServerStore) Delete(key string) error {

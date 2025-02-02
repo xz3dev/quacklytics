@@ -6,8 +6,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
-
-	// All of the modules that we intend to use, even if we don't use them in the
+	// All the modules that we intend to use, even if we don't use them in the
 	// web framework router.
 	//
 	// NOTE: Don't try to pass a list of module names to authboss.Init() if you reference
@@ -19,22 +18,42 @@ import (
 	//_ "github.com/volatiletech/authboss/v3/lock"
 	_ "github.com/volatiletech/authboss/v3/logout"
 	//_ "github.com/volatiletech/authboss/v3/recover"
-	//_ "github.com/volatiletech/authboss/v3/register"
+	_ "github.com/volatiletech/authboss/v3/register"
+)
+
+var (
+	assertUser   = &User{}
+	assertStorer = &ServerStore{}
+
+	_ authboss.User           = assertUser
+	_ authboss.AuthableUser   = assertUser
+	_ authboss.RememberValuer = assertUser
+	_ authboss.UserValuer     = assertUser
+	_ authboss.ArbitraryUser  = assertUser
+	//_ authboss.ConfirmableUser = assertUser
+	//_ authboss.LockableUser    = assertUser
+	//_ authboss.RecoverableUser = assertUser
+
+	// TBD: _ totp2fa.User = assertUser
+	// TBD: _ sms2fa.User  = assertUser
+
+	_ authboss.ServerStorer            = assertStorer
+	_ authboss.RememberingServerStorer = assertStorer
+	_ authboss.CreatingServerStorer    = assertStorer
+	//_ authboss.ConfirmingServerStorer  = assertStorer
+	//_ authboss.RecoveringServerStorer  = assertStorer
 )
 
 func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	ab := authboss.New()
+	registerHooks(ab)
+	initAuthStores()
+	defaults.SetCore(&ab.Config, true, false)
 
 	ab.Config.Paths.RootURL = "http://localhost:3000"
 	ab.Config.Paths.Mount = "/auth"
 	ab.Config.Paths.AuthLoginOK = "/app"
-
-	ab.Events.Before(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		log.Printf("Auth attempt: %+v", r.Form)
-		return false, nil
-	})
-
-	initAuthStores()
+	ab.Config.Paths.RegisterOK = "/app"
 
 	ab.Config.Storage.Server = NewAuthStore(db)
 	ab.Config.Storage.SessionState = NewCookieStore("ab_session")
@@ -45,16 +64,8 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	ab.Config.Modules.LogoutMethod = "GET"
 
 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
-	defaults.SetCore(&ab.Config, true, false)
+	ab.Config.Core.ErrorHandler = ABErrorHandler{}
 
-	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		w.WriteHeader(http.StatusOK)
-		return false, nil
-	})
-	ab.Events.After(authboss.EventLogout, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		w.WriteHeader(http.StatusOK)
-		return false, nil
-	})
 	// Setup mail sender (you'll need to implement this)
 	// ab.Config.Core.Mailer = NewMailer()
 
@@ -66,24 +77,28 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	return ab, nil
 }
 
-var (
-	assertUser   = &User{}
-	assertStorer = &ServerStore{}
+func registerHooks(ab *authboss.Authboss) {
+	ab.Events.Before(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		log.Printf("Auth attempt: %+v", r.Form)
+		return false, nil
+	})
 
-	_ authboss.User           = assertUser
-	_ authboss.AuthableUser   = assertUser
-	_ authboss.RememberValuer = assertUser
-	//_ authboss.ConfirmableUser = assertUser
-	//_ authboss.LockableUser    = assertUser
-	//_ authboss.RecoverableUser = assertUser
-	//_ authboss.ArbitraryUser   = assertUser
-
-	// TBD: _ totp2fa.User = assertUser
-	// TBD: _ sms2fa.User  = assertUser
-
-	_ authboss.ServerStorer            = assertStorer
-	_ authboss.RememberingServerStorer = assertStorer
-	//_ authboss.CreatingServerStorer    = assertStorer
-	//_ authboss.ConfirmingServerStorer  = assertStorer
-	//_ authboss.RecoveringServerStorer  = assertStorer
-)
+	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		w.WriteHeader(http.StatusOK)
+		return false, nil
+	})
+	ab.Events.Before(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		//w.WriteHeader(http.StatusTeapot)
+		log.Println("Register attempt!")
+		return true, nil
+	})
+	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		//w.WriteHeader(http.StatusTeapot)
+		log.Println("Register attempt!")
+		return true, nil
+	})
+	ab.Events.After(authboss.EventLogout, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		w.WriteHeader(http.StatusOK)
+		return false, nil
+	})
+}
