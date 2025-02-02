@@ -1,10 +1,10 @@
 package auth
 
 import (
+	"analytics/log"
 	"analytics/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"log"
 	"time"
 )
 
@@ -33,7 +33,7 @@ type RecoveryToken struct {
 }
 
 func (u *User) Validate() []error {
-	log.Printf("Validate %v", u)
+	log.Info("Validate %v", u)
 	return nil
 }
 

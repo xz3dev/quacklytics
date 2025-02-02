@@ -1,13 +1,13 @@
 package routes
 
 import (
+	"analytics/log"
 	"analytics/model"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -225,7 +225,7 @@ func setDashboardInsights(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("Updated dashboard %d with %d insights", dashboard.ID, len(input.IDs))
+	log.Info("Updated dashboard %d with %d insights", dashboard.ID, len(input.IDs))
 	dashboardUpdated, err := loadDashboard(tx, fmt.Sprintf("%d", dashboard.ID))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

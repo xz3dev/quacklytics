@@ -2,46 +2,50 @@ package log
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var Logger *zap.Logger
+var sugar *zap.SugaredLogger
 
 func init() {
 	var err error
-	Logger, err = zap.NewProduction()
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	Logger, err = config.Build(
+		zap.AddCallerSkip(1),
+	)
 	if err != nil {
 		panic("failed to initialize zap logger: " + err.Error())
 	}
-	defer Logger.Sync() // flush any buffered log entries
-	AuthbossLogger = &abLogger{Logger}
+	defer Logger.Sync()
+
+	sugar = Logger.Sugar()
+
+	AuthbossLogger = &abLogger{Logger: sugar.WithOptions(zap.AddCallerSkip(1))}
+	zap.ReplaceGlobals(Logger)
 }
 
-// Info logs an informational message.
-func Info(msg string, fields ...zap.Field) {
-	Logger.Info(msg, fields...)
+func Info(msg string, fields ...any) {
+	sugar.Infof(msg, fields...)
 }
 
-// Debug logs a debug message.
-func Debug(msg string, fields ...zap.Field) {
-	Logger.Debug(msg, fields...)
+func Debug(msg string, fields ...any) {
+	sugar.Debugf(msg, fields...)
 }
 
-// Warn logs a warning message.
-func Warn(msg string, fields ...zap.Field) {
-	Logger.Warn(msg, fields...)
+func Warn(msg string, fields ...any) {
+	sugar.Warnf(msg, fields...)
 }
 
-// Error logs an error message.
-func Error(msg string, fields ...zap.Field) {
-	Logger.Error(msg, fields...)
+func Error(msg string, fields ...any) {
+	sugar.Errorf(msg, fields...)
 }
 
-// Fatal logs a fatal error message and exits the application.
-func Fatal(msg string, fields ...zap.Field) {
-	Logger.Fatal(msg, fields...)
+func Fatal(msg string, fields ...any) {
+	sugar.Fatalf(msg, fields...)
 }
 
-// Panic logs a panic message and panics the application.
-func Panic(msg string, fields ...zap.Field) {
-	Logger.Panic(msg, fields...)
+func Panic(msg string, fields ...any) {
+	sugar.Panicf(msg, fields...)
 }

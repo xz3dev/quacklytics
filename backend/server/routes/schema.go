@@ -2,11 +2,11 @@ package routes
 
 import (
 	"analytics/actions"
+	"analytics/log"
 	"analytics/schema"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
-	"log"
 	"net/http"
 )
 
@@ -63,7 +63,7 @@ func getSchema(w http.ResponseWriter, r *http.Request) {
 	var ss []schema.EventSchema
 	query := db.Preload("Properties").Find(&ss)
 	if query.Error != nil {
-		log.Printf("Error while querying schema: %v", query.Error)
+		log.Error("Error while querying schema: %v", query.Error)
 		http.Error(w, query.Error.Error(), http.StatusInternalServerError)
 		return
 	}

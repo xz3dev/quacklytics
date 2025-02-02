@@ -1,8 +1,8 @@
 package model
 
 import (
+	"analytics/log"
 	"gorm.io/gorm"
-	"log"
 )
 
 type InsightInput struct {
@@ -38,7 +38,7 @@ func (i *Insight) UpdateSeries(db *gorm.DB) error {
 	// Then create new series if they exist
 	if i.Series != nil {
 		for idx := range *i.Series {
-			log.Printf("Creating series %d, %d", idx, i.ID)
+			log.Info("Creating series %d, %d", idx, i.ID)
 			(*i.Series)[idx].ID = 0 // clear id to force recreation
 			(*i.Series)[idx].InsightID = i.ID
 			if err := db.Create(&(*i.Series)[idx]).Error; err != nil {

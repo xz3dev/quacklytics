@@ -2,12 +2,12 @@ package appdb
 
 import (
 	"analytics/auth"
+	"analytics/log"
 	"analytics/model"
 	"analytics/projects"
 	"analytics/schema"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -55,9 +55,9 @@ func InitProjectDB(project projects.ProjectFiles) {
 	if err != nil {
 		log.Fatal("Error opening database: ", err)
 	}
-	log.Printf("Opened DB for project: %s", project.ID)
+	log.Info("Opened DB for project: %s", project.ID)
 	ProjectDBs[project.ID].AutoMigrate(projectTables...)
-	log.Printf("Migrated DB for project: %s", project.ID)
+	log.Info("Migrated DB for project: %s", project.ID)
 }
 
 func Init() *gorm.DB {
@@ -80,7 +80,7 @@ func Init() *gorm.DB {
 		log.Fatal("Error migrating database: ", err)
 	}
 
-	log.Println("Successfully connected to SQLite database and migrated schema")
+	log.Info("Successfully connected to SQLite database and migrated schema")
 
 	return appDb
 }

@@ -13,5 +13,6 @@ func main() {
 	appDb := appdb.Init()
 	projectDbs := appdb.InitProjects()
 	analyticsdb.InitProjects()
+
 	server.Start(appDb, projectDbs)
 }

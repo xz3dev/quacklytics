@@ -3,6 +3,7 @@ package routes
 import (
 	"analytics/actions"
 	"analytics/events"
+	"analytics/log"
 	"analytics/model"
 	"analytics/projects"
 	"analytics/queries"
@@ -12,7 +13,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -27,7 +27,7 @@ func AppendEvent(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Fatal(err)
+		log.Fatal(err.Error(), err)
 		return
 	}
 
@@ -51,7 +51,7 @@ func QueryEvents(w http.ResponseWriter, r *http.Request) {
 	events, err := actions.QueryEvents(projectId, queryParams)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Error while querying events: %v", err)
+		log.Error("Error while querying events: %v", err)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Internal server error"})
 		return
 	}
@@ -70,7 +70,7 @@ func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	events, err := actions.QueryEvents(projectId, nil)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("Error while querying events: ", err)
+		log.Error("Error while querying events: ", err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 	err = actions.ConvertEventsToParquet(events, path+filename)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("Error while converting events to Parquet: ", err)
+		log.Error("Error while converting events to Parquet: ", err)
 		return
 	}
 
@@ -134,12 +134,12 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 
 	if _, err := os.Stat(path + filename); err == nil && weekCompleted {
-		log.Printf("File %s exists, serving it.", filename)
+		log.Info("File %s exists, serving it.", filename)
 		w.WriteHeader(http.StatusOK)
 		http.ServeFile(w, r, path+filename)
 		return
 	}
-	log.Printf("File %s does not exist, creating it.", filename)
+	log.Info("File %s does not exist, creating it.", filename)
 
 	var conditions []queries.QueryCondition
 	if len(eventType) > 0 {
@@ -164,7 +164,7 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 		Value:     kwEnd,
 	})
 
-	log.Printf("Start %s, End %s", kwStart, kwEnd)
+	log.Info("Start %s, End %s", kwStart, kwEnd)
 	projectId := sv_mw.GetProjectID(r)
 
 	events, err := actions.QueryEvents(projectId, &queries.QueryParams{
@@ -172,7 +172,7 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Error while querying events: %v", err)
+		log.Error("Error while querying events: %v", err)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Internal server error"})
 		return
 	}

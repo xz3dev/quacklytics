@@ -2,9 +2,9 @@ package actions
 
 import (
 	"analytics/database/analyticsdb"
+	"analytics/log"
 	"analytics/projects"
 	"fmt"
-	"log"
 )
 
 const ParquetDir = "pq"
@@ -25,7 +25,7 @@ func ExportToParquet(projectId string) error {
 	if rows == 0 {
 		println("No events to export")
 	} else {
-		log.Printf("Exported events to parquet: %d", rows)
+		log.Info("Exported events to parquet: %d", rows)
 	}
 
 	return nil

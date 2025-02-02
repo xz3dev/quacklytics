@@ -3,11 +3,11 @@ package events
 import (
 	"analytics/database/analyticsdb"
 	db_ext "analytics/database/db-ext"
+	"analytics/log"
 	"analytics/model"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"log"
 	"strings"
 	"time"
 )
@@ -17,7 +17,7 @@ func getExistingPersons(projectID string, events []*model.EventInput) (map[uuid.
 	defer tx.Commit()
 
 	if err != nil {
-		log.Println("Error while creating transaction: ", err)
+		log.Error("Error while creating transaction: ", err)
 		return nil, err
 	}
 	var ids db_ext.UUIDList
@@ -36,7 +36,7 @@ func getExistingPersons(projectID string, events []*model.EventInput) (map[uuid.
 
 	persons := make(map[uuid.UUID]*model.Person)
 	if err != nil {
-		log.Printf("Error querying existing persons: %v", err)
+		log.Error("Error querying existing persons: %v", err)
 		return nil, err
 	}
 
@@ -64,16 +64,16 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 
 	existingPersons, err := getExistingPersons(p.projectID, events)
 	if err != nil {
-		log.Printf("Error getting existing persons: %v", err)
+		log.Error("Error getting existing persons: %v", err)
 		return
 	}
 
-	log.Printf("Project %s: Found %d existing persons", p.projectID, len(existingPersons))
+	log.Info("Project %s: Found %d existing persons", p.projectID, len(existingPersons))
 
 	tx, err := analyticsdb.Tx(p.projectID)
 	defer tx.Commit()
 	if err != nil {
-		log.Println("Error while creating transaction: ", err)
+		log.Error("Error while creating transaction: ", err)
 		return
 	}
 
@@ -122,19 +122,19 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 		for personId, person := range newPersons {
 			propJson, err := json.Marshal(person.Properties)
 			if err != nil {
-				log.Printf("Error marshalling person properties: %v", err)
+				log.Error("Error marshalling person properties: %v", err)
 				continue
 			}
 			err = personsAppender.AppendRow(mapUuid(personId), person.FirstSeen, propJson)
 			if err != nil {
-				log.Printf("Error inserting person: %v", err)
+				log.Error("Error inserting person: %v", err)
 				continue
 			}
 		}
 	}
 	err = personsAppender.Close()
 	if err != nil {
-		log.Printf("Error closing person appender: %v", err)
+		log.Error("Error closing person appender: %v", err)
 		return
 	}
 
@@ -155,7 +155,7 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 	expandedQuery := fmt.Sprintf("INSERT OR IGNORE INTO person_distinct_ids (person_id, distinct_id) VALUES %s", values.String())
 	_, err = tx.Exec(expandedQuery, params...)
 	if err != nil {
-		log.Printf("Error inserting person distinct IDs: %v", err)
+		log.Info("Error inserting person distinct IDs: %v", err)
 		return
 	}
 
@@ -163,13 +163,13 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 		for personId, person := range updatedPersons {
 			_, err = tx.Exec("UPDATE persons SET properties = json($2) where id = $1", personId.String(), person.Properties)
 			if err != nil {
-				log.Printf("Error updating person: %v", err)
+				log.Info("Error updating person: %v", err)
 				continue
 			}
 		}
 	}
 
 	duration := time.Since(startTime)
-	log.Printf("Project %s: Processed people data batch in %v (persons: %d, mappings: %d)",
+	log.Info("Project %s: Processed people data batch in %v (persons: %d, mappings: %d)",
 		p.projectID, duration, len(newPersons), len(distinctIdMappings))
 }

@@ -2,13 +2,13 @@ package analyticsdb
 
 import (
 	"analytics/database/analyticsdb/analyticsmigrations"
+	"analytics/log"
 	"analytics/projects"
 	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"github.com/marcboeker/go-duckdb"
-	"log"
 )
 
 const (
@@ -49,7 +49,7 @@ func InitProjects() {
 
 	for _, project := range projectList {
 		if err := InitProjectDB(project); err != nil {
-			log.Printf("Error initializing project DB %s: %v", project.ID, err)
+			log.Error("Error initializing project DB %s: %v", project.ID, err)
 			panic(err)
 		}
 	}
@@ -79,7 +79,7 @@ func InitProjectDB(project projects.ProjectFiles) error {
 
 	analyticsmigrations.MigrateDBIfNeeded(projectDB)
 
-	log.Printf("Initialized DuckDB for project: %s", project.ID)
+	log.Info("Initialized DuckDB for project: %s", project.ID)
 	return nil
 }
 

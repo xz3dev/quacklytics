@@ -1,12 +1,12 @@
 package auth
 
 import (
+	"analytics/log"
 	"context"
 	"errors"
 	"github.com/google/uuid"
 	"github.com/volatiletech/authboss/v3"
 	"gorm.io/gorm"
-	"log"
 )
 
 type ServerStore struct {
@@ -19,7 +19,7 @@ func NewAuthStore(db *gorm.DB) *ServerStore {
 
 func (a *ServerStore) Load(ctx context.Context, key string) (authboss.User, error) {
 	var user User
-	log.Printf("Loading user with key %s", key)
+	log.Info("Loading user with key %s", key)
 	if err := a.db.Where("email = ?", key).Or("id = ?", key).First(&user).Error; err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (a *ServerStore) UseRememberToken(ctx context.Context, pid string, token st
 
 func (a *ServerStore) Create(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	log.Printf("Creating user %v", u)
+	log.Info("Creating user %v", u)
 	var existingUsers []User
 	a.db.Find(&existingUsers)
 	if len(existingUsers) > 0 {

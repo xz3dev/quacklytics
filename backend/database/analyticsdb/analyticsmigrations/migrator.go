@@ -1,6 +1,7 @@
 package analyticsmigrations
 
 import (
+	"analytics/log"
 	"database/sql"
 	"embed"
 	"errors"
@@ -8,7 +9,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"go.uber.org/atomic"
 	"io/fs"
-	"log"
 )
 
 //go:embed *.sql
@@ -17,11 +17,11 @@ var embedMigrations embed.FS
 func MigrateDBIfNeeded(db *sql.DB) {
 	files, err := getAllFilenames(&embedMigrations)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error(), err)
 	}
 	fs, err := iofs.New(embedMigrations, ".")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error(), err)
 	}
 	isLocked := atomic.Bool{}
 	isLocked.Store(false)
@@ -30,7 +30,7 @@ func MigrateDBIfNeeded(db *sql.DB) {
 		isLocked: isLocked,
 	}
 	driver.ensureVersionTable()
-	log.Printf("Found %d migrations", len(files))
+	log.Info("Found %d migrations", len(files))
 	m, err := migrate.NewWithInstance("iofs", fs, "data", &driver)
 
 	//err = m.Down()
@@ -40,9 +40,9 @@ func MigrateDBIfNeeded(db *sql.DB) {
 
 	err = m.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		log.Fatal(err)
+		log.Fatal(err.Error(), err)
 	}
-	log.Printf("Migrated DuckDB to newest version successfully.")
+	log.Info("Migrated DuckDB to newest version successfully.")
 }
 
 func getAllFilenames(efs *embed.FS) (files []string, err error) {

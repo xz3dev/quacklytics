@@ -11,7 +11,7 @@ var (
 )
 
 type abLogger struct {
-	*zap.Logger
+	Logger *zap.SugaredLogger
 }
 
 var AuthbossLogger *abLogger

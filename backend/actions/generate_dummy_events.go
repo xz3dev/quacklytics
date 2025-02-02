@@ -2,10 +2,10 @@ package actions
 
 import (
 	"analytics/events"
+	"analytics/log"
 	"analytics/model"
 	"fmt"
 	"github.com/google/uuid"
-	"log"
 	"math"
 	"math/rand"
 	"time"
@@ -21,7 +21,7 @@ func GenerateRandomEvents(projectId string, numEvents int, eventType string) {
 	// Calculate the total duration of 12 weeks in seconds
 	totalDuration := now.Sub(twelveWeeksAgo).Seconds()
 
-	log.Printf("Generating %d events over the last 12 weeks", numEvents)
+	log.Info("Generating %d events over the last 12 weeks", numEvents)
 
 	for i := 0; i < numEvents; i++ {
 		// Generate a random timestamp within the last 12 weeks

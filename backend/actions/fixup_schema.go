@@ -3,12 +3,12 @@ package actions
 import (
 	"analytics/database/analyticsdb"
 	"analytics/events"
+	"analytics/log"
 	"analytics/model"
 	"analytics/schema"
 	"analytics/util"
 	"fmt"
 	"gorm.io/gorm"
-	"log"
 )
 
 func FixupSchema(project string, db *gorm.DB) error {
@@ -28,7 +28,7 @@ func FixupSchema(project string, db *gorm.DB) error {
 	}
 
 	util.ProcessBatched(e, 10000, func(batch []model.Event) {
-		log.Printf("Processing batch of %d events", len(batch))
+		log.Info("Processing batch of %d events", len(batch))
 		inputs := make([]*model.EventInput, len(batch))
 		for i, event := range batch {
 			inputs[i] = &event.EventInput

@@ -3,11 +3,11 @@ package events
 import (
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
+	"analytics/log"
 	"analytics/model"
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
-	"log"
 	"slices"
 	"time"
 )
@@ -20,7 +20,7 @@ const (
 func ProcessEvent(projectID string, event *model.EventInput) {
 	db, exists := appdb.ProjectDBs[projectID]
 	if !exists {
-		log.Printf("No database found for project: %s", projectID)
+		log.Error("No database found for project: %s", projectID)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 	for _, event := range events {
 		propertiesJson, err := json.Marshal(event.Properties)
 		if err != nil {
-			log.Printf("Project %s: Error marshaling properties: %v", p.projectID, err)
+			log.Error("Project %s: Error marshaling properties: %v", p.projectID, err)
 			continue
 		}
 
@@ -96,13 +96,13 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 			propertiesJson,
 		)
 		if err != nil {
-			log.Printf("Project %s: Error appending row: %v", p.projectID, err)
+			log.Error("Project %s: Error appending row: %v", p.projectID, err)
 			continue
 		}
 	}
 
 	duration := time.Since(startTime)
-	log.Printf("Project %s: Processed batch of %d events in %v", p.projectID, len(events), duration)
+	log.Info("Project %s: Processed batch of %d events in %v", p.projectID, len(events), duration)
 }
 
 func mapUuid(id uuid.UUID) duckdb.UUID {

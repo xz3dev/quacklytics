@@ -1,12 +1,12 @@
 package events
 
 import (
+	"analytics/log"
 	"analytics/model"
 	"analytics/schema"
 	"fmt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -50,14 +50,14 @@ func persistAllSchemas(schemasByType map[string]*schema.EventSchema, db *gorm.DB
 	})
 
 	if err != nil {
-		log.Println("Error persisting schemas:", err)
+		log.Error("Error persisting schemas:", err)
 	}
 }
 
 func fetchExistingSchemas(eventTypes []string, db *gorm.DB) []schema.EventSchema {
 	var schemas []schema.EventSchema
 	if err := db.Where("event_type in ?", eventTypes).Find(&schemas).Error; err != nil {
-		log.Println("Error fetching event schemas:", err)
+		log.Error("Error fetching event schemas:", err)
 		return nil
 	}
 	return schemas
@@ -199,7 +199,7 @@ func persistSchemaChanges(s *schema.EventSchema, db *gorm.DB) {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// First persist the properties and get their IDs
 		if err := persistPropertiesAndUpdateIDs(s, db); err != nil {
-			log.Println("Error persisting properties:", err)
+			log.Error("Error persisting properties:", err)
 		}
 
 		// Now persist values with the correct property IDs
@@ -207,7 +207,7 @@ func persistSchemaChanges(s *schema.EventSchema, db *gorm.DB) {
 		return nil
 	})
 	if err != nil {
-		log.Println("Error persisting schema:", err)
+		log.Error("Error persisting schema:", err)
 	}
 }
 
@@ -243,7 +243,7 @@ func persistPropertyValues(properties []schema.EventSchemaProperty, db *gorm.DB)
 	// Only persist if we have values
 	if len(allValues) > 0 {
 		if err := persistValues(allValues, db); err != nil {
-			log.Println("Error persisting property values:", err)
+			log.Error("Error persisting property values:", err)
 			return err
 		}
 	}

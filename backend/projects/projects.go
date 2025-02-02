@@ -1,7 +1,7 @@
 package projects
 
 import (
-	"log"
+	"analytics/log"
 	"os"
 	"path/filepath"
 	"strings"

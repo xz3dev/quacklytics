@@ -2,11 +2,11 @@ package actions
 
 import (
 	"analytics/database/analyticsdb"
+	"analytics/log"
 	"analytics/model"
 	"analytics/queries"
 	"database/sql"
 	"encoding/json"
-	"log"
 )
 
 func QueryEvents(projectId string, params *queries.QueryParams) (*[]model.Event, error) {
@@ -16,25 +16,25 @@ func QueryEvents(projectId string, params *queries.QueryParams) (*[]model.Event,
 
 	tx, err := analyticsdb.Tx(projectId)
 	if err != nil {
-		log.Println("Error while creating transaction: ", err)
+		log.Error("Error while creating transaction: ", err)
 		return nil, err
 	}
 	defer tx.Commit()
 
 	query, args := queries.BuildSQL(params)
 
-	log.Printf("Query: %s, args: %v", query, args)
+	log.Info("Query: %s, args: %v", query, args)
 
 	rows, err := tx.Query(query, args...)
 	if err != nil {
-		log.Println("Error executing query:", err)
+		log.Error("Error executing query:", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	events, err := parseEvents(rows)
 	if err != nil {
-		log.Println("Error parsing events:", err)
+		log.Error("Error parsing events:", err)
 		return nil, err
 	}
 
@@ -54,11 +54,11 @@ func parseEvents(rows *sql.Rows) (*[]model.Event, error) {
 			&event.PersonId,
 			&propertiesJson,
 		); err != nil {
-			log.Println(err)
+			log.Error(err.Error(), err)
 			return nil, err
 		}
 		if err := json.Unmarshal(propertiesJson, &event.Properties); err != nil {
-			log.Println("Error unmarshalling properties:", err)
+			log.Error("Error unmarshalling properties:", err)
 			return nil, err
 		}
 		events = append(events, event)

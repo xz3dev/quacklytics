@@ -3,6 +3,7 @@ package server
 import (
 	"analytics/auth"
 	"analytics/database/appdb"
+	"analytics/log"
 	sv_mw "analytics/server/middlewares"
 	"analytics/server/routes"
 	"fmt"
@@ -10,8 +11,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/remember"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"log"
+	"moul.io/chizap"
 	"net/http"
 )
 
@@ -38,16 +40,17 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	var err error
 	ab, err = auth.SetupAuthboss(appDb)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error(), err)
 	}
 	server := http.Server{
-		Addr:    fmt.Sprintf(":%d", config.Port),
-		Handler: setupMux(projectDbs, appDb),
+		Addr:     fmt.Sprintf(":%d", config.Port),
+		Handler:  setupMux(projectDbs, appDb),
+		ErrorLog: zap.NewStdLog(log.Logger),
 	}
 
-	log.Printf("Starting server on port %d", port)
+	log.Info("Starting server on port %d", port)
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error(), err)
 	}
 }
 
@@ -117,7 +120,10 @@ func setupAnalyticsRoutes(mux chi.Router) {
 }
 
 func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
-	r.Use(middleware.Logger)
+	r.Use(chizap.New(log.Logger, &chizap.Opts{
+		WithReferer:   false,
+		WithUserAgent: false,
+	}))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
