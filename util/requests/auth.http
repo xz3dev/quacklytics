@@ -8,17 +8,6 @@ Content-Type: application/json
   "password": "123123"
 }
 
-
-###
-
-GET {{url}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "xyron1996@gmail.com",
-  "password": "123123"
-}
-
 ###
 
 GET {{url}}/auth/me
@@ -26,6 +15,10 @@ GET {{url}}/auth/me
 ###
 
 GET {{url}}/me
+
+###
+
+GET {{url}}/auth/logout
 
 ###
 

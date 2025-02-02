@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { authService, authStore } from '$lib/client/auth';
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { LogOut, User } from 'lucide-svelte';
-  import { Button } from '$lib/components/ui/button';
+import { authService, authStore } from '$lib/client/auth'
+import { Button } from '$lib/components/ui/button'
+import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
+import { LogOut, User } from 'lucide-svelte'
 
-  async function handleLogout() {
+async function handleLogout() {
     try {
-      await authService.logout();
+        await authService.logout()
     } catch (error) {
-      console.error('Logout failed:', error);
+        console.error('Logout failed:', error)
     }
-  }
+}
 
-  $: initials = $authStore?.email ? $authStore.email.charAt(0).toUpperCase() : '?';
+$: initials = $authStore?.email ? $authStore.email.charAt(0).toUpperCase() : '?'
 </script>
 
 <DropdownMenu.Root>

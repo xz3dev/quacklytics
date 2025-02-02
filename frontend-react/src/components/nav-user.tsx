@@ -16,6 +16,7 @@ import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/co
 import {useTheme} from "@/components/theme/theme-provider.tsx";
 import {cn} from "@lib/utils.ts";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
+import {useAuthStore} from "@/services/auth.ts";
 
 export function NavUser({user}: {
     user: {
@@ -26,6 +27,11 @@ export function NavUser({user}: {
 }) {
     const {isMobile} = useSidebar()
     const {theme, setTheme} = useTheme()
+    const {logout} = useAuthStore()
+
+    async function handleLogout() {
+        await logout()
+    }
 
     return (
         <SidebarMenu>
@@ -73,7 +79,7 @@ export function NavUser({user}: {
                                         onClick={() => setTheme("light")}
                                         className={cn("flex-1 place-content-center", theme === "light" && "bg-muted text-muted-foreground")}
                                     >
-                                        <Sun className="h-[1.2rem] w-[1.2rem]" />
+                                        <Sun className="h-[1.2rem] w-[1.2rem]"/>
                                     </DropdownMenuItem>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" align="center">
@@ -86,7 +92,7 @@ export function NavUser({user}: {
                                         onClick={() => setTheme("dark")}
                                         className={cn("flex-1 place-content-center", theme === "dark" && "bg-muted text-muted-foreground")}
                                     >
-                                        <Moon className="h-[1.2rem] w-[1.2rem]" />
+                                        <Moon className="h-[1.2rem] w-[1.2rem]"/>
                                     </DropdownMenuItem>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" align="center">
@@ -99,7 +105,7 @@ export function NavUser({user}: {
                                         onClick={() => setTheme("system")}
                                         className={cn("flex-1 place-content-center", theme === "system" && "bg-muted text-muted-foreground")}
                                     >
-                                        <SunMoon className="h-[1.2rem] w-[1.2rem]" />
+                                        <SunMoon className="h-[1.2rem] w-[1.2rem]"/>
                                     </DropdownMenuItem>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" align="center">
@@ -130,7 +136,9 @@ export function NavUser({user}: {
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator/>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={handleLogout}
+                        >
                             <LogOut/>
                             Log out
                         </DropdownMenuItem>

@@ -1,11 +1,14 @@
 package auth
 
 import (
+	"analytics/log"
+	"encoding/json"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/defaults"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
+	"os"
+
 	// All the modules that we intend to use, even if we don't use them in the
 	// web framework router.
 	//
@@ -46,14 +49,26 @@ var (
 
 func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	ab := authboss.New()
-	registerHooks(ab)
 	initAuthStores()
 	defaults.SetCore(&ab.Config, true, false)
 
+	ab.Config.Core.Router = defaults.NewRouter()
+	ab.Config.Core.ErrorHandler = ABErrorHandler{}
+	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
+	ab.Config.Core.Responder = defaults.NewResponder(ab.Config.Core.ViewRenderer)
+	ab.Config.Core.Redirector = &defaults.Redirector{
+		Renderer:           ab.Config.Core.ViewRenderer,
+		FormValueName:      authboss.FormValueRedirect,
+		CorceRedirectTo200: true,
+	}
+	ab.Config.Core.BodyReader = defaults.NewHTTPBodyReader(true, false)
+	ab.Config.Core.Mailer = defaults.NewLogMailer(os.Stdout)
+	ab.Config.Core.Logger = log.AuthbossLogger
 	ab.Config.Paths.RootURL = "http://localhost:3000"
 	ab.Config.Paths.Mount = "/auth"
-	ab.Config.Paths.AuthLoginOK = "/app"
-	ab.Config.Paths.RegisterOK = "/app"
+	ab.Config.Paths.AuthLoginOK = "/projects"
+	ab.Config.Paths.RegisterOK = "/login"
+	//ab.Config.Core.Redirector = defaults.Redirector{}
 
 	ab.Config.Storage.Server = NewAuthStore(db)
 	ab.Config.Storage.SessionState = NewCookieStore("ab_session")
@@ -63,8 +78,7 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	ab.Config.Modules.RegisterPreserveFields = []string{"email"}
 	ab.Config.Modules.LogoutMethod = "GET"
 
-	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
-	ab.Config.Core.ErrorHandler = ABErrorHandler{}
+	registerHooks(ab)
 
 	// Setup mail sender (you'll need to implement this)
 	// ab.Config.Core.Mailer = NewMailer()
@@ -78,27 +92,19 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 }
 
 func registerHooks(ab *authboss.Authboss) {
-	ab.Events.Before(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		log.Printf("Auth attempt: %+v", r.Form)
-		return false, nil
-	})
-
-	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		w.WriteHeader(http.StatusOK)
-		return false, nil
-	})
-	ab.Events.Before(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		//w.WriteHeader(http.StatusTeapot)
-		log.Println("Register attempt!")
-		return true, nil
-	})
-	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		//w.WriteHeader(http.StatusTeapot)
-		log.Println("Register attempt!")
-		return true, nil
-	})
 	ab.Events.After(authboss.EventLogout, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		type RedirectResponse struct {
+			Location string `json:"location"`
+		}
+
+		response := RedirectResponse{
+			Location: "/login",
+		}
 		w.WriteHeader(http.StatusOK)
-		return false, nil
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			return false, err
+		}
+		return true, nil
 	})
 }

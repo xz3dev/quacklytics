@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             } | undefined = await http.post(`auth/login`, {email, password})
             const user = await http.get<User>(`auth/me`)
             set({user, loading: false})
-            return resp?.location ?? 'login'
+            return resp?.location ?? 'projects'
         } catch (error) {
             console.error('Login error:', error)
             throw error

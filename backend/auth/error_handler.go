@@ -9,9 +9,9 @@ import (
 
 type ABErrorHandler struct{}
 
-func (e ABErrorHandler) Wrap(f func(w http.ResponseWriter, r *http.Request) error) http.Handler {
+func (e ABErrorHandler) Wrap(handler func(w http.ResponseWriter, r *http.Request) error) http.Handler {
 	return errorHandler{
-		Handler:   f,
+		Handler:   handler,
 		LogWriter: log.AuthbossLogger,
 	}
 }

@@ -30,7 +30,7 @@ export const authService = {
                 | {
                       location: string
                   }
-                | undefined = await http.post(`auth/login`, { email, password })
+                | undefined = await http.post('auth/login', { email, password })
 
             await this.checkAuth()
             const targetLocation = response?.location
@@ -46,6 +46,7 @@ export const authService = {
 
     async logout() {
         try {
+            console.log('Logging out!')
             await http.get('auth/logout')
             authStore.logout()
         } catch (error) {
@@ -56,7 +57,7 @@ export const authService = {
 
     async checkAuth() {
         try {
-            const user: User | undefined = await http.get(`auth/me`)
+            const user: User | undefined = await http.get('auth/me')
             if (user) {
                 authStore.login(user)
             }
