@@ -107,8 +107,10 @@ func setupPrivateEventRoutes(mux chi.Router) {
 	mux.Get("/events/parquet", routes.QueryEventAsParquet)
 	mux.Post("/event", routes.AppendEvent)
 	mux.Get("/events/parquet/kw", routes.QueryEventsKW)
+	mux.Get("/events/parquet/months", routes.QueryEventsMonth)
 	mux.Get("/events/parquet/export", routes.EventsExport)
 	mux.Get("/events/parquet/checksums", routes.LastTwelveWeeksChecksums)
+	mux.Get("/events/parquet/months/checksums", routes.LastTwelveMonthsChecksums)
 }
 
 func setupAnalyticsRoutes(mux chi.Router) {

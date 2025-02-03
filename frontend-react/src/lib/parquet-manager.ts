@@ -39,6 +39,35 @@ export class ParquetManager {
         return localFilesAfterUpdate
     }
 
+
+    async downloadLast3Months(eventType?: string): Promise<{ filename: string; blob: Blob }[]> {
+        console.log(`Downloading last 12 weeks...`);
+        const serverChecksums = await this.downloader.getServerChecksums();
+        const localFiles = await this.dbManager.getAllFiles();
+        const localChecksums = await this.getLocalChecksums(localFiles);
+
+        const promises: Promise<any>[] = [];
+        for (const [filename, serverChecksum] of Object.entries(serverChecksums)) {
+            const localChecksum = localChecksums[filename];
+
+            if (serverChecksum !== localChecksum) {
+                const [, kw, year] = filename.match(/events_kw(\d+)_(\d+)\.parquet/) || [];
+                if (kw && year) {
+                    promises.push(
+                        new Promise(async (resolve) => {
+                            await this.downloadAndSaveParquetFile(parseInt(kw), parseInt(year), eventType);
+                            resolve(null);
+                        }),
+                    );
+                }
+            }
+        }
+        await Promise.all(promises);
+        const localFilesAfterUpdate = await this.dbManager.getAllFiles();
+        // await dbManager.importParquetFiles(localFilesAfterUpdate);
+        return localFilesAfterUpdate
+    }
+
     private async downloadAndSaveParquetFile(
         kw: number,
         year: number,

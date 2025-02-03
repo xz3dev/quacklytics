@@ -7,3 +7,9 @@ GET {{url}}/{{project}}/events/parquet/checksums
 ###
 
 GET {{url}}/{{project}}/events/parquet/export
+
+###
+
+GET {{url}}/{{project}}/events/parquet/months/checksums
+
+###

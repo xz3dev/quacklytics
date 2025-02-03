@@ -115,6 +115,7 @@ func EventsExport(w http.ResponseWriter, r *http.Request) {
 }
 
 func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
+	projectId := sv_mw.GetProjectID(r)
 	w.Header().Set("Content-Type", "application/json")
 
 	kw, _ := strconv.Atoi(r.URL.Query().Get("kw"))
@@ -129,7 +130,7 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	weekCompleted := time.Now().After(kwEnd)
 
 	path := projects.TmpDir + "/"
-	filename := fmt.Sprintf("events_kw%d_%d.parquet", kw, year)
+	filename := fmt.Sprintf("events_%s_kw%d_%d.parquet", projectId, kw, year)
 
 	// Set headers for file download
 	w.Header().Set("Content-Type", "application/octet-stream")
@@ -167,7 +168,6 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Info("Start %s, End %s", kwStart, kwEnd)
-	projectId := sv_mw.GetProjectID(r)
 
 	events, err := actions.QueryEvents(projectId, &queries.QueryParams{
 		Conditions: conditions,
@@ -187,7 +187,108 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path+filename)
 }
 
+func QueryEventsMonth(w http.ResponseWriter, r *http.Request) {
+	projectId := sv_mw.GetProjectID(r)
+	w.Header().Set("Content-Type", "application/json")
+
+	// Parse month and year from query parameters
+	month, err := strconv.Atoi(r.URL.Query().Get("month"))
+	if err != nil || month < 1 || month > 12 {
+		respondError(w, http.StatusBadRequest, "Valid month (1-12) and year query parameters are required.")
+		return
+	}
+
+	year, err := strconv.Atoi(r.URL.Query().Get("year"))
+	if err != nil || year < 1 {
+		respondError(w, http.StatusBadRequest, "Valid year query parameter is required.")
+		return
+	}
+
+	eventType := r.URL.Query().Get("type")
+
+	// Get the start and end time of the specified month
+	monthStart, monthEnd := getMonthStartEnd(year, month)
+	monthCompleted := time.Now().After(monthEnd)
+
+	path := projects.TmpDir + "/"
+	filename := fmt.Sprintf("events_%s_month%d_%d.parquet", projectId, month, year)
+
+	// Set headers for file download
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+
+	// Check if the file exists and the month is completed
+	if _, err := os.Stat(path + filename); err == nil && monthCompleted {
+		log.Info("File %s exists, serving it.", filename)
+		w.WriteHeader(http.StatusOK)
+		http.ServeFile(w, r, path+filename)
+		return
+	}
+	log.Info("File %s does not exist or month not completed, creating it.", filename)
+
+	var conditions []queries.QueryCondition
+	if len(eventType) > 0 {
+		conditions = append(conditions, queries.QueryCondition{
+			Field:     "event_type",
+			Operation: queries.Equals,
+			FieldType: queries.FieldTypes["event_type"],
+			Value:     eventType,
+		})
+	}
+
+	conditions = append(conditions, queries.QueryCondition{
+		Field:     "timestamp",
+		Operation: queries.GreaterEquals,
+		FieldType: queries.FieldTypes["timestamp"],
+		Value:     monthStart,
+	})
+	conditions = append(conditions, queries.QueryCondition{
+		Field:     "timestamp",
+		Operation: queries.LessThan,
+		FieldType: queries.FieldTypes["timestamp"],
+		Value:     monthEnd,
+	})
+
+	log.Info("Start %s, End %s", monthStart.Format(time.RFC3339), monthEnd.Format(time.RFC3339))
+
+	// Query events based on conditions
+	events, err := actions.QueryEvents(projectId, &queries.QueryParams{
+		Conditions: conditions,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Error("Error while querying events: %v", err)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Internal server error"})
+		return
+	}
+
+	// Convert events to Parquet format and save to file
+	if err := actions.ConvertEventsToParquet(events, path+filename); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Error("Error while converting events to Parquet: %v", err)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Internal server error"})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	// Serve the generated file
+	http.ServeFile(w, r, path+filename)
+}
+
+// getMonthStartEnd returns the start and end time of a given month and year.
+func getMonthStartEnd(year int, month int) (time.Time, time.Time) {
+	// Start of the month
+	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+
+	// Start of the next month
+	end := start.AddDate(0, 1, 0)
+
+	return start, end
+}
+
 func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
+	projectId := sv_mw.GetProjectID(r)
 	w.Header().Set("Content-Type", "application/json")
 
 	checksums := make(map[string]string)
@@ -203,7 +304,7 @@ func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 			year--
 		}
 
-		filename := fmt.Sprintf("events_kw%d_%d.parquet", week, year)
+		filename := fmt.Sprintf("events_%s_kw%d_%d.parquet", projectId, week, year)
 		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
 
 		checksum, err := calculateFileChecksum(filepath)
@@ -256,4 +357,45 @@ func getWeekStartEnd(year int, week int) (time.Time, time.Time) {
 func respondError(w http.ResponseWriter, statusCode int, message string) {
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+func LastTwelveMonthsChecksums(w http.ResponseWriter, r *http.Request) {
+	projectId := sv_mw.GetProjectID(r)
+	w.Header().Set("Content-Type", "application/json")
+
+	checksums := make(map[string]string)
+	currentDate := time.Now()
+	currentYear, currentMonth := currentDate.Year(), int(currentDate.Month())
+
+	for i := 0; i < 12; i++ {
+		month := currentMonth - i
+		year := currentYear
+
+		if month <= 0 {
+			month += 12
+			year--
+		}
+
+		filename := fmt.Sprintf("events_%s_month%d_%d.parquet", projectId, month, year)
+		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
+
+		// If the loop is at the current month, set checksum to empty string
+		if month == currentMonth && year == currentYear {
+			checksums[filename] = ""
+			continue
+		}
+
+		checksum, err := calculateFileChecksum(filepath)
+		if err != nil {
+			// If file doesn't exist or there's an error, set checksum to empty string
+			checksums[filename] = ""
+		} else {
+			checksums[filename] = checksum
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"checksums": checksums,
+	})
 }
