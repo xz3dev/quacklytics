@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="run (win)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="analytics" />
+    <working_directory value="$PROJECT_DIR$/backend" />
+    <envs>
+      <env name="CGO_ENABLED" value="1" />
+      <env name="CGO_FLAGS" value="-lf:\sdks\duckdb;" />
+      <env name="CGO_LDFLAGS" value="-Lf:\sdks\duckdb\ -lduckdb" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="analytics" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/main.go" />
+    <method v="2" />
+  </configuration>
+</component>
