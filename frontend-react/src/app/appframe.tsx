@@ -73,7 +73,7 @@ export function AppFrame() {
                         </Breadcrumb>
                     </header>
                     <div className="flex flex-1 flex-col gap-4 p-4">
-                        <DuckDB> <!-- TODO: move duckdb inside project and fix data loading -->
+                        <DuckDB>
                             <Outlet/>
                         </DuckDB>
                     </div>
