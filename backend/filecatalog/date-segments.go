@@ -1,6 +1,7 @@
 package filecatalog
 
 import (
+	"analytics/util"
 	"fmt"
 	"time"
 )
@@ -23,11 +24,11 @@ func GenerateTimeFragments(now time.Time, cutoff time.Time) []DataSegment {
 	// 1) Collect quarterly segments from 'cutoff' up to (but not including) the current quarter start.
 	// 2) Collect monthly segments for the current quarter.
 
-	currentQuarterStart := startOfQuarter(now)
+	currentQuarterStart := util.StartOfQuarter(now)
 
 	// Add quarterly segments from the earliest quarter that intersects our cutoff
 	// up to the quarter before the current quarter.
-	quarterStart := startOfQuarter(cutoff)
+	quarterStart := util.StartOfQuarter(cutoff)
 
 	// If 'cutoff' is in the middle of a quarter,
 	// we start that first segment partially at 'cutoff' rather than the full quarter start.
@@ -67,11 +68,11 @@ func GenerateTimeFragments(now time.Time, cutoff time.Time) []DataSegment {
 	currentQuarterEnd := currentQuarterStart.AddDate(0, 3, 0).Add(-time.Nanosecond)
 
 	for m.Before(now) && m.Before(currentQuarterEnd) {
-		monthEnd := endOfMonth(m)
+		monthEnd := util.EndOfMonth(m)
 		validUntil := &currentQuarterEnd
 		if monthEnd.After(now) {
 			monthEnd = now
-			validUntil = endOfDay(now)
+			validUntil = util.EndOfDay(now)
 		}
 
 		segments = append(segments, DataSegment{
@@ -86,35 +87,6 @@ func GenerateTimeFragments(now time.Time, cutoff time.Time) []DataSegment {
 	}
 
 	return segments
-}
-
-// startOfQuarter returns a time corresponding to the start (month=1,4,7,10) of the quarter for t.
-func startOfQuarter(t time.Time) time.Time {
-	year, month, _ := t.Date()
-	loc := t.Location()
-
-	// Determine which quarter month: (1,4,7,10)
-	// e.g., month=2 => quarter start is 1 (January)
-	qMonth := ((month-1)/3)*3 + 1
-
-	return time.Date(year, time.Month(qMonth), 1, 0, 0, 0, 0, loc)
-}
-
-func endOfDay(t time.Time) *time.Time {
-	year, month, day := t.Date()
-	end := time.Date(year, month, day, 23, 59, 59, 999999999, t.Location())
-	return &end
-}
-
-// endOfMonth returns the last moment of the month (23:59:59.999999999) for the given time t.
-func endOfMonth(t time.Time) time.Time {
-	year, month, _ := t.Date()
-	loc := t.Location()
-
-	// Start of next month
-	firstOfNextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
-	// Subtract a nanosecond to get the last instant of the current month
-	return firstOfNextMonth.Add(-time.Nanosecond)
 }
 
 // makeQuarterFilename generates a filename like "2025-q1.parquet"
