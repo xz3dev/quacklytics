@@ -88,7 +88,6 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 
 	return mux
 }
-
 func setupProjectRoutes(mux chi.Router) {
 	mux.Get("/projects", routes.ListProjects)
 	mux.Post("/projects", routes.CreateProject)
@@ -111,6 +110,8 @@ func setupPrivateEventRoutes(mux chi.Router) {
 	mux.Get("/events/parquet/export", routes.EventsExport)
 	mux.Get("/events/parquet/checksums", routes.LastTwelveWeeksChecksums)
 	mux.Get("/events/parquet/months/checksums", routes.LastTwelveMonthsChecksums)
+	mux.Get("/events/parquet/seq/checksums", routes.FileChecksums)
+	mux.Get("/events/parquet/gen", routes.RegenerateFiles)
 }
 
 func setupAnalyticsRoutes(mux chi.Router) {
