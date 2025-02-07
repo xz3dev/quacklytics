@@ -110,7 +110,9 @@ func setupPrivateEventRoutes(mux chi.Router) {
 	mux.Get("/events/parquet/export", routes.EventsExport)
 	mux.Get("/events/parquet/checksums", routes.LastTwelveWeeksChecksums)
 	mux.Get("/events/parquet/months/checksums", routes.LastTwelveMonthsChecksums)
+
 	mux.Get("/events/parquet/seq/checksums", routes.FileChecksums)
+	mux.Get("/events/parquet/seq/download", routes.FileDownload)
 	mux.Get("/events/parquet/gen", routes.RegenerateFiles)
 }
 
