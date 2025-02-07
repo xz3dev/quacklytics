@@ -30,3 +30,15 @@ func ClearDirectory(path string) error {
 	}
 	return nil
 }
+
+func EnsureDirectory(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", path, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to access directory %s: %w", path, err)
+	}
+	return nil
+}

@@ -4,9 +4,11 @@ import (
 	"analytics/database/analyticsdb"
 	"analytics/log"
 	"analytics/projects"
+	"analytics/util"
 	"fmt"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func ExportEventsToParquet(projectId string, db *gorm.DB, segment DataSegment) error {
@@ -23,10 +25,9 @@ func ExportEventsToParquet(projectId string, db *gorm.DB, segment DataSegment) e
 
 	path := projects.TmpDir + "/" + projectId + "/" + ParquetDir + "/"
 
-	//filePath := path + segment.Filename
-	//if err := os.Remove(filePath); err != nil {
-	//	return err
-	//}
+	if err := util.EnsureDirectory(path); err != nil {
+		return err
+	}
 
 	query := fmt.Sprintf(
 		"COPY (%s) TO '%s%s' (FORMAT PARQUET, COMPRESSION 'zstd')",

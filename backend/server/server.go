@@ -7,13 +7,14 @@ import (
 	svmw "analytics/server/middlewares"
 	"analytics/server/routes"
 	"fmt"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/remember"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 var ab *authboss.Authboss
