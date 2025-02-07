@@ -31,6 +31,7 @@ var projectTables = []interface{}{
 	&schema.EventSchemaPropertyValue{},
 	&model.InsightMeta{},
 	&projects.ProjectSetting{},
+	&model.FileCatalogEntry{},
 }
 
 var appTables = []interface{}{

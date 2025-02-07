@@ -1,3 +1,13 @@
 GET {{url}}/test/pq/test/pq/test.txt
 
 ###
+
+GET {{url}}/test/events/parquet/gen
+
+###
+
+GET {{url}}/test/events/parquet/seq/checksums
+
+###
+
+GET {{url}}/test/events/parquet/seq/download?file=2025-month-02.parquet

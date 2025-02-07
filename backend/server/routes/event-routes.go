@@ -8,11 +8,10 @@ import (
 	"analytics/projects"
 	"analytics/queries"
 	sv_mw "analytics/server/middlewares"
-	"crypto/sha1"
+	"analytics/util"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
-	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -103,14 +102,16 @@ func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 	//actions.GenerateRandomEvents(100, "test_type4")
 	w.WriteHeader(http.StatusOK)
 }
-func EventsExport(w http.ResponseWriter, r *http.Request) {
-	db := sv_mw.GetProjectDB(r, w)
-	projectId := sv_mw.GetProjectID(r)
 
-	if err := actions.ExportToParquet(projectId, db); err != nil {
-		log.Error(err.Error(), err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+func EventsExport(w http.ResponseWriter, r *http.Request) {
+	//db := sv_mw.GetProjectDB(r, w)
+	//projectId := sv_mw.GetProjectID(r)
+
+	//if err := actions.ExportToParquet(projectId, db); err != nil {
+	//	log.Error(err.Error(), err)
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//}
+	// TODO: reimplement with time boundaries
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -126,7 +127,7 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventType := r.URL.Query().Get("type")
-	kwStart, kwEnd := getWeekStartEnd(year, kw)
+	kwStart, kwEnd := util.GetWeekStartEnd(year, kw)
 	weekCompleted := time.Now().After(kwEnd)
 
 	path := projects.TmpDir + "/"
@@ -207,7 +208,7 @@ func QueryEventsMonth(w http.ResponseWriter, r *http.Request) {
 	eventType := r.URL.Query().Get("type")
 
 	// Get the start and end time of the specified month
-	monthStart, monthEnd := getMonthStartEnd(year, month)
+	monthStart, monthEnd := util.GetMonthStartEnd(year, month)
 	monthCompleted := time.Now().After(monthEnd)
 
 	path := projects.TmpDir + "/"
@@ -276,17 +277,6 @@ func QueryEventsMonth(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path+filename)
 }
 
-// getMonthStartEnd returns the start and end time of a given month and year.
-func getMonthStartEnd(year int, month int) (time.Time, time.Time) {
-	// Start of the month
-	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-
-	// Start of the next month
-	end := start.AddDate(0, 1, 0)
-
-	return start, end
-}
-
 func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 	projectId := sv_mw.GetProjectID(r)
 	w.Header().Set("Content-Type", "application/json")
@@ -307,7 +297,7 @@ func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 		filename := fmt.Sprintf("events_%s_kw%d_%d.parquet", projectId, week, year)
 		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
 
-		checksum, err := calculateFileChecksum(filepath)
+		checksum, err := util.CalculateFileChecksum(filepath)
 		if err != nil || week == currentWeek {
 			// If file doesn't exist or there's an error, set checksum to empty string
 			checksums[filename] = ""
@@ -320,38 +310,6 @@ func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"checksums": checksums,
 	})
-}
-
-func calculateFileChecksum(filepath string) (string, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	hash := sha1.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", hash.Sum(nil)), nil
-}
-
-func getWeekStartEnd(year int, week int) (time.Time, time.Time) {
-	// Find the first day of the year
-	firstDay := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-
-	// Find the first day of the week (Monday)
-	offset := int(time.Monday - firstDay.Weekday())
-	if offset > 0 {
-		offset -= 7
-	}
-	weekStart := firstDay.AddDate(0, 0, offset+(week-1)*7)
-
-	// The end of the week is 6 days after the start (Sunday)
-	weekEnd := weekStart.AddDate(0, 0, 6).Add(24*time.Hour - 1*time.Microsecond)
-
-	return weekStart, weekEnd
 }
 
 func respondError(w http.ResponseWriter, statusCode int, message string) {
@@ -385,7 +343,7 @@ func LastTwelveMonthsChecksums(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		checksum, err := calculateFileChecksum(filepath)
+		checksum, err := util.CalculateFileChecksum(filepath)
 		if err != nil {
 			// If file doesn't exist or there's an error, set checksum to empty string
 			checksums[filename] = ""
