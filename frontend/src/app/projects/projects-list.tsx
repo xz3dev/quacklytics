@@ -6,14 +6,14 @@ import {useEffect} from "react";
 export function ProjectsList() {
     const projects = useProjects()
     const navigator = useNavigate()
-    if (projects.isPending || projects.isLoading) return <Spinner></Spinner>
-    if (projects.isError) return <div>Error: {projects.error.message}</div>
-
     useEffect(() => {
-        if(projects.data.length === 1){
+        if(projects.data?.length === 1){
             navigator(`/app/${projects.data[0].id}`)
         }
     }, [projects]);
+    if (projects.isPending || projects.isLoading) return <Spinner></Spinner>
+    if (projects.isError) return <div>Error: {projects.error.message}</div>
+
 
     return (
         <div className="flex flex-col gap-2 place-content-center w-screen h-screen items-center gap-2">

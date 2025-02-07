@@ -1,6 +1,6 @@
 import {create} from "zustand/index";
 import {ParquetManager} from "@lib/parquet-manager.ts";
-import {useEffect} from "react";
+import {createContext, useEffect} from "react";
 import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
 
@@ -38,4 +38,22 @@ export function DuckDB(props: { children: React.ReactNode }) {
             </DuckDBLoadingIndicator>
         </>
     )
+}
+
+export const DuckDBContext = createContext<Context>({
+    status: 'loading',
+    dataManager: {},
+    dataDownloader: {},
+    dataImporter: {},
+    database: {},
+    dataStore: {},
+})
+
+interface Context {
+    status: 'loading' | 'ready'
+    dataManager: unknown
+    dataDownloader: unknown
+    dataImporter: unknown
+    dataStore: unknown
+    database: unknown
 }
