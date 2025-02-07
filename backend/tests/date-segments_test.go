@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"analytics/file-catalog"
+	"analytics/filecatalog"
 	"testing"
 	"time"
 )
@@ -9,7 +9,7 @@ import (
 func Test(t *testing.T) {
 	testTime := time.Date(2024, 2, 5, 5, 1, 2, 0, time.UTC)
 	cutoff := testTime.AddDate(-2, 0, 0)
-	segments := file_catalog.GenerateTimeFragments(testTime, cutoff)
+	segments := filecatalog.GenerateTimeFragments(testTime, cutoff)
 
 	expectedData := []struct {
 		StartDate string
