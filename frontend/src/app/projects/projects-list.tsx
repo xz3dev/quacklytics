@@ -16,7 +16,7 @@ export function ProjectsList() {
 
 
     return (
-        <div className="flex flex-col gap-2 place-content-center w-screen h-screen items-center gap-2">
+        <div className="flex flex-col gap-2 place-content-center w-screen h-screen items-center">
             <h1 className="text-3xl font-semibold tracking-widest mb-8">Jump to Project: </h1>
             {projects.data.map(p => (
                     <Link

@@ -2,10 +2,10 @@ package routes
 
 import (
 	"analytics/actions"
+	"analytics/constants"
 	"analytics/events"
 	"analytics/log"
 	"analytics/model"
-	"analytics/projects"
 	"analytics/queries"
 	sv_mw "analytics/server/middlewares"
 	"analytics/util"
@@ -73,7 +73,7 @@ func QueryEventAsParquet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := projects.TmpDir + "/"
+	path := constants.TmpDir + "/"
 	filename := shortRequestId + ".parquet"
 	err = actions.ConvertEventsToParquet(events, path+filename)
 	if err != nil {
@@ -130,7 +130,7 @@ func QueryEventsKW(w http.ResponseWriter, r *http.Request) {
 	kwStart, kwEnd := util.GetWeekStartEnd(year, kw)
 	weekCompleted := time.Now().After(kwEnd)
 
-	path := projects.TmpDir + "/"
+	path := constants.TmpDir + "/"
 	filename := fmt.Sprintf("events_%s_kw%d_%d.parquet", projectId, kw, year)
 
 	// Set headers for file download
@@ -211,7 +211,7 @@ func QueryEventsMonth(w http.ResponseWriter, r *http.Request) {
 	monthStart, monthEnd := util.GetMonthStartEnd(year, month)
 	monthCompleted := time.Now().After(monthEnd)
 
-	path := projects.TmpDir + "/"
+	path := constants.TmpDir + "/"
 	filename := fmt.Sprintf("events_%s_month%d_%d.parquet", projectId, month, year)
 
 	// Set headers for file download
@@ -295,7 +295,7 @@ func LastTwelveWeeksChecksums(w http.ResponseWriter, r *http.Request) {
 		}
 
 		filename := fmt.Sprintf("events_%s_kw%d_%d.parquet", projectId, week, year)
-		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
+		filepath := fmt.Sprintf("%s/%s", constants.TmpDir, filename)
 
 		checksum, err := util.CalculateFileChecksum(filepath)
 		if err != nil || week == currentWeek {
@@ -335,7 +335,7 @@ func LastTwelveMonthsChecksums(w http.ResponseWriter, r *http.Request) {
 		}
 
 		filename := fmt.Sprintf("events_%s_month%d_%d.parquet", projectId, month, year)
-		filepath := fmt.Sprintf("%s/%s", projects.TmpDir, filename)
+		filepath := fmt.Sprintf("%s/%s", constants.TmpDir, filename)
 
 		// If the loop is at the current month, set checksum to empty string
 		if month == currentMonth && year == currentYear {

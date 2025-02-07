@@ -1,47 +1,45 @@
 package projects
 
 import (
+	"analytics/constants"
+	"analytics/database/appdb"
 	"analytics/log"
+	"analytics/model"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-const DbProjectFilePrefix = "project_"
-const DbAnalyticsFilePrefix = "analytics_"
-const DbDir = "_data"
-const TmpDir = "_tmp"
-
 func CreateDirectories() {
-	dir := filepath.Dir(DbDir)
+	dir := filepath.Dir(constants.DbDir)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		log.Fatal("Error creating directory for database: ", err)
 	}
 
-	dir = filepath.Dir(TmpDir)
+	dir = filepath.Dir(constants.TmpDir)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		log.Fatal("Error creating directory for database: ", err)
 	}
 }
 
-func ListProjects() []ProjectFiles {
+func ListProjects() []model.ProjectFiles {
 
-	files, err := os.ReadDir(DbDir)
+	files, err := os.ReadDir(constants.DbDir)
 	if err != nil {
 		log.Fatal("Error reading directory: ", err)
 	}
 
-	projects := make([]ProjectFiles, 0)
+	projects := make([]model.ProjectFiles, 0)
 	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), DbProjectFilePrefix) {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), constants.DbProjectFilePrefix) {
 			var projectName = strings.TrimSuffix(
-				strings.TrimPrefix(file.Name(), DbProjectFilePrefix),
+				strings.TrimPrefix(file.Name(), constants.DbProjectFilePrefix),
 				".db",
 			)
-			projects = append(projects, ProjectFiles{
+			projects = append(projects, model.ProjectFiles{
 				ID:              projectName,
-				DbFile:          filepath.Join(DbDir, file.Name()),
-				AnalyticsDbFile: filepath.Join(DbDir, DbAnalyticsFilePrefix+projectName+".db"),
+				DbFile:          filepath.Join(constants.DbDir, file.Name()),
+				AnalyticsDbFile: filepath.Join(constants.DbDir, constants.DbAnalyticsFilePrefix+projectName+".db"),
 			})
 		}
 	}
@@ -49,8 +47,12 @@ func ListProjects() []ProjectFiles {
 	return projects
 }
 
-type ProjectFiles struct {
-	ID              string `json:"id"`
-	DbFile          string `json:"dbFile"`
-	AnalyticsDbFile string `json:"analyticsDbFile"`
+func Init() appdb.ProjectDBLookup {
+	projectList := ListProjects()
+
+	for _, project := range projectList {
+		appdb.InitProjectDB(project)
+	}
+
+	return appdb.ProjectDBs
 }

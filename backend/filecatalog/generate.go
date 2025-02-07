@@ -1,7 +1,9 @@
 package filecatalog
 
 import (
+	"analytics/actions"
 	"analytics/log"
+	"analytics/model"
 	"gorm.io/gorm"
 	"time"
 )
@@ -28,7 +30,7 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) error {
 
 	log.Info("Found %d existing files", len(existing))
 
-	var missingSegments []DataSegment
+	var missingSegments []model.DataSegment
 	for _, segment := range segments {
 		if !existingFilenames[segment.Filename] {
 			missingSegments = append(missingSegments, segment)
@@ -38,7 +40,7 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) error {
 	log.Info("Found %d missing files", len(missingSegments))
 
 	for _, segment := range missingSegments {
-		ExportEventsToParquet(projectId, db, segment)
+		actions.ExportEventsToParquet(projectId, db, segment)
 	}
 
 	return nil

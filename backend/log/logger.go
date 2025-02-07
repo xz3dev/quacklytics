@@ -8,7 +8,7 @@ import (
 var Logger *zap.Logger
 var sugar *zap.SugaredLogger
 
-func init() {
+func Init() {
 	var err error
 	config := zap.NewDevelopmentConfig()
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder

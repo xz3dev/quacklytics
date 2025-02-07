@@ -1,37 +1,31 @@
 package projects
 
 import (
+	"analytics/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-type ProjectSetting struct {
-	Key   ProjectSettingKey
-	Value string
-}
-
-type ProjectSettingKey string
-
 const (
-	Name      ProjectSettingKey = "name"
-	Partition ProjectSettingKey = "partition"
+	Name      model.ProjectSettingKey = "name"
+	Partition model.ProjectSettingKey = "partition"
 )
 
-func QuerySettings(db *gorm.DB) (map[ProjectSettingKey]string, error) {
-	var settings []ProjectSetting
+func QuerySettings(db *gorm.DB) (map[model.ProjectSettingKey]string, error) {
+	var settings []model.ProjectSetting
 	err := db.Find(&settings).Error
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[ProjectSettingKey]string, len(settings))
+	result := make(map[model.ProjectSettingKey]string, len(settings))
 	for _, setting := range settings {
 		result[setting.Key] = setting.Value
 	}
 	return result, nil
 }
 
-func UpdateSetting(db *gorm.DB, key ProjectSettingKey, value string) error {
-	setting := ProjectSetting{
+func UpdateSetting(db *gorm.DB, key model.ProjectSettingKey, value string) error {
+	setting := model.ProjectSetting{
 		Key:   key,
 		Value: value,
 	}

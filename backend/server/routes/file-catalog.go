@@ -1,10 +1,10 @@
 package routes
 
 import (
+	"analytics/constants"
 	"analytics/filecatalog"
 	"analytics/log"
 	"analytics/model"
-	"analytics/projects"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"net/http"
@@ -34,7 +34,7 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 
 	projectId := svmw.GetProjectID(r)
 
-	filepath := filepath.Join(projects.TmpDir, projectId, filecatalog.ParquetDir, filename)
+	filepath := filepath.Join(constants.TmpDir, projectId, constants.ParquetDir, filename)
 
 	if _, err := os.Stat(filepath); err == nil {
 		log.Info("File %s exists, serving it.", filename)

@@ -3,6 +3,7 @@ package routes
 import (
 	"analytics/actions"
 	"analytics/database/appdb"
+	"analytics/model"
 	"analytics/projects"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
@@ -11,10 +12,10 @@ import (
 )
 
 type projectData struct {
-	Id        string                `json:"id"`
-	Name      string                `json:"name"`
-	Partition string                `json:"partition"`
-	Files     projects.ProjectFiles `json:"files"`
+	Id        string             `json:"id"`
+	Name      string             `json:"name"`
+	Partition string             `json:"partition"`
+	Files     model.ProjectFiles `json:"files"`
 }
 
 func ListProjects(writer http.ResponseWriter, request *http.Request) {
@@ -77,6 +78,6 @@ func UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 type ProjectSettingsUpdate struct {
-	Key   projects.ProjectSettingKey `json:"key"`
-	Value string                     `json:"value"`
+	Key   model.ProjectSettingKey `json:"key"`
+	Value string                  `json:"value"`
 }

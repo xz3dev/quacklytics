@@ -9,3 +9,12 @@ type FileCatalogEntry struct {
 	ValidUntil *time.Time `json:"validUntil"`
 	Checksum   string     `json:"checksum"`
 }
+
+// DataSegment holds the time range and an example generated filename.
+// You can extend this with checksums, etc.
+type DataSegment struct {
+	StartDate  time.Time
+	EndDate    time.Time
+	ValidUntil *time.Time
+	Filename   string
+}

@@ -3,18 +3,13 @@ package analyticsdb
 import (
 	"analytics/database/analyticsdb/analyticsmigrations"
 	"analytics/log"
+	"analytics/model"
 	"analytics/projects"
 	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"github.com/marcboeker/go-duckdb"
-)
-
-const (
-	DbFile       = "_data/data.db"
-	DbDir        = "_data"
-	DbFilePrefix = "analytics_"
 )
 
 type DBConnection struct {
@@ -55,7 +50,7 @@ func InitProjects() {
 	}
 }
 
-func InitProjectDB(project projects.ProjectFiles) error {
+func InitProjectDB(project model.ProjectFiles) error {
 	connector, err := duckdb.NewConnector(project.AnalyticsDbFile+"?"+"access_mode=READ_WRITE", nil)
 	if err != nil {
 		return err

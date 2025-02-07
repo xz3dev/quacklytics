@@ -4,7 +4,6 @@ import (
 	"analytics/auth"
 	"analytics/log"
 	"analytics/model"
-	"analytics/projects"
 	"analytics/schema"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -19,7 +18,7 @@ const DbDir = "_data"
 
 type ProjectDBLookup = map[string]*gorm.DB
 
-var ProjectDBs ProjectDBLookup = make(ProjectDBLookup)
+var ProjectDBs = make(ProjectDBLookup)
 
 var projectTables = []interface{}{
 	&model.Dashboard{},
@@ -30,7 +29,7 @@ var projectTables = []interface{}{
 	&schema.EventSchemaProperty{},
 	&schema.EventSchemaPropertyValue{},
 	&model.InsightMeta{},
-	&projects.ProjectSetting{},
+	&model.ProjectSetting{},
 	&model.FileCatalogEntry{},
 }
 
@@ -40,17 +39,7 @@ var appTables = []interface{}{
 	&auth.RecoveryToken{},
 }
 
-func InitProjects() ProjectDBLookup {
-	projectList := projects.ListProjects()
-
-	for _, project := range projectList {
-		InitProjectDB(project)
-	}
-
-	return ProjectDBs
-}
-
-func InitProjectDB(project projects.ProjectFiles) {
+func InitProjectDB(project model.ProjectFiles) *gorm.DB {
 	var err error
 	ProjectDBs[project.ID], err = gorm.Open(sqlite.Open(project.DbFile), &gorm.Config{})
 	if err != nil {
@@ -63,6 +52,7 @@ func InitProjectDB(project projects.ProjectFiles) {
 	}
 	log.Info("Migrated DB for project: %s", project.ID)
 	log.Info("----- End initializing DB for project: %s -----", project.ID)
+	return ProjectDBs[project.ID]
 }
 
 func Init() *gorm.DB {
