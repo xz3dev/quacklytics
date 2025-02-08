@@ -1,13 +1,20 @@
 package model
 
-import "time"
+import (
+	"gorm.io/gorm"
+	"time"
+)
 
 type FileCatalogEntry struct {
-	Name       string     `gorm:"type:varchar(512);primary_key;;not null" json:"name"`
-	Start      *time.Time `json:"start" gorm:"not null"`
-	End        *time.Time `json:"end"`
-	ValidUntil *time.Time `json:"validUntil"`
-	Checksum   string     `json:"checksum"`
+	ID         uint           `gorm:"primarykey" json:"id"`
+	Name       string         `gorm:"type:text;not null" json:"name"`
+	Start      *time.Time     `json:"start" gorm:"not null"`
+	End        *time.Time     `json:"end"`
+	ValidUntil *time.Time     `json:"validUntil"`
+	Checksum   string         `json:"checksum"`
+	CreatedAt  time.Time      `json:"createdAt"`
+	UpdatedAt  time.Time      `json:"updatedAt"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deletedAt"`
 }
 
 // DataSegment holds the time range and an example generated filename.

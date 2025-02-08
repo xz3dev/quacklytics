@@ -11,6 +11,7 @@ var sugar *zap.SugaredLogger
 func Init() {
 	var err error
 	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	Logger, err = config.Build(
 		zap.AddCallerSkip(1),

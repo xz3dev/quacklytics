@@ -25,7 +25,7 @@ const dashboardsApi = {
     },
 
     getDashboard: async (params: { project: string | number, id: number }): Promise<Dashboard> => {
-        return await http.get<Dashboard>(`${params.project}/dashboards/${params.id}`)
+        return http.get<Dashboard>(`${params.project}/dashboards/${params.id}`)
     },
 
     setDashboardInsights: async (params: {

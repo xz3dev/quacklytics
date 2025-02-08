@@ -19,7 +19,7 @@ func NewAuthStore(db *gorm.DB) *ServerStore {
 
 func (a *ServerStore) Load(ctx context.Context, key string) (authboss.User, error) {
 	var user User
-	log.Info("Loading user with key %s", key)
+	log.Debug("Loading user with key %s", key)
 	if err := a.db.Where("email = ?", key).Or("id = ?", key).First(&user).Error; err != nil {
 		return nil, err
 	}

@@ -7,12 +7,16 @@ import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 export class DuckDbManager {
     private db = createDb()
     private conn = this.db.then(async (db) => {
-        const conn =  await db?.connect();
-        await conn?.query(`SET TimeZone='UTC';`);
-        return conn
+        if(!db) throw Error(
+            'Failed to init to duckdb'
+        )
+        const con = await db.connect();
+        await this.setupTable(con)
+        return con
     })
 
     async setupTable(conn: AsyncDuckDBConnection) {
+        console.log(`Creating events table...`)
         await conn.query(`
             create table if not exists events
             (
@@ -26,8 +30,8 @@ export class DuckDbManager {
         `)
     }
 
-    async importParquetFiles(
-        files: Array<{ filename: string; blob: Blob }>,
+    async reimportAllParquetFiles(
+        files: Array<{ filename: string; blob: Blob, checksum: string }>,
     ): Promise<void> {
         const conn = await this.conn
         const db = await this.db
@@ -38,25 +42,21 @@ export class DuckDbManager {
 
         await this.queryTimeZone()
 
-        await this.setupTable(conn)
-
-        const queries = []
+        const queries: Promise<any>[] = []
 
         for (const {filename, blob} of files) {
+            console.info(`Importing ${filename}`)
             const arrayBuffer = await blob.arrayBuffer()
             await db.registerFileBuffer(filename, new Uint8Array(arrayBuffer))
 
             // Import data from the Parquet file into the events table
             const query = conn.query(`
                 insert or ignore into events
-                select lpad(to_hex(id::bit::hugeint), 32, '0')       as id,
-                       timestamp::timestamp                          as timestamp,
-                       eventtype                                     as event_type,
-                       distinctid                                    as distinct_id,
-                       lpad(to_hex(personid::bit::hugeint), 32, '0') as person_id,
-                       properties::json                              as properties
+                select *
                 from parquet_scan('${filename}')
-            `)
+            `).catch((e) => {
+                console.error(`Failed to import ${filename}: ${e.message}`)
+            })
             queries.push(query)
         }
         await Promise.all(queries)
@@ -69,7 +69,9 @@ export class DuckDbManager {
             console.error('Database connection not available')
             return ''
         }
-        const results = await conn.query(`select * from duckdb_settings() where name='TimeZone';`)
+        const results = await conn.query(`select *
+                                          from duckdb_settings()
+                                          where name = 'TimeZone';`)
         const result = results.toArray().map(r => r.toJSON())[0]['value']
         console.log(`Current DB TimeZone:`, result)
     }

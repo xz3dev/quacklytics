@@ -1,28 +1,15 @@
-import { useEffect, useState } from "react"
-import { AnalyticsEvent } from "@/model/event"
-import { useDB } from "@app/duckdb/duckdb"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { formatDistance } from "date-fns"
+import {useEffect, useState} from "react"
+import {AnalyticsEvent} from "@/model/event"
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
+import {Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Textarea} from "@/components/ui/textarea"
+import {formatDistance} from "date-fns"
+import {db} from "@app/duckdb/duckdb.tsx";
 
 const DEFAULT_QUERY = 'SELECT * FROM events order by timestamp desc LIMIT 100 '
 
 export function EventsViewer() {
-    const db = useDB()
     const [events, setEvents] = useState<AnalyticsEvent[]>([])
     const [query, setQuery] = useState(DEFAULT_QUERY)
     const [isLoading, setIsLoading] = useState(false)

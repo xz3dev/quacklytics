@@ -11,7 +11,13 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 )
+
+type FileCatalogEntryResponse struct {
+	model.FileCatalogEntry
+	AutoLoad bool `json:"autoload"`
+}
 
 func FileChecksums(w http.ResponseWriter, r *http.Request) {
 	db := svmw.GetProjectDB(r, w)
@@ -22,7 +28,18 @@ func FileChecksums(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(files)
+
+	sixMonthAgo := time.Now().AddDate(0, -6, 0)
+
+	result := make([]FileCatalogEntryResponse, len(files))
+	for i, file := range files {
+		result[i] = FileCatalogEntryResponse{
+			FileCatalogEntry: file,
+			AutoLoad:         file.Start.After(sixMonthAgo),
+		}
+	}
+
+	json.NewEncoder(w).Encode(result)
 }
 
 func FileDownload(w http.ResponseWriter, r *http.Request) {

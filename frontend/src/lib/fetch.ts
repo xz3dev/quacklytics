@@ -33,7 +33,7 @@ const request = async <T>(
         method,
     })
 
-    if(!response.ok) {
+    if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status} : ${response.statusText}`)
     }
 
@@ -45,9 +45,25 @@ const request = async <T>(
     }
 }
 
+const getBlob = async (url: string, init?: RequestInit) => {
+    const fullUrl = baseUrl + (url.startsWith('/') ? `${url}` : `/${url}`)
+    const response = await fetch(fullUrl, {
+        ...init,
+        credentials: 'include',
+        method: 'GET',
+    })
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} : ${response.statusText}`)
+    }
+
+    return response.blob()
+}
+
 export const http = {
     get,
     post,
     put,
     del,
+    getBlob,
 }
