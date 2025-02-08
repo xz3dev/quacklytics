@@ -49,24 +49,19 @@ export function TrendInsightChart({insight}: Props) {
 
     const results = useDuckDBQueries(projectId, queries)
 
-    const seriesQueries = useMemo(
-        () => results.map((result, index) => ({
-            ...result,
-            visualisation: queries[index].metadata.visualisation,
-            name: queries[index].metadata.name
-        })),
-        [results, queries],
-    )
+    const seriesQueries = results.map((result, index) => ({
+        ...result,
+        visualisation: queries[index].metadata.visualisation,
+        name: queries[index].metadata.name
+    }))
 
+    const seriesData = seriesQueries
+        .map((q, index) => ({
+            rows: (q.data ?? []) as ResultRow[],
+            visualization: q.visualisation,
+            index,
+        } satisfies Series))
 
-    const seriesData = useMemo(() => {
-        return seriesQueries
-            .map((q, index) => ({
-                rows: (q.data ?? []) as ResultRow[],
-                visualization: q.visualisation,
-                index,
-            } satisfies Series))
-    }, [seriesQueries])
 
     const chartData: ChartData[] = useMemo(
         () => buildChartData(seriesData, insight.config.timeBucket, determineDateRange(insight.config.duration)),
@@ -171,7 +166,8 @@ function buildChartData(
         end: UTCDate
     },
 ): ChartData[] {
-    if(data.length === 0 || data.every(s => s.rows.length === 0)) return []
+    console.log(`building chart data for ${bucket}. ${data[0].rows.length}`)
+    if (data.length === 0 || data.every(s => s.rows.length === 0)) return []
     const seriesCount = data.length
 
     const emptyValues: Record<number, number> = {}
@@ -236,8 +232,6 @@ function buildChartData(
             }
         })
     })
-
-    console.log(data, dataMap)
 
     return Array.from(dataMap.entries())
         .sort(([a], [b]) => a - b)  // Sort by timestamp

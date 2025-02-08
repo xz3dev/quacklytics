@@ -1,12 +1,11 @@
 import {Spinner} from "@/components/spinner.tsx";
 
-export function DuckDBLoadingIndicator(props: { children: React.ReactNode }) {
-    // const isLoading = useDuckDBStore(state => state.isLoading)
-    const isLoading = false
-    if (!isLoading) return props.children
+export function DuckDBLoadingIndicator(props: { isLoading: boolean, children: React.ReactNode }) {
+    if (!props.isLoading) return props.children
     return (
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center h-screen">
             <Spinner />
+            <div className="font-medium text-sm">Loading Data...</div>
         </div>
     )
 }

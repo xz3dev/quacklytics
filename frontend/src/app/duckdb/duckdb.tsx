@@ -1,14 +1,18 @@
-import {useEffect, useMemo, useRef} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
 import {FILE_KEY, FileCatalogApi, useFileCatalog} from "@/services/file-catalog.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useQueries} from "@tanstack/react-query";
+import {Spinner} from "@/components/spinner.tsx";
+import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
 
 export const db = new DuckDbManager()
 
 export function DuckDB(props: { children: React.ReactNode }) {
     const projectId = useProjectId()
     const availableFiles = useFileCatalog(projectId)
+
+    const [isImportingData, setIsImportingData] = useState(true)
 
     const autoloadFiles = useMemo(() => {
         return availableFiles
@@ -40,22 +44,21 @@ export function DuckDB(props: { children: React.ReactNode }) {
 
     const importedChecksums = useRef<Set<string>>(new Set([]))
     useEffect(() => {
-        console.log(fileQueries)
         if(Array.isArray(fileQueries) && typeof fileQueries !== 'string') {
             const importedSet = importedChecksums.current
             const newSet = new Set(fileQueries.map(f => f.checksum))
             if(!eqSet(newSet, importedSet)) {
                 importedChecksums.current = newSet
-                void db.reimportAllParquetFiles(fileQueries)
-            } else {
-                console.log(`Skipping update.`, importedSet, newSet)
+                db.reimportAllParquetFiles(fileQueries).then(() => setIsImportingData(false))
             }
         }
     }, [fileQueries]);
 
     return (
         <>
-            {props.children}
+            <DuckDBLoadingIndicator isLoading={isImportingData}>
+                {props.children}
+            </DuckDBLoadingIndicator>
         </>
     )
 }
