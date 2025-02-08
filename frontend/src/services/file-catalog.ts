@@ -2,6 +2,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
 import {sha1Blob} from "@lib/checksums.ts";
 import {db} from "@app/duckdb/duckdb.tsx";
+import {DUCKDB_INSIGHT_QUERY_KEY} from "@/services/duck-db-queries.ts";
 
 export interface FileMetadata {
     name: string
@@ -55,7 +56,7 @@ export function useDownloadFile() {
         mutationFn: async ({fileName}: { projectId: string; fileName: string }): Promise<FileDownload | null> => {
             return await FileCatalogApi.downloadFile(fileName)
         },
-        onSuccess: (file: FileDownload | null, {projectId, fileName}) => {
+        onSuccess: async (file: FileDownload | null, {projectId, fileName}) => {
             console.log(`Downloaded ${fileName} from ${projectId}`, file)
             if(file) {
                 console.log(`persisting ${fileName}`)
@@ -65,7 +66,10 @@ export function useDownloadFile() {
                         return file
                     }
                 )
-                void db.reimportAllParquetFiles([file])
+                await db.reimportAllParquetFiles([file])
+                await queryClient.invalidateQueries({
+                    queryKey: ['duckdb']
+                })
             }
         }
     })
