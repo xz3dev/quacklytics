@@ -2,7 +2,6 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
 import {sha1Blob} from "@lib/checksums.ts";
 import {db} from "@app/duckdb/duckdb.tsx";
-import {DUCKDB_INSIGHT_QUERY_KEY} from "@/services/duck-db-queries.ts";
 
 export interface FileMetadata {
     name: string
