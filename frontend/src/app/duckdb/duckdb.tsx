@@ -1,8 +1,8 @@
 import {useEffect, useMemo, useRef, useState} from "react";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
-import {FILE_KEY, FileCatalogApi, useFileCatalog} from "@/services/file-catalog.ts";
+import {FILE_KEY, FileCatalogApi, FileMetadata, useFileCatalog} from "@/services/file-catalog.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
-import {useQueries} from "@tanstack/react-query";
+import {useQueries, useQueryClient} from "@tanstack/react-query";
 import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
 
 export const db = new DuckDbManager()
@@ -10,13 +10,21 @@ export const db = new DuckDbManager()
 export function DuckDB(props: { children: React.ReactNode }) {
     const projectId = useProjectId()
     const availableFiles = useFileCatalog(projectId)
+    const queryClient = useQueryClient()
 
     const [isImportingData, setIsImportingData] = useState(true)
+
+    const shouldLoadFile = (f: FileMetadata) => {
+        if(f.autoload) return true
+        const cache = queryClient.getQueryData<FileMetadata>(FILE_KEY(projectId, f))
+        if(cache && cache.checksum === f.checksum) return true
+        return false
+    }
 
     const autoloadFiles = useMemo(() => {
         return availableFiles
                 .data
-                ?.filter(f => f.autoload)
+                ?.filter(shouldLoadFile)
                 ?.map(file => file)
             ?? []
     }, [availableFiles])
