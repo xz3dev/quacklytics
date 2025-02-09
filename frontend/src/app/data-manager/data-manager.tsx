@@ -52,17 +52,8 @@ export function DataManager() {
 
     async function loadFiles(files: FileMetadata[]) {
         setIsDbWorking(true)
-        const resolvers: ((v: unknown) => void)[] = []
-        const promises2 = files.map(() => new Promise((resolve) => resolvers.push(resolve)))
-        for (let file of files) {
-            fileDownloader.mutate(
-                {projectId, file},
-                {
-                    onSuccess: () => resolvers[files.indexOf(file)](null),
-                },
-            );
-        }
-        await Promise.all(promises2)
+        const promises = files.map(file => fileDownloader.mutateAsync({projectId, file}))
+        await Promise.all(promises)
         setIsDbWorking(false)
     }
 
