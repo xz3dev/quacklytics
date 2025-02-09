@@ -10,17 +10,20 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 )
 
 type FileCatalogEntryResponse struct {
 	model.FileCatalogEntry
-	AutoLoad bool `json:"autoload"`
+	AutoLoad bool  `json:"autoload"`
+	FileSize int64 `json:"filesize"`
 }
 
 func FileChecksums(w http.ResponseWriter, r *http.Request) {
 	db := svmw.GetProjectDB(r, w)
+	projectId := svmw.GetProjectID(r)
 	files, err := filecatalog.ListAll(db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -32,10 +35,17 @@ func FileChecksums(w http.ResponseWriter, r *http.Request) {
 	sixMonthAgo := time.Now().AddDate(0, -6, 0)
 
 	result := make([]FileCatalogEntryResponse, len(files))
+	dir := path.Join(constants.TmpDir, projectId, constants.ParquetDir)
 	for i, file := range files {
+		stat, err := os.Stat(path.Join(dir, file.Name))
+		if err != nil {
+			log.Error("Error while reading file %s: %v", file.Name, err)
+			continue
+		}
 		result[i] = FileCatalogEntryResponse{
 			FileCatalogEntry: file,
 			AutoLoad:         file.Start.After(sixMonthAgo),
+			FileSize:         stat.Size(),
 		}
 	}
 

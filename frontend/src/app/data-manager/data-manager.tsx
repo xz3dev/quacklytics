@@ -9,6 +9,8 @@ import {DownloadProgressBar} from "@app/data-manager/download-progress-bar.tsx";
 import {useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
 import {Spinner} from "@/components/spinner.tsx";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
+import {useDataRangeStore} from "@lib/data/data-state.ts";
+import {format} from "date-fns";
 
 export function DataManager() {
     const [progress,] = useState<number>(0);
@@ -18,6 +20,7 @@ export function DataManager() {
 
     const availableFiles = useFileCatalog(projectId)
     const fileDownloader = useDownloadFile()
+    const dataRanges = useDataRangeStore()
 
     const statusIcon = {
         success: <HardDrive className="h-4 w-4"/>,
@@ -31,6 +34,17 @@ export function DataManager() {
     if (availableFiles.status === 'error') {
         return availableFiles.error.message
     }
+
+    const rawOptions = availableFiles.data
+        .filter(file => file.eventCount > 0 && !dataRanges.isLoaded(file))
+        .sort((a, b) => b.start.localeCompare(a.start))
+
+    const downloadOptions = rawOptions.reduce((acc, file, index) => {
+        const previousSize = index > 0 ? acc[index - 1]?.accSize || 0 : 0;
+        const accumulatedSize = previousSize + file.filesize;
+        acc.push({...file, accSize: accumulatedSize});
+        return acc;
+    }, [] as Array<{ accSize: number } & typeof rawOptions[0]>);
 
     return (
         <div className="z-50">
@@ -51,6 +65,21 @@ export function DataManager() {
 
                         <label
                             className="block mb-1.5 text-xs font-medium text-muted-foreground">
+                            Downloaded Data Range
+                        </label>
+                        {
+                            (dataRanges.minDate && dataRanges.maxDate) && (
+                                <div
+                                    className="font-medium text-foreground text-lg"
+                                >
+                                    {format(dataRanges.minDate, 'yyyy-MM-dd')} - {format(dataRanges.maxDate, 'yyyy-MM-dd')}
+                                </div>
+                            )
+                        }
+
+
+                        <label
+                            className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
                             Auto-Download Range
                         </label>
                         <AutoDownloadRangeSelector></AutoDownloadRangeSelector>
@@ -85,15 +114,14 @@ export function DataManager() {
                             <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">Available
                                 Files</label>
                             <div className="flex flex-col gap-1 items-center justify-between text-sm">
-                                <div>{availableFiles.data?.length ?? 0}</div>
-                                {availableFiles.data?.map((file) => (
+                                {downloadOptions?.map((file) => (
                                     <Button
                                         key={file.name}
                                         className="self-stretch"
                                         variant="outline"
                                         onClick={() => fileDownloader.mutate({projectId, file})}
                                     >
-                                        Download {file.name}
+                                        Download data until {format(file.start, 'yyyy-MM-dd')} ({Math.round(bytesToMegabytesBinary(file.accSize))}MB)
                                     </Button>
                                 ))}
                             </div>
@@ -103,4 +131,10 @@ export function DataManager() {
             </Popover>
         </div>
     )
+};
+
+
+const bytesToMegabytesBinary = (bytes: number, decimals: number = 2): number => {
+    const megabytes = bytes / (1024 ** 2); // 1 MB = 1024 * 1024 bytes
+    return parseFloat(megabytes.toFixed(decimals));
 };

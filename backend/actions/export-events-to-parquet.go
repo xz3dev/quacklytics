@@ -40,13 +40,18 @@ func ExportEventsToParquet(projectId string, db *gorm.DB, segment model.DataSegm
 		return err
 	}
 
+	rows, err := resp.RowsAffected()
+	if err != nil {
+		return err
+	}
+
 	createCatalogEntry(
 		projectId,
 		db,
 		segment,
+		uint(rows),
 	)
 
-	rows, err := resp.RowsAffected()
 	if rows == 0 {
 		println("No events to export")
 	} else {
@@ -60,6 +65,7 @@ func createCatalogEntry(
 	projectId string,
 	db *gorm.DB,
 	segment model.DataSegment,
+	count uint,
 ) error {
 	filepath := constants.TmpDir + "/" + projectId + "/" + constants.ParquetDir + "/" + segment.Filename
 	checksum, err := util.CalculateFileChecksum(filepath)
@@ -73,6 +79,7 @@ func createCatalogEntry(
 		End:        &segment.EndDate,
 		ValidUntil: segment.ValidUntil,
 		Checksum:   checksum,
+		EventCount: count,
 	}
 
 	return db.Create(&entry).Error

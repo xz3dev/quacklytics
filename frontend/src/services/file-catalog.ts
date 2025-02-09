@@ -9,6 +9,8 @@ export interface FileMetadata {
     validUntil: string | null
     checksum: string
     autoload: boolean
+    filesize: number
+    eventCount: number
 }
 
 export const FILE_CATALOG_KEY = (project: string) => ['fileCatalog', project] as const

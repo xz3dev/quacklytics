@@ -12,6 +12,7 @@ type FileCatalogEntry struct {
 	End        *time.Time     `json:"end"`
 	ValidUntil *time.Time     `json:"validUntil"`
 	Checksum   string         `json:"checksum"`
+	EventCount uint           `gorm:"type:uint;not null;default:0" json:"eventCount"`
 	CreatedAt  time.Time      `json:"createdAt"`
 	UpdatedAt  time.Time      `json:"updatedAt"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deletedAt"`
