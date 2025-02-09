@@ -5,12 +5,13 @@ import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 import {DiscontinuousRange} from "@lib/utils/ranges.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
+import {useDateRangeStore} from "@lib/data/data-state.ts";
 
 export class DuckDbManager {
     importedDateRange = new DiscontinuousRange<Date>([])
     private db = createDb()
     private conn = this.db.then(async (db) => {
-        if(!db) throw Error(
+        if (!db) throw Error(
             'Failed to init to duckdb'
         )
         const con = await db.connect();
@@ -63,6 +64,8 @@ export class DuckDbManager {
             queries.push(query)
         }
         await Promise.all(queries)
+
+        useDateRangeStore.getState().updateDateRange(files)
     }
 
     async queryTimeZone() {

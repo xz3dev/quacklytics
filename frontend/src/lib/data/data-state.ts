@@ -1,14 +1,31 @@
-import {create} from 'zustand';
+import {FileDownload} from "@/services/file-catalog.ts";
+import {create} from "zustand";
+import {findMaxDate, findMinDate, updateDate} from "@lib/utils/date-comparison.ts";
 
-const ranges = ["3", "6", "12"] as const;
-type DownloadRange = typeof ranges[number];
-
-interface AppDataState {
-    downloadRange: DownloadRange
+interface DateRangeStore {
+    minDate: Date | null;
+    maxDate: Date | null;
+    updateDateRange: (files: Array<FileDownload>) => void;
 }
 
-const useAppDataStore = create<AppDataState>((set) => ({
-    downloadRange: '6',
-}));
+export const useDateRangeStore = create<DateRangeStore>((set, ) => ({
+    minDate: null,
+    maxDate: null,
 
-export default useAppDataStore;
+    updateDateRange: (files: Array<FileDownload>) => {
+        if (files.length === 0) return;
+
+        const startDates = files.map(file => new Date(file.start));
+        const endDates = files.map(file => new Date(file.end));
+
+        const newMinDate = findMinDate(startDates);
+        const newMaxDate = findMaxDate(endDates);
+
+        set(state => ({
+            minDate: updateDate(state.minDate, newMinDate, (a, b) => a < b),
+            maxDate: updateDate(state.maxDate, newMaxDate, (a, b) => a > b),
+        }));
+
+        console.log(`minDate: ${newMinDate}, maxDate: ${newMaxDate}`)
+    },
+}));
