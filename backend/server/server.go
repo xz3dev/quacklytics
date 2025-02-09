@@ -2,6 +2,7 @@ package server
 
 import (
 	"analytics/auth"
+	"analytics/config"
 	"analytics/database/appdb"
 	"analytics/log"
 	svmw "analytics/server/middlewares"
@@ -19,24 +20,8 @@ import (
 
 var ab *authboss.Authboss
 
-type Config struct {
-	Port        int
-	Url         string
-	FrontendUrl string
-}
-
-func DefaultConfig() Config {
-	return Config{
-		Port:        3000,
-		Url:         "http://localhost:3000",
-		FrontendUrl: "http://localhost:5173",
-	}
-}
-
-const port = 3000
-
 func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
-	config := DefaultConfig()
+	config := config.Load()
 	var err error
 	ab, err = auth.SetupAuthboss(appDb)
 	if err != nil {
@@ -48,7 +33,7 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 		ErrorLog: zap.NewStdLog(log.Logger),
 	}
 
-	log.Info("Starting server on port %d", port)
+	log.Info("Starting server on port %d", config.Port)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err.Error(), err)
 	}
