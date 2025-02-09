@@ -7,6 +7,7 @@ import (
 	"analytics/model"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,6 +15,12 @@ import (
 	"path/filepath"
 	"time"
 )
+
+func SetupFileCatalogRoutes(mux chi.Router) {
+	mux.Get("/events/parquet/seq/checksums", FileChecksums)
+	mux.Get("/events/parquet/seq/download", FileDownload)
+	mux.Get("/events/parquet/gen", RegenerateFiles)
+}
 
 type FileCatalogEntryResponse struct {
 	model.FileCatalogEntry

@@ -67,9 +67,8 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 
 	// Mount Authboss
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
-	//mux.Post("/auth/register", routes.RegisterUser)
 	mux.Get("/auth/me", routes.CurrentUser)
-	setupPublicEventRoutes(mux)
+	mux.Post("/event", routes.AppendEvent)
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
@@ -81,10 +80,13 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 		mux.Use(svmw.ProjectMiddleware(projectDbs))
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
 		mux.Post("/dummy", routes.GenerateDummyEvents)
-		setupPrivateEventRoutes(mux)
-		setupAnalyticsRoutes(mux)
+		routes.SetupPrivateEventRoutes(mux)
+		routes.SetupFileCatalogRoutes(mux)
+		routes.SetupSchemaRoutes(mux)
+		routes.SetupInsightRoutes(mux)
+		routes.SetupDashoardRoutes(mux)
 		routes.SetupPersonsRoutes(mux)
-		setupProjectSpecificRoutes(mux)
+		routes.SetupProjectSpecificRoutes(mux)
 	})
 
 	return mux
@@ -93,37 +95,6 @@ func setupProjectRoutes(mux chi.Router) {
 	mux.Get("/projects", routes.ListProjects)
 	mux.Post("/projects", routes.CreateProject)
 }
-
-func setupProjectSpecificRoutes(mux chi.Router) {
-	mux.Post("/settings", routes.UpdateProjectSettings)
-}
-
-func setupPublicEventRoutes(mux chi.Router) {
-	mux.Post("/event", routes.AppendEvent)
-}
-
-func setupPrivateEventRoutes(mux chi.Router) {
-	mux.Get("/events", routes.QueryEvents)
-	mux.Get("/events/parquet", routes.QueryEventAsParquet)
-	mux.Post("/event", routes.AppendEvent)
-	mux.Get("/events/parquet/kw", routes.QueryEventsKW)
-	mux.Get("/events/parquet/months", routes.QueryEventsMonth)
-	mux.Get("/events/parquet/export", routes.EventsExport)
-	mux.Get("/events/parquet/checksums", routes.LastTwelveWeeksChecksums)
-	mux.Get("/events/parquet/months/checksums", routes.LastTwelveMonthsChecksums)
-
-	mux.Get("/events/parquet/seq/checksums", routes.FileChecksums)
-	mux.Get("/events/parquet/seq/download", routes.FileDownload)
-	mux.Get("/events/parquet/gen", routes.RegenerateFiles)
-}
-
-func setupAnalyticsRoutes(mux chi.Router) {
-	routes.SetupSchemaRoutes(mux)
-	//mux.Get("/insights/", ListInsights)
-	routes.SetupInsightRoutes(mux)
-	routes.SetupDashoardRoutes(mux)
-}
-
 func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
 	r.Use(middleware.RequestID)
 	r.Use(svmw.Logger(log.Logger, &svmw.LoggerOpts{
@@ -137,17 +108,3 @@ func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.D
 	r.Use(svmw.AuthbossMW(ab))
 	r.Use(svmw.DbLookupMiddleware(projectDbs, appdb))
 }
-
-//func setupCORS(mux *chi.Mux, c Config) {
-//	mux.Use(cors.Handler(cors.Options{
-//		AllowedOrigins: []string{
-//			c.FrontendUrl,
-//			c.Url,
-//		},
-//		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-//		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "Set-Cookie"},
-//		ExposedHeaders:   []string{"Set-Cookie"},
-//		AllowCredentials: true,
-//		MaxAge:           300, // Maximum value not ignored by any of major browsers
-//	}))
-//}

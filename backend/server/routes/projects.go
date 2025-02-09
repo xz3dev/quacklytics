@@ -8,6 +8,7 @@ import (
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
@@ -63,6 +64,10 @@ func CreateProject(writer http.ResponseWriter, request *http.Request) {
 	project := actions.CreateProject(input.Name)
 
 	json.NewEncoder(writer).Encode(project)
+}
+
+func SetupProjectSpecificRoutes(mux chi.Router) {
+	mux.Post("/settings", UpdateProjectSettings)
 }
 
 func UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
