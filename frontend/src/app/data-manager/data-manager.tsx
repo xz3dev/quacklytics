@@ -6,7 +6,7 @@ import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive} from "lucide-react";
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";
 import {DownloadProgressBar} from "@app/data-manager/download-progress-bar.tsx";
-import {useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
+import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
 import {Spinner} from "@/components/spinner.tsx";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
@@ -38,13 +38,25 @@ export function DataManager() {
     const rawOptions = availableFiles.data
         .filter(file => file.eventCount > 0 && !dataRanges.isLoaded(file))
         .sort((a, b) => b.start.localeCompare(a.start))
+    console.log(rawOptions)
 
     const downloadOptions = rawOptions.reduce((acc, file, index) => {
-        const previousSize = index > 0 ? acc[index - 1]?.accSize || 0 : 0;
+        const prev = acc[index - 1]
+        const previousSize = index > 0 ? prev?.accSize || 0 : 0;
         const accumulatedSize = previousSize + file.filesize;
-        acc.push({...file, accSize: accumulatedSize});
+        acc.push({
+            ...file,
+            accSize: accumulatedSize,
+            files: [...(prev?.files ?? []), file]
+        });
         return acc;
-    }, [] as Array<{ accSize: number } & typeof rawOptions[0]>);
+    }, [] as Array<{ accSize: number, files: FileMetadata[] } & typeof rawOptions[0]>);
+
+    function loadFiles(files: FileMetadata[]): void {
+        for (const file of files) {
+            fileDownloader.mutate({projectId, file})
+        }
+    }
 
     return (
         <div className="z-50">
@@ -119,7 +131,7 @@ export function DataManager() {
                                         key={file.name}
                                         className="self-stretch"
                                         variant="outline"
-                                        onClick={() => fileDownloader.mutate({projectId, file})}
+                                        onClick={() => loadFiles(file.files)}
                                     >
                                         Download data until {format(file.start, 'yyyy-MM-dd')} ({Math.round(bytesToMegabytesBinary(file.accSize))}MB)
                                     </Button>
