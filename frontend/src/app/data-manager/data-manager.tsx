@@ -5,16 +5,16 @@ import {cn} from "@/lib/utils"; // Optional: For utility class merging
 import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive} from "lucide-react";
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";
-import {DownloadProgressBar} from "@app/data-manager/download-progress-bar.tsx";
 import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
-import {Spinner} from "@/components/spinner.tsx";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {format} from "date-fns";
+import {Spinner} from "@/components/spinner.tsx";
 
 export function DataManager() {
-    const [progress,] = useState<number>(0);
     const [storageUsed,] = useState({used: 45, total: 200});
+    const [isOpen, setIsOpen] = useState(false);
+    const [isDbWorking, setIsDbWorking] = useState(false);
 
     const projectId = useProjectId()
 
@@ -28,17 +28,15 @@ export function DataManager() {
         error: <AlertCircleIcon className="h-4 w-4 text-red-600"/>
     };
 
-    if (availableFiles.status === 'pending') {
-        return <Spinner/>;
-    }
-    if (availableFiles.status === 'error') {
-        return availableFiles.error.message
-    }
+    const availableFilesData = availableFiles.data ?? []
 
-    const rawOptions = availableFiles.data
+    const storageConsumption = availableFilesData
+        .filter(file => dataRanges.isLoaded(file))
+        .reduce((acc, file) => (acc ?? 0) + file.filesize, 0)
+
+    const rawOptions = availableFilesData
         .filter(file => file.eventCount > 0 && !dataRanges.isLoaded(file))
         .sort((a, b) => b.start.localeCompare(a.start))
-    console.log(rawOptions)
 
     const downloadOptions = rawOptions.reduce((acc, file, index) => {
         const prev = acc[index - 1]
@@ -52,16 +50,25 @@ export function DataManager() {
         return acc;
     }, [] as Array<{ accSize: number, files: FileMetadata[] } & typeof rawOptions[0]>);
 
-    function loadFiles(files: FileMetadata[]): void {
-        for (const file of files) {
-            fileDownloader.mutate({projectId, file})
+    async function loadFiles(files: FileMetadata[]) {
+        setIsDbWorking(true)
+        const resolvers: ((v: unknown) => void)[] = []
+        const promises2 = files.map(() => new Promise((resolve) => resolvers.push(resolve)))
+        for (let file of files) {
+            fileDownloader.mutate(
+                {projectId, file},
+                {
+                    onSuccess: () => resolvers[files.indexOf(file)](null),
+                },
+            );
         }
+        await Promise.all(promises2)
+        setIsDbWorking(false)
     }
 
     return (
         <div className="z-50">
-            {/* Data Manager Button */}
-            <Popover>
+            <Popover onOpenChange={setIsOpen} open={isOpen}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="secondary"
@@ -73,8 +80,11 @@ export function DataManager() {
 
                 {/* Popup Content */}
                 <PopoverContent align="end" sideOffset={8} side="bottom">
-                    <Card className="p-4 max-h-96 overflow-y-auto">
-
+                    <Card className="p-4 max-h-96 overflow-y-auto relative">
+                        {isDbWorking && <div
+                            className="absolute inset-0 flex items-center justify-center bg-muted/40 backdrop-blur-sm">
+                            <Spinner></Spinner>
+                        </div>}
                         <label
                             className="block mb-1.5 text-xs font-medium text-muted-foreground">
                             Downloaded Data Range
@@ -82,7 +92,7 @@ export function DataManager() {
                         {
                             (dataRanges.minDate && dataRanges.maxDate) && (
                                 <div
-                                    className="font-medium text-foreground text-lg"
+                                    className="font-medium text-foreground text-sm"
                                 >
                                     {format(dataRanges.minDate, 'yyyy-MM-dd')} - {format(dataRanges.maxDate, 'yyyy-MM-dd')}
                                 </div>
@@ -96,19 +106,12 @@ export function DataManager() {
                         </label>
                         <AutoDownloadRangeSelector></AutoDownloadRangeSelector>
 
-                        <label
-                            className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground"
-                        >
-                            Download Progress
-                        </label>
-                        <DownloadProgressBar state={availableFiles.status} progress={progress}></DownloadProgressBar>
-
                         {/* Storage Consumption */}
                         <div>
                             <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">Storage
                                 Consumption</label>
                             <div className="flex items-center justify-between text-sm">
-                                <span>{storageUsed.used} MB / {storageUsed.total} MB</span>
+                                <span>{bytesToMegabytesBinary(storageConsumption)} MB</span>
                                 <div
                                     className={cn(
                                         {"bg-red-300": storageUsed.used / storageUsed.total > 0.9}
@@ -122,22 +125,23 @@ export function DataManager() {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">Available
-                                Files</label>
+                        {downloadOptions.length > 0 && <div>
+                            <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
+                                Download additional event data
+                            </label>
                             <div className="flex flex-col gap-1 items-center justify-between text-sm">
                                 {downloadOptions?.map((file) => (
                                     <Button
                                         key={file.name}
                                         className="self-stretch"
-                                        variant="outline"
+                                        variant="secondary"
                                         onClick={() => loadFiles(file.files)}
                                     >
-                                        Download data until {format(file.start, 'yyyy-MM-dd')} ({Math.round(bytesToMegabytesBinary(file.accSize))}MB)
+                                        Since {format(file.start, 'yyyy-MM-dd')} ({Math.round(bytesToMegabytesBinary(file.accSize))}MB)
                                     </Button>
                                 ))}
                             </div>
-                        </div>
+                        </div>}
                     </Card>
                 </PopoverContent>
             </Popover>

@@ -63,12 +63,6 @@ export function useDownloadFile() {
                     staleTime: Infinity,
                     gcTime: 1000 * 60 * 60 * 24 * 14,
                 })
-                // queryClient.setQueryData<FileDownload>(
-                //     FILE_KEY(projectId, file),
-                //     () => {
-                //         return file
-                //     },
-                // )
                 await db.importParquet([file])
                 await queryClient.invalidateQueries({
                     queryKey: ['duckdb']

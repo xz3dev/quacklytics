@@ -8,7 +8,6 @@ import {FileDownload} from "@/services/file-catalog.ts";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
 
 export class DuckDbManager {
-    importedDateRange = new DiscontinuousRange<Date>([])
     private db = createDb()
     private conn = this.db.then(async (db) => {
         if (!db) throw Error(
@@ -58,9 +57,11 @@ export class DuckDbManager {
                 insert or ignore into events
                 select *
                 from parquet_scan('${file.name}')
-            `).catch((e) => {
-                console.error(`Failed to import ${file.name}: ${e.message}`)
-            })
+            `)
+                .then(() => console.debug(`import done ${file.name}`))
+                .catch((e) => {
+                    console.error(`Failed to import ${file.name}: ${e.message}`)
+                })
             queries.push(query)
         }
         await Promise.all(queries)
