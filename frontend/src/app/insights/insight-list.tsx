@@ -15,7 +15,7 @@ import {
 import {MoreHorizontal, Plus, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
-import {cn} from "@lib/utils.ts";
+import {cn} from "@lib/utils/tailwind.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {newValueInsight} from "@/model/value-insight.ts";
 import {newTrendInsight} from "@/model/trend-insight.ts";

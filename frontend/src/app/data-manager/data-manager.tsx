@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
-import {cn} from "@/lib/utils"; // Optional: For utility class merging
+import {cn} from "@lib/utils/tailwind.ts"; // Optional: For utility class merging
 import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive} from "lucide-react";
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";

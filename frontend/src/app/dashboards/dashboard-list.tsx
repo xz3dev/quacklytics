@@ -21,7 +21,7 @@ import {
 import {Home, MoreHorizontal, Plus, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id"
 import {ProjectLink} from "@/components/project-link"
-import {cn} from "@lib/utils"
+import {cn} from "@lib/utils/tailwind.ts"
 
 interface Props {
     filter?: (d: Dashboard) => boolean

@@ -8,7 +8,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover"
 import {Command, CommandEmpty, CommandInput, CommandItem, CommandList} from "@/components/ui/command"
 import {useSchema} from "@/services/schemas"
 import {useProjectId} from "@/hooks/use-project-id"
-import {cn} from "@/lib/utils"
+import {cn} from "@lib/utils/tailwind.ts"
 
 interface TrendAggregationOptions {
     name: string

@@ -4,7 +4,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui
 import {usePropValues} from "@/services/schemas.ts"
 import {useProjectId} from "@/hooks/use-project-id.tsx"
 import {useVirtualizer} from '@tanstack/react-virtual'
-import {cn} from "@/lib/utils"
+import {cn} from "@lib/utils/tailwind.ts"
 
 export function SchemaPropValueList({propId, isOpen, onClose, fieldName}: {
     propId: number

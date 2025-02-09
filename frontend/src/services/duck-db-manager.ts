@@ -3,7 +3,6 @@ import type {DataType} from '@apache-arrow/ts'
 import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
 import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
-import {DiscontinuousRange} from "@lib/utils/ranges.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
 

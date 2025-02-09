@@ -9,7 +9,7 @@ import {Spinner} from "@/components/spinner.tsx";
 import {determinePreviousDateRange} from "@/model/InsightDateRange.ts";
 import {ArrowDownRight, ArrowUpRight} from "lucide-react";
 import {isPresent} from "ts-is-present";
-import {cn} from "@lib/utils.ts";
+import {cn} from "@lib/utils/tailwind.ts";
 
 type Props = {
     insight: ValueInsight

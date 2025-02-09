@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/components/ui/sidebar"
 import {useTheme} from "@/components/theme/theme-provider.tsx";
-import {cn} from "@lib/utils.ts";
+import {cn} from "@lib/utils/tailwind.ts";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {useAuthStore} from "@/services/auth.ts";
 
