@@ -20,8 +20,8 @@ export function DataManager() {
     const fileDownloader = useDownloadFile()
 
     const statusIcon = {
-        success: <HardDrive className="h-4 w-4 text-muted"/>,
-        pending: <ArrowDownCircleIcon className="h-4 w-4 text-primary-foreground animate-pulse"/>,
+        success: <HardDrive className="h-4 w-4"/>,
+        pending: <ArrowDownCircleIcon className="h-4 w-4 animate-pulse"/>,
         error: <AlertCircleIcon className="h-4 w-4 text-red-600"/>
     };
 
@@ -37,7 +37,9 @@ export function DataManager() {
             {/* Data Manager Button */}
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button className="flex items-center justify-between gap-2">
+                    <Button
+                        variant="secondary"
+                    >
                         Data Manager
                         {statusIcon[availableFiles.status]}
                     </Button>
