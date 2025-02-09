@@ -1,7 +1,6 @@
 import {FileDownload, FileMetadata} from "@/services/file-catalog.ts";
 import {create} from "zustand";
 import {findMaxDate, findMinDate, updateDate} from "@lib/utils/date-comparison.ts";
-import {format} from "date-fns";
 
 interface DateRangeStore {
     minDate: Date | null
@@ -50,23 +49,11 @@ export const useDataRangeStore = create<DateRangeStore>((set, get,) => ({
     isLoaded: (file: FileMetadata): boolean => {
         const {minDate, maxDate} = get()
         const start = new Date(file.start)
-        const end = new Date(file.end)
         if (!minDate || !maxDate) return false;
-
-        const f = 'yyyy-MM-dd hh-mm-ss'
 
         const isIncluded = (date: Date) => {
             return minDate.getTime() <= date.getTime() && date.getTime() <= maxDate.getTime();
         };
-
-        // console.log(
-        //     isIncluded(start),
-        //     isIncluded(end),
-        //     format(minDate, f),
-        //     format(maxDate, f),
-        //     format(start, f),
-        //     format(end, f),
-        // )
 
         return isIncluded(start)
     }
