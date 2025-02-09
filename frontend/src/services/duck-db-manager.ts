@@ -5,7 +5,7 @@ import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 import {DiscontinuousRange} from "@lib/utils/ranges.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
-import {useDateRangeStore} from "@lib/data/data-state.ts";
+import {useDataRangeStore} from "@lib/data/data-state.ts";
 
 export class DuckDbManager {
     importedDateRange = new DiscontinuousRange<Date>([])
@@ -65,7 +65,7 @@ export class DuckDbManager {
         }
         await Promise.all(queries)
 
-        useDateRangeStore.getState().updateDateRange(files)
+        useDataRangeStore.getState().updateDateRange(files)
     }
 
     async queryTimeZone() {

@@ -8,7 +8,7 @@ interface DateRangeStore {
     updateDateRange: (files: Array<FileDownload>) => void;
 }
 
-export const useDateRangeStore = create<DateRangeStore>((set, ) => ({
+export const useDataRangeStore = create<DateRangeStore>((set, ) => ({
     minDate: null,
     maxDate: null,
 
