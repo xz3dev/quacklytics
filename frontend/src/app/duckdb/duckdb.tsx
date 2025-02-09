@@ -17,7 +17,7 @@ export function DuckDB(props: { children: React.ReactNode }) {
         return availableFiles
                 .data
                 ?.filter(f => f.autoload)
-                ?.map(file => file.name)
+                ?.map(file => file)
             ?? []
     }, [availableFiles])
 
@@ -25,6 +25,8 @@ export function DuckDB(props: { children: React.ReactNode }) {
         queries: autoloadFiles.map((f) => ({
             queryFn: () => FileCatalogApi.downloadFile(f),
             queryKey: FILE_KEY(projectId, f),
+            staleTime: Infinity,
+            gcTime: 1000 * 60 * 60 * 24 * 14, // 14 days
         })),
         combine: (queries) => {
             if(queries.some(q => q.status === 'error')) {
@@ -48,7 +50,7 @@ export function DuckDB(props: { children: React.ReactNode }) {
             const newSet = new Set(fileQueries.map(f => f.checksum))
             if(!eqSet(newSet, importedSet)) {
                 importedChecksums.current = newSet
-                db.reimportAllParquetFiles(fileQueries).then(() => setIsImportingData(false))
+                db.importParquet(fileQueries).then(() => setIsImportingData(false))
             }
         }
     }, [fileQueries]);

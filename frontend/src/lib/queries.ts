@@ -133,8 +133,6 @@ export function buildQuery(query: Query): {
         sql += ` OFFSET ${query.offset}`
     }
 
-    console.log(sql, params)
-
     return {sql, params}
 }
 

@@ -1,6 +1,5 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
-import {sha1Blob} from "@lib/checksums.ts";
 import {db} from "@app/duckdb/duckdb.tsx";
 
 export interface FileMetadata {
@@ -13,64 +12,67 @@ export interface FileMetadata {
 }
 
 export const FILE_CATALOG_KEY = (project: string) => ['fileCatalog', project] as const
-export const FILE_KEY = (project: string, file: string) => ['file', project, file] as const
+export const FILE_KEY = (project: string, file: FileMetadata) => ['file', project, file.name, file.checksum] as const
 
-export interface FileDownload {
-    filename: string
+export type FileDownload = FileMetadata & {
     blob: Blob
-    checksum: string
 }
 // API functions
 export const FileCatalogApi = {
     getFileChecksums: async (): Promise<FileMetadata[]> => {
         return http.get<any>(`test/events/parquet/seq/checksums`)
     },
-    downloadFile: async (filename: string): Promise<FileDownload> => {
-        const blob = await http.getBlob(`test/events/parquet/seq/download?file=${filename}`)
+    downloadFile: async (file: FileMetadata): Promise<FileDownload> => {
+        const blob = await http.getBlob(`test/events/parquet/seq/download?file=${file.name}&checksum=${file.checksum}`)
         return {
-            filename,
+            ...file,
             blob,
-            checksum: await sha1Blob(blob)
         }
     },
-
 }
 
 export function useFileCatalog(projectId: string) {
     return useQuery({
-        queryKey: [FILE_CATALOG_KEY(projectId)],
+        queryKey: FILE_CATALOG_KEY(projectId),
         queryFn: () => FileCatalogApi.getFileChecksums(),
-    })
-}
-
-export function useDownloadFiles() {
-    return useQuery({
-        queryKey: [FILE_CATALOG_KEY('test')],
     })
 }
 
 export function useDownloadFile() {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: async ({fileName}: { projectId: string; fileName: string }): Promise<FileDownload | null> => {
-            return await FileCatalogApi.downloadFile(fileName)
+        gcTime: 1000 * 60 * 60 * 24 * 14,
+        mutationFn: async ({projectId, file}: { projectId: string; file: FileMetadata }): Promise<FileDownload | null> => {
+            const cache = queryClient.getQueryData<FileDownload>(FILE_KEY(projectId, file))
+            if(cache && cache.checksum === file.checksum) {
+                console.log(`using cached ${file.name}`)
+                return cache
+            }
+            console.log(`downloading ${file.name}`)
+            return await FileCatalogApi.downloadFile(file)
         },
-        onSuccess: async (file: FileDownload | null, {projectId, fileName}) => {
-            console.log(`Downloaded ${fileName} from ${projectId}`, file)
+        onSuccess: async (file: FileDownload | null, {projectId}) => {
+            console.log(`Downloaded ${file} from ${projectId}`, file)
             if(file) {
-                console.log(`persisting ${fileName}`)
-                queryClient.setQueryData<FileDownload>(
-                    FILE_KEY(projectId, fileName),
-                    () => {
-                        return file
-                    }
-                )
-                await db.reimportAllParquetFiles([file])
+                console.log(`persisting ${file}`)
+                await queryClient.fetchQuery({
+                    queryKey: FILE_KEY(projectId, file),
+                    queryFn: () => file,
+                    staleTime: Infinity,
+                    gcTime: 1000 * 60 * 60 * 24 * 14,
+                })
+                // queryClient.setQueryData<FileDownload>(
+                //     FILE_KEY(projectId, file),
+                //     () => {
+                //         return file
+                //     },
+                // )
+                await db.importParquet([file])
                 await queryClient.invalidateQueries({
                     queryKey: ['duckdb']
                 })
             }
-        }
+        },
     })
 }
 

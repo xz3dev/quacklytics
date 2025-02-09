@@ -166,7 +166,6 @@ function buildChartData(
         end: UTCDate
     },
 ): ChartData[] {
-    console.log(`building chart data for ${bucket}. ${data[0].rows.length}`)
     if (data.length === 0 || data.every(s => s.rows.length === 0)) return []
     const seriesCount = data.length
 

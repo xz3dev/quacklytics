@@ -3,8 +3,11 @@ import type {DataType} from '@apache-arrow/ts'
 import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
 import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
+import {DiscontinuousRange} from "@lib/utils/ranges.ts";
+import {FileDownload} from "@/services/file-catalog.ts";
 
 export class DuckDbManager {
+    importedDateRange = new DiscontinuousRange<Date>([])
     private db = createDb()
     private conn = this.db.then(async (db) => {
         if(!db) throw Error(
@@ -30,8 +33,8 @@ export class DuckDbManager {
         `)
     }
 
-    async reimportAllParquetFiles(
-        files: Array<{ filename: string; blob: Blob, checksum: string }>,
+    async importParquet(
+        files: Array<FileDownload>,
     ): Promise<void> {
         const conn = await this.conn
         const db = await this.db
@@ -44,18 +47,18 @@ export class DuckDbManager {
 
         const queries: Promise<any>[] = []
 
-        for (const {filename, blob} of files) {
-            console.info(`Importing ${filename}`)
-            const arrayBuffer = await blob.arrayBuffer()
-            await db.registerFileBuffer(filename, new Uint8Array(arrayBuffer))
+        for (const file of files) {
+            console.info(`Importing ${file.name}`)
+            const arrayBuffer = await file.blob.arrayBuffer()
+            await db.registerFileBuffer(file.name, new Uint8Array(arrayBuffer))
 
             // Import data from the Parquet file into the events table
             const query = conn.query(`
                 insert or ignore into events
                 select *
-                from parquet_scan('${filename}')
+                from parquet_scan('${file.name}')
             `).catch((e) => {
-                console.error(`Failed to import ${filename}: ${e.message}`)
+                console.error(`Failed to import ${file.name}: ${e.message}`)
             })
             queries.push(query)
         }
@@ -73,7 +76,7 @@ export class DuckDbManager {
                                           from duckdb_settings()
                                           where name = 'TimeZone';`)
         const result = results.toArray().map(r => r.toJSON())[0]['value']
-        console.log(`Current DB TimeZone:`, result)
+        console.debug(`Current DB TimeZone:`, result)
     }
 
     async runQuery<T extends Query>(query: Query) {
@@ -83,7 +86,7 @@ export class DuckDbManager {
         const preparedQuery = await conn.prepare(sql)
         const results = await preparedQuery.query(...params)
         await preparedQuery.close()
-        console.log(`Returned ${results.toArray().length} rows`)
+        console.debug(`Returned ${results.toArray().length} rows`)
         return results
             .toArray()
             .map((i: { toJSON(): QueryResult<T> }) => i.toJSON())
@@ -97,10 +100,10 @@ export class DuckDbManager {
     >(query: string, params?: unknown[]) {
         const conn = await this.conn
         if (!conn) return
-        console.log(query, ...(params ?? []))
+        console.debug(query, ...(params ?? []))
         const preparedQuery = await conn.prepare<T>(query)
         const results = await preparedQuery.query()
-        console.log(`Returned ${results.toArray().length} rows`)
+        console.debug(`Returned ${results.toArray().length} rows`)
         return this.mapToEvents(results.toArray())
     }
 

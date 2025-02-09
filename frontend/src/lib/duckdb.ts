@@ -1,4 +1,5 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
+import {LogLevel} from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
@@ -25,7 +26,7 @@ export const createDb = async () => {
     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
     // Instantiate the asynchronus version of DuckDB-wasm
     const worker = new Worker(new URL(bundle.mainWorker!, import.meta.url));
-    const logger = new duckdb.ConsoleLogger();
+    const logger = new duckdb.ConsoleLogger(LogLevel.WARNING);
     const db = new duckdb.AsyncDuckDB(logger, worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
     const conn = await db.connect();

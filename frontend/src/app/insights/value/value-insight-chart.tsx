@@ -30,7 +30,6 @@ export function ValueInsightChart({insight}: Props) {
             },
         )
         const hash = simpleHash(JSON.stringify(series) + JSON.stringify(insight.config))
-        console.log(query)
         return {projectId, query, hash}
     }, [projectId, insight])
 
@@ -43,7 +42,6 @@ export function ValueInsightChart({insight}: Props) {
             },
         )
         const hash = simpleHash(JSON.stringify(series) + JSON.stringify(insight.config))
-        console.log(query)
         return {projectId, query, hash}
     }, [projectId, insight])
 

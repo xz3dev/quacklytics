@@ -89,7 +89,7 @@ export function DataManager() {
                                         key={file.name}
                                         className="self-stretch"
                                         variant="outline"
-                                        onClick={() => fileDownloader.mutate({projectId, fileName: file.name})}
+                                        onClick={() => fileDownloader.mutate({projectId, file})}
                                     >
                                         Download {file.name}
                                     </Button>
