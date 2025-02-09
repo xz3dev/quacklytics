@@ -56,7 +56,7 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 
 func setupMux(dbs appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
 	mux := chi.NewMux()
-	setupMiddleware(mux, dbs, appdb)
+	setupGlobalMiddleware(mux, dbs, appdb)
 
 	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
 	return mux
@@ -65,7 +65,6 @@ func setupMux(dbs appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
 func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
 
-	// Mount Authboss
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
 	mux.Get("/auth/me", routes.CurrentUser)
 	mux.Post("/event", routes.AppendEvent)
@@ -75,7 +74,6 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 		setupProjectRoutes(mux)
 	})
 
-	// Use Authboss middleware for protected routes
 	mux.Route("/{projectid}", func(mux chi.Router) {
 		mux.Use(svmw.ProjectMiddleware(projectDbs))
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
@@ -91,11 +89,13 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 
 	return mux
 }
+
 func setupProjectRoutes(mux chi.Router) {
 	mux.Get("/projects", routes.ListProjects)
 	mux.Post("/projects", routes.CreateProject)
 }
-func setupMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
+
+func setupGlobalMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
 	r.Use(middleware.RequestID)
 	r.Use(svmw.Logger(log.Logger, &svmw.LoggerOpts{
 		WithReferer:   false,
