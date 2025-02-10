@@ -1,9 +1,9 @@
-GET {{url}}/test/events/catalog/gen
+GET {{url}}/{{project}}/events/catalog/gen
 
 ###
 
-GET {{url}}/test/events/catalog
+GET {{url}}/{{project}}/events/catalog
 
 ###
 
-GET {{url}}/test/events/download?file=2025-month-02.parquet
+GET {{url}}/{{project}}/events/download?file=2025-month-02.parquet
