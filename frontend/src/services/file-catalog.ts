@@ -22,10 +22,10 @@ export type FileDownload = FileMetadata & {
 // API functions
 export const FileCatalogApi = {
     getFileChecksums: async (): Promise<FileMetadata[]> => {
-        return http.get<any>(`test/events/parquet/seq/checksums`)
+        return http.get<any>(`test/events/catalog`)
     },
     downloadFile: async (file: FileMetadata): Promise<FileDownload> => {
-        const blob = await http.getBlob(`test/events/parquet/seq/download?file=${file.name}&checksum=${file.checksum}`)
+        const blob = await http.getBlob(`test/events/download?file=${file.name}&checksum=${file.checksum}`)
         return {
             ...file,
             blob,

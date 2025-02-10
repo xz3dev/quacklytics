@@ -17,9 +17,9 @@ import (
 )
 
 func SetupFileCatalogRoutes(mux chi.Router) {
-	mux.Get("/events/parquet/seq/checksums", FileChecksums)
-	mux.Get("/events/parquet/seq/download", FileDownload)
-	mux.Get("/events/parquet/gen", RegenerateFiles)
+	mux.Get("/events/catalog", FileChecksums)
+	mux.Get("/events/catalog/gen", RegenerateFiles)
+	mux.Get("/events/download", FileDownload)
 }
 
 type FileCatalogEntryResponse struct {
