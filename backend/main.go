@@ -1,6 +1,7 @@
 package main
 
 import (
+	"analytics/config"
 	"analytics/cron"
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	config.Load()
 	log.Init()
 	projects.CreateDirectories()
 	cron.Init()

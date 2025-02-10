@@ -15,7 +15,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@duckdb/duckdb-wasm": "",
+    "@duckdb/duckdb-wasm": "1.29.0",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-avatar": "^1.1.2",
     "@radix-ui/react-checkbox": "^1.1.4",
@@ -60,7 +60,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react-swc": "^3.8.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.15.0",
     "eslint-plugin-react-hooks": "^5.1.0",
@@ -70,6 +70,6 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.15.0",
-    "vite": "^6.0.1"
+    "vite": "^6.1.0"
   }
 }

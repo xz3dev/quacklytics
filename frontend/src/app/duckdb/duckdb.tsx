@@ -55,6 +55,7 @@ export function DuckDB(props: { children: React.ReactNode }) {
     useEffect(() => {
         if(Array.isArray(fileQueries) && typeof fileQueries !== 'string') {
             const importedSet = importedChecksums.current
+            console.log(importedSet)
             const newSet = new Set(fileQueries.map(f => f.checksum))
             if(!eqSet(newSet, importedSet)) {
                 importedChecksums.current = newSet

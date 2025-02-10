@@ -1,13 +1,14 @@
 package actions
 
 import (
-	"analytics/constants"
+	"analytics/config"
 	"analytics/database/analyticsdb"
 	"analytics/log"
 	"analytics/model"
 	"analytics/util"
 	"fmt"
 	"gorm.io/gorm"
+	"path"
 	"time"
 )
 
@@ -23,17 +24,18 @@ func ExportEventsToParquet(projectId string, db *gorm.DB, segment model.DataSegm
 		segment.EndDate.Format(time.DateTime),
 	)
 
-	path := constants.TmpDir + "/" + projectId + "/" + constants.ParquetDir + "/"
+	dir := path.Join(config.Config.Paths.Parquet, projectId)
 
-	if err := util.EnsureDirectory(path); err != nil {
+	if err := util.EnsureDirectory(dir); err != nil {
 		return err
 	}
 
+	filepath := path.Join(dir, segment.Filename)
+
 	query := fmt.Sprintf(
-		"COPY (%s) TO '%s%s' (FORMAT PARQUET, COMPRESSION 'zstd')",
+		"COPY (%s) TO '%s' (FORMAT PARQUET, COMPRESSION 'zstd')",
 		selectStmt,
-		path,
-		segment.Filename,
+		filepath,
 	)
 	resp, err := tx.Exec(query)
 	if err != nil {
@@ -67,7 +69,7 @@ func createCatalogEntry(
 	segment model.DataSegment,
 	count uint,
 ) error {
-	filepath := constants.TmpDir + "/" + projectId + "/" + constants.ParquetDir + "/" + segment.Filename
+	filepath := path.Join(config.Config.Paths.Parquet, projectId, segment.Filename)
 	checksum, err := util.CalculateFileChecksum(filepath)
 	if err != nil {
 		return err

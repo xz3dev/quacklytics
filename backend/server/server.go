@@ -21,19 +21,18 @@ import (
 var ab *authboss.Authboss
 
 func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
-	config := config.Load()
 	var err error
 	ab, err = auth.SetupAuthboss(appDb)
 	if err != nil {
 		log.Fatal(err.Error(), err)
 	}
 	server := http.Server{
-		Addr:     fmt.Sprintf(":%d", config.Port),
+		Addr:     fmt.Sprintf(":%d", config.Config.Port),
 		Handler:  setupMux(projectDbs, appDb),
 		ErrorLog: zap.NewStdLog(log.Logger),
 	}
 
-	log.Info("Starting server on port %d", config.Port)
+	log.Info("Starting server on port %d", config.Config.Port)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err.Error(), err)
 	}

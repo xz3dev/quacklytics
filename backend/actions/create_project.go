@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"analytics/constants"
+	"analytics/config"
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
 	"analytics/model"
@@ -11,8 +11,8 @@ import (
 func CreateProject(projectName string) model.ProjectFiles {
 	project := model.ProjectFiles{
 		ID:              projectName,
-		DbFile:          filepath.Join(constants.DbDir, constants.DbProjectFilePrefix+projectName+".db"),
-		AnalyticsDbFile: filepath.Join(constants.DbDir, constants.DbAnalyticsFilePrefix+projectName+".db"),
+		DbFile:          filepath.Join(config.Config.Paths.Database, config.Config.Database.ProjectPrefix+projectName+".db"),
+		AnalyticsDbFile: filepath.Join(config.Config.Paths.Database, config.Config.Database.AnalyticsPrefix+projectName+".db"),
 	}
 
 	analyticsdb.InitProjectDB(project)

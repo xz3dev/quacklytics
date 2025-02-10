@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"analytics/constants"
+	"analytics/config"
 	"analytics/filecatalog"
 	"analytics/log"
 	"analytics/model"
@@ -42,7 +42,7 @@ func FileChecksums(w http.ResponseWriter, r *http.Request) {
 	sixMonthAgo := time.Now().AddDate(0, -6, 0)
 
 	result := make([]FileCatalogEntryResponse, len(files))
-	dir := path.Join(constants.TmpDir, projectId, constants.ParquetDir)
+	dir := path.Join(config.Config.Paths.Parquet, projectId)
 	for i, file := range files {
 		stat, err := os.Stat(path.Join(dir, file.Name))
 		if err != nil {
@@ -68,7 +68,7 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 
 	projectId := svmw.GetProjectID(r)
 
-	filepath := filepath.Join(constants.TmpDir, projectId, constants.ParquetDir, filename)
+	filepath := filepath.Join(config.Config.Paths.Parquet, projectId, filename)
 
 	if _, err := os.Stat(filepath); err == nil {
 		log.Info("File %s exists, serving it.", filename)
