@@ -5,6 +5,7 @@ import (
 	"analytics/config"
 	"analytics/database/appdb"
 	"analytics/log"
+	"analytics/realtime"
 	svmw "analytics/server/middlewares"
 	"analytics/server/routes"
 	"fmt"
@@ -56,6 +57,7 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
 		setupProjectRoutes(mux)
+		mux.Post("/auth/realtime", realtime.RequestRealtimeToken)
 	})
 
 	mux.Route("/{projectid}", func(mux chi.Router) {

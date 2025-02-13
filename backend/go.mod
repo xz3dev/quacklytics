@@ -6,9 +6,12 @@ require (
 	github.com/apache/arrow/go/v17 v17.0.0
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-co-op/gocron/v2 v2.15.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.4.0
+	github.com/gorilla/websocket v1.5.3
+	github.com/gurkankaymak/hocon v1.2.20
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/marcboeker/go-duckdb v1.8.1
 	github.com/volatiletech/authboss/v3 v3.5.0
@@ -23,12 +26,10 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/friendsofgo/errors v0.9.2 // indirect
-	github.com/go-co-op/gocron/v2 v2.15.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
-	github.com/gurkankaymak/hocon v1.2.20 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
