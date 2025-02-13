@@ -9,8 +9,7 @@ import (
 )
 
 func CurrentUser(w http.ResponseWriter, r *http.Request) {
-	ab, err := sv_mw.GetAuthboss(r)
-	util.HandleError(w, err)
+	ab := sv_mw.GetAuthboss(r)
 	user, err := ab.CurrentUser(r)
 	util.HandleError(w, err)
 

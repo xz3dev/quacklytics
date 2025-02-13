@@ -2,7 +2,6 @@ package sv_mw
 
 import (
 	"context"
-	"errors"
 	"github.com/volatiletech/authboss/v3"
 	"net/http"
 )
@@ -20,10 +19,10 @@ func AuthbossMW(ab *authboss.Authboss) func(http.Handler) http.Handler {
 	}
 }
 
-func GetAuthboss(r *http.Request) (*authboss.Authboss, error) {
+func GetAuthboss(r *http.Request) *authboss.Authboss {
 	ab, ok := r.Context().Value(AuthbossKey).(*authboss.Authboss)
 	if !ok {
-		return nil, errors.New("Authboss not found in context")
+		panic("Authboss not found in context")
 	}
-	return ab, nil
+	return ab
 }

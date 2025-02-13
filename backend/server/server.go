@@ -5,7 +5,6 @@ import (
 	"analytics/config"
 	"analytics/database/appdb"
 	"analytics/log"
-	"analytics/realtime"
 	svmw "analytics/server/middlewares"
 	"analytics/server/routes"
 	"fmt"
@@ -57,20 +56,27 @@ func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
 		setupProjectRoutes(mux)
-		mux.Post("/auth/realtime", realtime.RequestRealtimeToken)
+		mux.Post("/auth/realtime", routes.RequestRealtimeToken)
 	})
 
 	mux.Route("/{projectid}", func(mux chi.Router) {
-		mux.Use(svmw.ProjectMiddleware(projectDbs))
-		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
-		mux.Post("/dummy", routes.GenerateDummyEvents)
-		routes.SetupPrivateEventRoutes(mux)
-		routes.SetupFileCatalogRoutes(mux)
-		routes.SetupSchemaRoutes(mux)
-		routes.SetupInsightRoutes(mux)
-		routes.SetupDashoardRoutes(mux)
-		routes.SetupPersonsRoutes(mux)
-		routes.SetupProjectSpecificRoutes(mux)
+		mux.Group(func(mux chi.Router) {
+			// Authorized Routes
+			mux.Use(svmw.ProjectMiddleware(projectDbs))
+			mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
+			mux.Post("/dummy", routes.GenerateDummyEvents)
+			routes.SetupPrivateEventRoutes(mux)
+			routes.SetupFileCatalogRoutes(mux)
+			routes.SetupSchemaRoutes(mux)
+			routes.SetupInsightRoutes(mux)
+			routes.SetupDashoardRoutes(mux)
+			routes.SetupPersonsRoutes(mux)
+			routes.SetupProjectSpecificRoutes(mux)
+		})
+		mux.Group(func(mux chi.Router) {
+			mux.Use(svmw.NewWebSocketMiddleware().Middleware)
+			mux.Get("/realtime", routes.RealtimeWebSocketEndpoint)
+		})
 	})
 
 	return mux

@@ -37,6 +37,7 @@ var appTables = []interface{}{
 	&auth.User{},
 	&auth.RememberToken{},
 	&auth.RecoveryToken{},
+	&auth.RealtimeToken{},
 }
 
 func InitProjectDB(project model.ProjectFiles) *gorm.DB {

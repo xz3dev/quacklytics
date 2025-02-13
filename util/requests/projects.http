@@ -1,4 +1,4 @@
-POST {{url}}/projects
+POST http://{{host}}/projects
 Content-Type: application/json
 
 {
@@ -6,11 +6,11 @@ Content-Type: application/json
 }
 
 ###
-GET {{url}}/projects
+GET http://{{host}}/projects
 
 ###
 
-POST {{url}}/{{project}}/settings
+POST http://{{host}}/{{project}}/settings
 Content-Type: application/json
 
 [

@@ -1,0 +1,20 @@
+###
+POST http://{{host}}/auth/realtime
+
+> {%
+    const body = JSON.parse(response.body.toString())
+    client.global.set("ws_token", body.token);
+    console.log(body.token)
+%}
+
+###
+
+###
+WEBSOCKET ws://{{host}}/{{project}}/realtime
+Content-Type: application/json
+
+{
+  "token": "{{ws_token}}"
+}
+
+###

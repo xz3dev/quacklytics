@@ -1,6 +1,6 @@
 
 // $2a$12$WmbECJg6GlgFzWZ68i5M9u/s2TLbYIe9nqSCfrfNOhBlire7GeoLe
-POST {{url}}/auth/login
+POST http://{{host}}/auth/login
 Content-Type: application/json
 
 {
@@ -10,19 +10,19 @@ Content-Type: application/json
 
 ###
 
-GET {{url}}/auth/me
+GET http://{{host}}/auth/me
 
 ###
 
-GET {{url}}/me
+GET http://{{host}}/me
 
 ###
 
-GET {{url}}/auth/logout
+GET http://{{host}}/auth/logout
 
 ###
 
-POST {{url}}/auth/register
+POST http://{{host}}/auth/register
 Content-Type: application/json
 
 {
@@ -30,7 +30,3 @@ Content-Type: application/json
   "password": "a123ABCd2e!",
   "confirm_password": "a123ABCd2e!"
 }
-
-###
-
-POST {{url}}/auth/realtime
