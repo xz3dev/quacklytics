@@ -4,6 +4,8 @@ import {FILE_KEY, FileCatalogApi, FileMetadata, useFileCatalog} from "@/services
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useQueries, useQueryClient} from "@tanstack/react-query";
 import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
+import {useEvents} from "@/services/events.ts";
+import {UTCDate} from "@date-fns/utc";
 
 export const db = new DuckDbManager()
 
@@ -11,6 +13,14 @@ export function DuckDB(props: { children: React.ReactNode }) {
     const projectId = useProjectId()
     const availableFiles = useFileCatalog(projectId)
     const queryClient = useQueryClient()
+
+    const dates = availableFiles.data?.map(it => it.end)
+    const maxDate = dates ? Math.max(...dates.map(date => new Date(date).getTime())) : undefined;
+    const newestEvents = useEvents(projectId, maxDate ? new UTCDate(maxDate) : undefined)
+
+    if(newestEvents.data) {
+        console.log(`Loaded ${newestEvents.data.length} events.`)
+    }
 
     const [isImportingData, setIsImportingData] = useState(true)
 

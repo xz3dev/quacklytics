@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"time"
 )
@@ -20,4 +21,15 @@ type eventId struct {
 type Event struct {
 	eventId
 	EventInput
+}
+
+func (e Event) MarshalJSON() ([]byte, error) {
+	type Alias Event
+	return json.Marshal(&struct {
+		Timestamp int64 `json:"timestamp"`
+		*Alias
+	}{
+		Timestamp: e.EventInput.Timestamp.Unix(),
+		Alias:     (*Alias)(&e),
+	})
 }

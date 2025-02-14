@@ -42,8 +42,6 @@ export class DuckDbManager {
             return
         }
 
-        await this.queryTimeZone()
-
         const queries: Promise<any>[] = []
 
         for (const file of files) {
@@ -66,6 +64,41 @@ export class DuckDbManager {
         await Promise.all(queries)
 
         useDataRangeStore.getState().updateDateRange(files)
+    }
+
+    async importEvents(
+        events: AnalyticsEvent[],
+    ): Promise<void> {
+        const conn = await this.conn
+        const db = await this.db
+        if (!db || !conn) {
+            console.error('Database connection not available')
+            return
+        }
+
+        const batchInsertQuery = `
+            insert or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
+            values
+            ${events.map(() => `(?, epoch_ms(?::BIGINT), ?, ?, ?, ?)`).join(", ")}
+        `;
+
+        const batchParams: any[] = events.flatMap(event => [
+            event.id,
+            event.timestamp,
+            event.eventType,
+            event.distinctId,
+            event.personId,
+            JSON.stringify(event.properties),
+        ]);
+        console.log(batchInsertQuery)
+
+        try {
+            const q = await conn.prepare(batchInsertQuery)
+            await q.query(...batchParams)
+            console.debug(`Successfully imported ${events.length} event(s)`);
+        } catch (e) {
+            console.error(`Failed to batch import events: ${e}`);
+        }
     }
 
     async queryTimeZone() {
