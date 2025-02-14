@@ -12,8 +12,8 @@ export function useSidebarData(): SidebarData {
     const isDashboard = useMatch('/app/:projectid/dashboards/:dashboardid')
     const isEvents = useMatch('/app/:projectid/events')
     const isData = useMatch('/app/:projectid/data')
-    const isSchema = useMatch('/app/:projectid/data/schema')
-    const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
+    // const isSchema = useMatch('/app/:projectid/data/schema')
+    // const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
     const isAnalytics = !!isHome || !!isEvents || !!isInsights || !!isInsight || !!isDashboards || !!isDashboard
     const isSettings = useMatch('/app/:projectid/settings')
 
@@ -92,22 +92,23 @@ export function useSidebarData(): SidebarData {
                 title: "Data Management",
                 url: `${projectUrl}/data`,
                 icon: Database,
+                isActive: !!isData,
                 items: [
-                    {
-                        title: "Overview & Statistics",
-                        url: `${projectUrl}/data`,
-                        isActive: !!isData,
-                    },
-                    {
-                        title: "Real Time",
-                        url: `${projectUrl}/data/realtime`,
-                        isActive: !!isRealTimeEvents,
-                    },
-                    {
-                        title: "Schema",
-                        url: `${projectUrl}/data/schema`,
-                        isActive: !!isSchema,
-                    },
+                    // {
+                    //     title: "Overview & Statistics",
+                    //     url: `${projectUrl}/data`,
+                    //     isActive: !!isData,
+                    // },
+                    // {
+                    //     title: "Real Time",
+                    //     url: `${projectUrl}/data/realtime`,
+                    //     isActive: !!isRealTimeEvents,
+                    // },
+                    // {
+                    //     title: "Schema",
+                    //     url: `${projectUrl}/data/schema`,
+                    //     isActive: !!isSchema,
+                    // },
                 ],
             },
             {
