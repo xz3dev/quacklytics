@@ -5,6 +5,7 @@ import (
 	"analytics/filecatalog"
 	"analytics/log"
 	"analytics/model"
+	"analytics/projects"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -39,7 +41,18 @@ func FileChecksums(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	sixMonthAgo := time.Now().AddDate(0, -6, 0)
+	settings, err := projects.QuerySettings(db)
+	if err != nil {
+		http.Error(w, "cannot query project settings", http.StatusInternalServerError)
+		return
+	}
+
+	autoLoadMonths, _ := strconv.Atoi(settings[projects.AutoLoadRange])
+	if autoLoadMonths <= 0 {
+		autoLoadMonths = 6
+	}
+
+	sixMonthAgo := time.Now().AddDate(0, -autoLoadMonths, 0)
 
 	result := make([]FileCatalogEntryResponse, len(files))
 	dir := path.Join(config.Config.Paths.Parquet, projectId)
