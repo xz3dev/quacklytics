@@ -3,6 +3,7 @@ package routes
 import (
 	"analytics/actions"
 	"analytics/database/appdb"
+	"analytics/log"
 	"analytics/model"
 	"analytics/projects"
 	sv_mw "analytics/server/middlewares"
@@ -10,12 +11,14 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
 )
 
 type projectData struct {
 	Id        string             `json:"id"`
 	Name      string             `json:"name"`
 	Partition string             `json:"partition"`
+	AutoLoad  int                `json:"autoload"`
 	Files     model.ProjectFiles `json:"files"`
 }
 
@@ -36,10 +39,19 @@ func ListProjects(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
+		autoload, err := strconv.Atoi(settings[projects.AutoLoadRange])
+		if err != nil {
+			log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects.AutoLoadRange])
+		}
+		if autoload <= 0 {
+			autoload = 6
+		}
+
 		data = append(data, projectData{
 			Id:        project.ID,
 			Name:      settings[projects.Name],
 			Partition: settings[projects.Partition],
+			AutoLoad:  autoload,
 			Files:     project,
 		})
 	}
@@ -80,6 +92,7 @@ func UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
 	for _, update := range input {
 		projects.UpdateSetting(db, update.Key, update.Value)
 	}
+	ListProjects(w, r)
 }
 
 type ProjectSettingsUpdate struct {

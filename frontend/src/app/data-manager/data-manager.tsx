@@ -5,7 +5,7 @@ import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive, Info} from "lucide-reac
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";
 import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
-import {useProjectId} from "@/hooks/use-project-id.tsx";
+import {useProject, useProjectId} from "@/hooks/use-project-id.tsx";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {format} from "date-fns";
 import {Spinner} from "@/components/spinner.tsx";
@@ -99,7 +99,8 @@ export function DataManager() {
                             className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
                             Auto-Download Range
                         </label>
-                        <AutoDownloadRangeSelector></AutoDownloadRangeSelector>
+                        <AutoDownloadRangeSelector
+                        ></AutoDownloadRangeSelector>
 
                         <div>
                             <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">

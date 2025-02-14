@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	Name      model.ProjectSettingKey = "name"
-	Partition model.ProjectSettingKey = "partition"
+	Name          model.ProjectSettingKey = "name"
+	Partition     model.ProjectSettingKey = "partition"
+	AutoLoadRange model.ProjectSettingKey = "autoload"
 )
 
 func QuerySettings(db *gorm.DB) (map[model.ProjectSettingKey]string, error) {

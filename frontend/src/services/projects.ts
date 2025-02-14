@@ -1,10 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { http } from '@/lib/fetch'
-import { Project } from "@/model/project"
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import {http} from '@/lib/fetch'
+import {Project} from "@/model/project"
 
 const PROJECTS_KEY = 'projects' as const
 
-// API functions
 const projectsApi = {
     getProjects: async (): Promise<Project[]> => {
         const response = await http.get<Project[]>('/projects')
@@ -12,8 +11,16 @@ const projectsApi = {
     },
 
     createProject: async (name: string): Promise<Project> => {
-        return http.post<Project>('/projects', { name })
-    }
+        return http.post<Project>('/projects', {name})
+    },
+
+    updateSetting: async (
+        projectId: string,
+        setting: { key: string; value: string }
+    ): Promise<void> => {
+        await http.post(`/${projectId}/settings`, [setting]);
+    },
+
 }
 
 export function useProjects(key: string = PROJECTS_KEY) {
@@ -32,10 +39,34 @@ export function useCreateProject() {
             queryClient.setQueryData<Project[]>(
                 [PROJECTS_KEY],
                 (old = []) => {
-            console.log('updating, ', [...old, newProject])
                     return [...old, newProject];
                 }
             )
         }
+    })
+}
+
+export function useUpdateAutoLoad() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (params: { projectId: string, value: number }) => {
+            return projectsApi.updateSetting(params.projectId, {key: 'autoload', value: params.value.toString()});
+        },
+        onSuccess: (_, variables) => {
+            queryClient.setQueryData<Project[]>(
+                [PROJECTS_KEY],
+                (old = []) => {
+                    return old.map(p => {
+                        if(p.id === variables.projectId) {
+                            return {
+                                ...p,
+                                autoload: variables.value,
+                            }
+                        }
+                        return p
+                    })
+                }
+            )
+        },
     })
 }
