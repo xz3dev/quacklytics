@@ -12,7 +12,6 @@ import {Spinner} from "@/components/spinner.tsx";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 export function DataManager() {
-    const [storageUsed,] = useState({used: 45, total: 200});
     const [isOpen, setIsOpen] = useState(false);
     const [isDbWorking, setIsDbWorking] = useState(false);
 
