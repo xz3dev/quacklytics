@@ -29,7 +29,7 @@ func (e Event) MarshalJSON() ([]byte, error) {
 		Timestamp int64 `json:"timestamp"`
 		*Alias
 	}{
-		Timestamp: e.EventInput.Timestamp.Unix(),
+		Timestamp: e.EventInput.Timestamp.UnixMilli(),
 		Alias:     (*Alias)(&e),
 	})
 }

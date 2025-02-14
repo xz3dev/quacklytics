@@ -5,13 +5,20 @@ import {findMaxDate, findMinDate, updateDate} from "@lib/utils/date-comparison.t
 interface DateRangeStore {
     minDate: Date | null
     maxDate: Date | null
+    effectiveMinDate: Date | null
+    effectiveMaxDate: Date | null
     updateDateRange: (files: Array<FileDownload>) => void
+    updateEffectiveDateRange: (min: Date, max: Date) => void
+    updateMaxDate: (date: Date) => void
     isLoaded: (file: FileMetadata) => boolean
 }
 
 export const useDataRangeStore = create<DateRangeStore>((set, get,) => ({
     minDate: null,
     maxDate: null,
+
+    effectiveMinDate: null,
+    effectiveMaxDate: null,
 
     /**
      * Updates the date range for the provided files by calculating the earliest
@@ -34,8 +41,27 @@ export const useDataRangeStore = create<DateRangeStore>((set, get,) => ({
             minDate: updateDate(state.minDate, newMinDate, (a, b) => a < b),
             maxDate: updateDate(state.maxDate, newMaxDate, (a, b) => a > b),
         }));
+    },
 
-        console.debug(`minDate: ${newMinDate}, maxDate: ${newMaxDate}`)
+
+    /**
+     * Updates the maximum date with the provided date if the new date is later
+     * than the current maximum date.
+     *
+     * @param {Date} date - The new date to compare and potentially set as the max date.
+     */
+    updateMaxDate: (date: Date) => {
+        set(state => ({
+            maxDate: updateDate(state.maxDate, date, (a, b) => a > b),
+        }));
+    },
+
+
+    updateEffectiveDateRange: (min: Date, max: Date) => {
+        set(state => ({
+            effectiveMinDate: updateDate(state.effectiveMinDate, min, (a, b) => a < b),
+            effectiveMaxDate: updateDate(state.effectiveMaxDate, max, (a, b) => a > b),
+        }));
     },
 
 

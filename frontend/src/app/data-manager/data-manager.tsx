@@ -1,8 +1,7 @@
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
-import {cn} from "@lib/utils/tailwind.ts"; // Optional: For utility class merging
-import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive} from "lucide-react";
+import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive, Info} from "lucide-react";
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";
 import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
@@ -10,6 +9,7 @@ import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {format} from "date-fns";
 import {Spinner} from "@/components/spinner.tsx";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 export function DataManager() {
     const [storageUsed,] = useState({used: 45, total: 200});
@@ -70,7 +70,12 @@ export function DataManager() {
                 </PopoverTrigger>
 
                 {/* Popup Content */}
-                <PopoverContent align="end" sideOffset={8} side="bottom">
+                <PopoverContent
+                    align="end"
+                    sideOffset={8}
+                    side="bottom"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                >
                     <Card className="p-4 max-h-96 overflow-y-auto relative">
                         {isDbWorking && <div
                             className="absolute inset-0 flex items-center justify-center bg-muted/40 backdrop-blur-sm">
@@ -81,11 +86,11 @@ export function DataManager() {
                             Downloaded Data Range
                         </label>
                         {
-                            (dataRanges.minDate && dataRanges.maxDate) && (
+                            (dataRanges.minDate && dataRanges.effectiveMaxDate) && (
                                 <div
                                     className="font-medium text-foreground text-sm"
                                 >
-                                    {format(dataRanges.minDate, 'yyyy-MM-dd')} - {format(dataRanges.maxDate, 'yyyy-MM-dd')}
+                                    {format(dataRanges.minDate, 'yyyy-MM-dd')} - {format(dataRanges.effectiveMaxDate, 'yyyy-MM-dd HH:mm')}
                                 </div>
                             )
                         }
@@ -97,23 +102,23 @@ export function DataManager() {
                         </label>
                         <AutoDownloadRangeSelector></AutoDownloadRangeSelector>
 
-                        {/* Storage Consumption */}
                         <div>
-                            <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">Storage
-                                Consumption</label>
-                            <div className="flex items-center justify-between text-sm">
-                                <span>{bytesToMegabytesBinary(storageConsumption)} MB</span>
-                                <div
-                                    className={cn(
-                                        {"bg-red-300": storageUsed.used / storageUsed.total > 0.9}
-                                    )}
-                                >
-                                    <div
-                                        className="bg-blue-500 h-full"
-                                        style={{width: `${(storageUsed.used / storageUsed.total) * 100}%`}}
-                                    />
-                                </div>
-                            </div>
+                            <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
+                                Storage Consumption
+                            </label>
+                            <Tooltip defaultOpen={false}>
+                                <TooltipTrigger>
+                                    <div className="flex items-center text-sm gap-2">
+                                        <span>
+                                            ~{bytesToMegabytesBinary(storageConsumption)} MB
+                                        </span>
+                                        <Info width={14} height={14}></Info>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    This value is an assumption based on available data.
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
 
                         {downloadOptions.length > 0 && <div>

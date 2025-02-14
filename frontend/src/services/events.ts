@@ -10,7 +10,6 @@ export const EventsApi = {
     fetchEvents: async (projectId: string, since: UTCDate): Promise<AnalyticsEvent[]> => {
         const url = `${projectId}/events?timestamp__gt=${encodeURIComponent(since.toISOString())}`;
         const events = await http.get<AnalyticsEvent[]>(url);
-        console.log(`Received ${events.length} events since ${since.toISOString()}`)
         await db.importEvents(events)
         return events
     }

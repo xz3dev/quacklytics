@@ -16,11 +16,7 @@ export function DuckDB(props: { children: React.ReactNode }) {
 
     const dates = availableFiles.data?.map(it => it.end)
     const maxDate = dates ? Math.max(...dates.map(date => new Date(date).getTime())) : undefined;
-    const newestEvents = useEvents(projectId, maxDate ? new UTCDate(maxDate) : undefined)
-
-    if(newestEvents.data) {
-        console.log(`Loaded ${newestEvents.data.length} events.`)
-    }
+    useEvents(projectId, maxDate ? new UTCDate(maxDate) : undefined)
 
     const [isImportingData, setIsImportingData] = useState(true)
 
@@ -65,7 +61,6 @@ export function DuckDB(props: { children: React.ReactNode }) {
     useEffect(() => {
         if(Array.isArray(fileQueries) && typeof fileQueries !== 'string') {
             const importedSet = importedChecksums.current
-            console.log(importedSet)
             const newSet = new Set(fileQueries.map(f => f.checksum))
             if(!eqSet(newSet, importedSet)) {
                 importedChecksums.current = newSet

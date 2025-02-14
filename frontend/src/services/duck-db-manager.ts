@@ -5,6 +5,7 @@ import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
+import {processInBatches} from "@lib/utils/batches.ts";
 
 export class DuckDbManager {
     private db = createDb()
@@ -55,7 +56,6 @@ export class DuckDbManager {
                 select *
                 from parquet_scan('${file.name}')
             `)
-                .then(() => console.debug(`import done ${file.name}`))
                 .catch((e) => {
                     console.error(`Failed to import ${file.name}: ${e.message}`)
                 })
@@ -64,11 +64,11 @@ export class DuckDbManager {
         await Promise.all(queries)
 
         useDataRangeStore.getState().updateDateRange(files)
-    }
 
-    async importEvents(
-        events: AnalyticsEvent[],
-    ): Promise<void> {
+        await this.updateEffectiveDateRange(conn)
+    }
+    
+    async importEvents(events: AnalyticsEvent[]) {
         const conn = await this.conn
         const db = await this.db
         if (!db || !conn) {
@@ -76,6 +76,19 @@ export class DuckDbManager {
             return
         }
 
+        await processInBatches(events, 1000, async (batch) => {
+            await this.importEventsRaw(batch, conn)
+        })
+
+        console.debug(`Imported ${events.length} events`)
+
+        await this.updateEffectiveDateRange(conn)
+    }
+
+    private async importEventsRaw(
+        events: AnalyticsEvent[],
+        conn: AsyncDuckDBConnection,
+    ): Promise<void> {
         const batchInsertQuery = `
             insert or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
             values
@@ -90,7 +103,6 @@ export class DuckDbManager {
             event.personId,
             JSON.stringify(event.properties),
         ]);
-        console.log(batchInsertQuery)
 
         try {
             const q = await conn.prepare(batchInsertQuery)
@@ -100,19 +112,25 @@ export class DuckDbManager {
             console.error(`Failed to batch import events: ${e}`);
         }
     }
+    
+    private async updateEffectiveDateRange(
+        conn: AsyncDuckDBConnection,
+    ) {
 
-    async queryTimeZone() {
-        const conn = await this.conn
-        const db = await this.db
-        if (!db || !conn) {
-            console.error('Database connection not available')
-            return ''
-        }
-        const results = await conn.query(`select *
-                                          from duckdb_settings()
-                                          where name = 'TimeZone';`)
-        const result = results.toArray().map(r => r.toJSON())[0]['value']
-        console.debug(`Current DB TimeZone:`, result)
+        const result = await conn.query(`
+            select min(timestamp) as min_date,
+                   max(timestamp) as max_date
+            from events
+        `);
+
+        const data = result.toArray()[0]
+
+        const minDate = new Date(data.min_date)
+        const maxDate = new Date(data.max_date)
+        
+        const store = useDataRangeStore.getState()
+        store.updateEffectiveDateRange(minDate, maxDate)
+        store.updateMaxDate(maxDate)
     }
 
     async runQuery<T extends Query>(query: Query) {
