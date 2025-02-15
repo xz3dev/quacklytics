@@ -30,7 +30,8 @@ func Load() *AppConfig {
 		panic(err)
 	}
 	Config = &AppConfig{
-		Port: conf.GetInt("app.port"),
+		Port:          conf.GetInt("app.port"),
+		ServeFrontend: conf.GetBoolean("app.serve_frontend"),
 		Paths: Paths{
 			Parquet:  getString(conf, "paths.parquet"),
 			Database: getString(conf, "paths.database"),
@@ -52,9 +53,10 @@ func getString(c *hocon.Config, key string) string {
 }
 
 type AppConfig struct {
-	Port     int
-	Paths    Paths
-	Database Database
+	Port          int
+	ServeFrontend bool
+	Paths         Paths
+	Database      Database
 }
 
 type Paths struct {

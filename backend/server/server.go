@@ -47,7 +47,9 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 func setupMux(dbs appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
 	mux := chi.NewMux()
 	setupGlobalMiddleware(mux, dbs, appdb)
-	serveFrontend(mux)
+	if config.Config.ServeFrontend {
+		serveFrontend(mux)
+	}
 	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
 	return mux
 }

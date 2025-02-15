@@ -10,6 +10,16 @@ Content-Type: application/json
 
 ###
 
+POST http://{{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@test.de",
+  "password": "a123ABCd2e!"
+}
+
+###
+
 GET http://{{host}}/auth/me
 
 ###

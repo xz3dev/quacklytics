@@ -47,5 +47,5 @@ WORKDIR /app
 # Copy the Go application binary
 COPY --from=backend-builder /backend/app .
 
-# Set the entrypoint command to run the backend
+EXPOSE 3000
 ENTRYPOINT ["./app"]
