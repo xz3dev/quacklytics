@@ -5,6 +5,7 @@ import {Popover, PopoverContent, PopoverTrigger,} from '@/components/ui/popover'
 import {FieldFilter} from "@/model/filters.ts";
 import {FilterSelectorCard} from "@/components/filters/filter-selector-card.tsx";
 import {useState} from "react";
+import {format} from "date-fns";
 
 interface Props {
     filter: FieldFilter
@@ -33,7 +34,7 @@ export function FilterSelector({
                         className="h-8 mr-0 rounded-r-none pr-0"
                     >
                         <span className="mr-2">
-                            {filter.field.name} {filter.operator} {filter.value}
+                            {filter.field.name} {filter.operator} {filter.value instanceof Date ? format(filter.value, 'yyyy-MM-dd HH:mm') : filter.value}
                         </span>
                     </Button>
                 </PopoverTrigger>

@@ -19,20 +19,20 @@ export function TrendInsightSeriesOptions() {
 
     const handleAddFilter = (filter: FieldFilter, seriesIndex: number) => {
         updateFn?.((insight) => {
-            insight.series?.[seriesIndex]?.query?.filters.push(filter)
+            insight.series?.[seriesIndex]?.query?.filters?.push(filter)
         })
     }
 
     const handleRemoveFilter = (seriesIndex: number, filterIndex: number) => {
         updateFn?.((insight) => {
-            insight.series?.[seriesIndex]?.query?.filters.splice(filterIndex, 1)
+            insight.series?.[seriesIndex]?.query?.filters?.splice(filterIndex, 1)
         })
     }
 
     const handleFilterUpdate = (seriesIndex: number, filterIndex: number, filter: FieldFilter) => {
         console.log(`update`, filter)
         updateFn?.((insight) => {
-            if (insight.series?.[seriesIndex]?.query?.filters[filterIndex]) {
+            if (insight.series?.[seriesIndex]?.query?.filters?.[filterIndex]) {
                 insight.series[seriesIndex].query.filters[filterIndex] = filter
             }
         })
@@ -105,13 +105,13 @@ export function TrendInsightSeriesOptions() {
                         </Button>
                         <div className="flex flex-wrap items-center gap-2 gap-y-1">
                             <TrendInsightSeriesAggregationSelection
-                                currentFunction={series.query?.aggregations[0]?.function ?? 'COUNT'}
-                                selectedField={series.query?.aggregations[0]?.field}
+                                currentFunction={series.query?.aggregations?.[0]?.function ?? 'COUNT'}
+                                selectedField={series.query?.aggregations?.[0]?.field}
                                 onSelect={(func, field, distinct) =>
                                     handleAggregationChange(seriesIndex, func, field, distinct)
                                 }
                             />
-                            {series.query?.filters.map((filter, filterIndex) => (
+                            {series.query?.filters?.map((filter, filterIndex) => (
                                 <FilterSelector
                                     key={filterIndex}
                                     filter={filter}

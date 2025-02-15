@@ -5,7 +5,7 @@ import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive, Info} from "lucide-reac
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";
 import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
-import {useProject, useProjectId} from "@/hooks/use-project-id.tsx";
+import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {format} from "date-fns";
 import {Spinner} from "@/components/spinner.tsx";
