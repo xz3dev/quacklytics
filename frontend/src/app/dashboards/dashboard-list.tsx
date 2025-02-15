@@ -77,7 +77,7 @@ export function DashboardList({filter, sort, title}: Props) {
     }
 
     return (
-        <div className="p-4">
+        <>
             <div className="mb-4 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">{title ?? "Dashboards"}</h2>
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -203,6 +203,6 @@ export function DashboardList({filter, sort, title}: Props) {
                     ))}
                 </TableBody>
             </Table>
-        </div>
+        </>
     )
 }

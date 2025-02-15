@@ -48,26 +48,38 @@ export class DuckDbManager {
         for (const file of files) {
             console.info(`Importing ${file.name}`)
             const arrayBuffer = await file.blob.arrayBuffer()
-            await db.registerFileBuffer(file.name, new Uint8Array(arrayBuffer))
+            console.log(`File buffer created for ${file.name}`)
+            try {
+                await db.registerFileBuffer(file.name, new Uint8Array(arrayBuffer))
 
-            // Import data from the Parquet file into the events table
-            const query = conn.query(`
-                insert or ignore into events
-                select *
-                from parquet_scan('${file.name}')
-            `)
-                .catch((e) => {
-                    console.error(`Failed to import ${file.name}: ${e.message}`)
-                })
-            queries.push(query)
+                console.log(`File buffer registered for ${file.name}`)
+                // Import data from the Parquet file into the events table
+                const query = conn.query(`
+                    insert or ignore into events
+                    select *
+                    from parquet_scan('${file.name}')
+                `)
+                    .catch((e) => {
+                        console.error(`Failed to import ${file.name}: ${e.message}`)
+                    })
+                console.log(`Query prepared for ${file.name}`)
+
+                queries.push(query)
+            } catch (e) {
+                console.error(e)
+            }
         }
+        console.log(`Importing ${files.length} files...`)
         await Promise.all(queries)
+        console.log(`DONE: Importing ${files.length} files...`)
 
         useDataRangeStore.getState().updateDateRange(files)
+        console.log(`Updated date range`)
 
         await this.updateEffectiveDateRange(conn)
+        console.log(`updated effective date range`)
     }
-    
+
     async importEvents(events: AnalyticsEvent[]) {
         const conn = await this.conn
         const db = await this.db
@@ -112,7 +124,7 @@ export class DuckDbManager {
             console.error(`Failed to batch import events: ${e}`);
         }
     }
-    
+
     private async updateEffectiveDateRange(
         conn: AsyncDuckDBConnection,
     ) {
@@ -127,7 +139,7 @@ export class DuckDbManager {
 
         const minDate = new Date(data.min_date)
         const maxDate = new Date(data.max_date)
-        
+
         const store = useDataRangeStore.getState()
         store.updateEffectiveDateRange(minDate, maxDate)
         store.updateMaxDate(maxDate)

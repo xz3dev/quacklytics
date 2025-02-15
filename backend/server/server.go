@@ -7,16 +7,22 @@ import (
 	"analytics/log"
 	svmw "analytics/server/middlewares"
 	"analytics/server/routes"
+	"embed"
 	"fmt"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/remember"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"io/fs"
+	"net/http"
+	"os"
+	"strings"
 )
+
+//go:embed public
+var publicFiles embed.FS
 
 var ab *authboss.Authboss
 
@@ -41,9 +47,42 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 func setupMux(dbs appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
 	mux := chi.NewMux()
 	setupGlobalMiddleware(mux, dbs, appdb)
-
+	serveFrontend(mux)
 	mux.Mount("/api", http.StripPrefix("/api", buildRouter(dbs)))
 	return mux
+}
+
+func serveFrontend(mux *chi.Mux) {
+	frontendDir, err := fs.Sub(publicFiles, "public/frontend")
+	if err != nil {
+		panic(err)
+		log.Fatal(err.Error(), err)
+	}
+
+	files := []string{}
+	err = fs.WalkDir(frontendDir, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		files = append(files, path)
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err.Error(), err)
+	}
+	log.Info("Serving frontend files: %v", files)
+	fileServer := http.FileServerFS(frontendDir)
+	mux.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+
+		_, err := frontendDir.Open(path)
+		if os.IsNotExist(err) {
+			http.ServeFileFS(w, r, frontendDir, "/index.html")
+			return
+		}
+		// Serve the file.
+		fileServer.ServeHTTP(w, r)
+	})
 }
 
 func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {

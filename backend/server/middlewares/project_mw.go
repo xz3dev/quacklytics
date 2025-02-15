@@ -2,7 +2,6 @@ package sv_mw
 
 import (
 	"analytics/database/appdb"
-	"analytics/log"
 	"context"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -46,7 +45,6 @@ func GetProjectDB(r *http.Request, w http.ResponseWriter) *gorm.DB {
 
 func GetProjectID(r *http.Request) string {
 	id := r.Context().Value(ProjectIDKey)
-	log.Info("Getting project ID from context: %v", id)
 	return id.(string)
 }
 

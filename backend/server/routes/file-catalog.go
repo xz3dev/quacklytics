@@ -77,7 +77,12 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 	filename := r.URL.Query().Get("file")
 
 	var fileEntry model.FileCatalogEntry
-	db.First(&fileEntry, filename)
+	err := db.Find(&fileEntry, "name = ?", filename).Error
+	if err != nil {
+		log.Error("Error while querying file %s: %v", filename, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	projectId := svmw.GetProjectID(r)
 
