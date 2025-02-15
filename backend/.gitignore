@@ -3,3 +3,4 @@ _tmp/
 __debug*
 public/static/frontend
 server/public/frontend
+application.conf

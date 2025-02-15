@@ -1,12 +1,30 @@
 package config
 
 import (
+	_ "embed"
 	"github.com/gurkankaymak/hocon"
+	"os"
 )
+
+//go:embed default.conf
+var defaultConfig string
 
 var Config *AppConfig
 
 func Load() *AppConfig {
+
+	if _, err := os.Stat("application.conf"); os.IsNotExist(err) {
+		file, createErr := os.Create("application.conf")
+		if createErr != nil {
+			panic(createErr)
+		}
+		defer file.Close()
+
+		_, writeErr := file.WriteString(defaultConfig)
+		if writeErr != nil {
+			panic(writeErr)
+		}
+	}
 	conf, err := hocon.ParseResource("application.conf")
 	if err != nil {
 		panic(err)
