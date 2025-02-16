@@ -23,12 +23,12 @@ type projectData struct {
 }
 
 func ListProjects(writer http.ResponseWriter, request *http.Request) {
-	dbLookup := request.Context().Value(sv_mw.ProjectDBLookupKey).(appdb.ProjectDBLookup)
+	dbLookup := request.Context().Value(sv_mw.ProjectDBLookupKey).(*appdb.ProjectDBLookup)
 
 	projectList := projects.ListProjects()
 	data := make([]projectData, 0, len(projectList))
 	for _, project := range projectList {
-		projDb, ok := dbLookup[project.ID]
+		projDb, ok := (*dbLookup)[project.ID]
 		if !ok {
 			http.Error(writer, fmt.Sprintf("Project DB not found: %s", project.ID), http.StatusInternalServerError)
 			return

@@ -10,7 +10,7 @@ import (
 const ProjectDBLookupKey = "project_db_lookup"
 const AppDBLookupKey = "app_db"
 
-func DbLookupMiddleware(dbMap appdb.ProjectDBLookup, appdb *gorm.DB) func(http.Handler) http.Handler {
+func DbLookupMiddleware(dbMap *appdb.ProjectDBLookup, appdb *gorm.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := withDbLookupContext(r.Context(), dbMap, appdb)
@@ -19,7 +19,7 @@ func DbLookupMiddleware(dbMap appdb.ProjectDBLookup, appdb *gorm.DB) func(http.H
 	}
 }
 
-func withDbLookupContext(ctx context.Context, dbMap appdb.ProjectDBLookup, appdb *gorm.DB) context.Context {
+func withDbLookupContext(ctx context.Context, dbMap *appdb.ProjectDBLookup, appdb *gorm.DB) context.Context {
 	ctx = context.WithValue(ctx, ProjectDBLookupKey, dbMap)
 	ctx = context.WithValue(ctx, AppDBLookupKey, appdb)
 	return ctx

@@ -30,9 +30,9 @@ func main() {
 }
 
 func initCronJobs(
-	projectDbs appdb.ProjectDBLookup,
+	projectDbs *appdb.ProjectDBLookup,
 ) {
-	for projectId, db := range projectDbs {
+	for projectId, db := range *projectDbs {
 		cron.InitProjectCron(projectId, db, func(projectId string, db *gorm.DB) {
 			actions.GenerateParquetFiles(projectId, db)
 		})

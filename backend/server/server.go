@@ -27,7 +27,7 @@ var publicFiles embed.FS
 
 var ab *authboss.Authboss
 
-func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
+func Start(appDb *gorm.DB, projectDbs *appdb.ProjectDBLookup) {
 	var err error
 	ab, err = auth.SetupAuthboss(appDb)
 	if err != nil {
@@ -50,7 +50,7 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 	}
 }
 
-func setupMux(dbs appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
+func setupMux(dbs *appdb.ProjectDBLookup, appdb *gorm.DB) *chi.Mux {
 	mux := chi.NewMux()
 	setupGlobalMiddleware(mux, dbs, appdb)
 	if config.Config.ServeFrontend {
@@ -93,7 +93,7 @@ func serveFrontend(mux *chi.Mux) {
 	})
 }
 
-func buildRouter(projectDbs appdb.ProjectDBLookup) *chi.Mux {
+func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
 
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
@@ -134,7 +134,7 @@ func setupProjectRoutes(mux chi.Router) {
 	mux.Post("/projects", routes.CreateProject)
 }
 
-func setupGlobalMiddleware(r *chi.Mux, projectDbs appdb.ProjectDBLookup, appdb *gorm.DB) {
+func setupGlobalMiddleware(r *chi.Mux, projectDbs *appdb.ProjectDBLookup, appdb *gorm.DB) {
 	r.Use(middleware.RequestID)
 	r.Use(svmw.Logger(log.Logger, &svmw.LoggerOpts{
 		WithReferer:   false,

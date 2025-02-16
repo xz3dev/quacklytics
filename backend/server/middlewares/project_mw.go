@@ -11,7 +11,7 @@ import (
 const ProjectDBKey = "project_db"
 const ProjectIDKey = "project_id"
 
-func ProjectMiddleware(dbMap appdb.ProjectDBLookup) func(http.Handler) http.Handler {
+func ProjectMiddleware(dbMap *appdb.ProjectDBLookup) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Extract projectID from URL parameters
@@ -22,7 +22,7 @@ func ProjectMiddleware(dbMap appdb.ProjectDBLookup) func(http.Handler) http.Hand
 			}
 
 			// Get DB instance for this project
-			db, exists := dbMap[projectID]
+			db, exists := (*dbMap)[projectID]
 			if !exists {
 				http.Error(w, "Project database not found. Project:"+projectID, http.StatusNotFound)
 				return

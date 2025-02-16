@@ -47,7 +47,7 @@ func ListProjects() []model.ProjectFiles {
 	return projects
 }
 
-func Init() appdb.ProjectDBLookup {
+func Init() *appdb.ProjectDBLookup {
 	projectList := ListProjects()
 
 	for _, project := range projectList {
@@ -55,5 +55,5 @@ func Init() appdb.ProjectDBLookup {
 		analyticsdb.InitProjectDB(project.ID, project.AnalyticsDbFile)
 	}
 
-	return appdb.ProjectDBs
+	return &appdb.ProjectDBs
 }

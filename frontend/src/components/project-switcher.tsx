@@ -15,24 +15,19 @@ import {Button} from "@/components/ui/button"
 import {useCreateProject, useProjects} from "@/services/projects"
 import {useProjectSwitch} from "@/hooks/use-project-switch.tsx";
 import {Project} from "@/model/project.ts";
+import {useProjectId} from "@/hooks/use-project-id.tsx";
 
 export function ProjectSwitcher() {
     const {isMobile} = useSidebar()
     const projectSwitch = useProjectSwitch()
 
     const {data: projects = []} = useProjects()
+    const activeProjectId = useProjectId()
     const createProject = useCreateProject()
 
-    const [activeProject, setActiveProject] = React.useState(projects?.[0])
+    const activeProject = projects.find((project) => project.id === activeProjectId)
     const [isCreateOpen, setIsCreateOpen] = React.useState(false)
     const [newProjectName, setNewProjectName] = React.useState("")
-
-    // Update active project when projects load
-    React.useEffect(() => {
-        if (projects.length > 0 && !activeProject) {
-            setActiveProject(projects[0])
-        }
-    }, [projects, activeProject])
 
     const handleCreateProject = async () => {
         if (newProjectName.trim()) {
@@ -48,7 +43,6 @@ export function ProjectSwitcher() {
     }
 
     const navigateToProject = async (project: Project) => {
-        setActiveProject(project)
         projectSwitch(project.id)
     }
 

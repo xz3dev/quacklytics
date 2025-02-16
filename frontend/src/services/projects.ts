@@ -70,3 +70,27 @@ export function useUpdateAutoLoad() {
         },
     })
 }
+export function useUpdateProjectName() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (params: { projectId: string, value: string }) => {
+            return projectsApi.updateSetting(params.projectId, {key: 'name', value: params.value});
+        },
+        onSuccess: (_, variables) => {
+            queryClient.setQueryData<Project[]>(
+                [PROJECTS_KEY],
+                (old = []) => {
+                    return old.map(p => {
+                        if(p.id === variables.projectId) {
+                            return {
+                                ...p,
+                                name: variables.value,
+                            }
+                        }
+                        return p
+                    })
+                }
+            )
+        },
+    })
+}
