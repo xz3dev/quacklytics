@@ -16,7 +16,6 @@ RUN npm run build
 # Base image for building the backend
 FROM golang:1.24.0 AS backend-builder
 
-COPY --from=frontend-builder /backend/server/public/frontend ./backend/server/public/frontend
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -29,6 +28,7 @@ WORKDIR /backend
 # Copy backend files
 COPY /backend/go.* ./
 COPY /backend/ ./
+COPY --from=frontend-builder /backend/server/public/frontend ./server/public/frontend
 
 # Build Options
 ENV CGO_ENABLED=1
