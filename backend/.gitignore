@@ -4,3 +4,4 @@ __debug*
 public/static/frontend
 server/public/frontend
 application.conf
+_data2

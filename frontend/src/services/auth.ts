@@ -2,6 +2,8 @@
 import {create} from 'zustand'
 import {http} from "@lib/fetch.ts";
 import {User} from '@/model/user';
+import {Simulate} from "react-dom/test-utils";
+import error = Simulate.error;
 
 interface AuthState {
     loading: boolean
@@ -10,9 +12,10 @@ interface AuthState {
     logout: () => Promise<void>
     checkAuth: () => Promise<User | null>
     setUser: (user: User | null) => void
+    register: (email: string, password: string) => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
     loading: true,
     user: null,
     setUser: (user) => set({user}),
@@ -49,8 +52,22 @@ export const useAuthStore = create<AuthState>((set) => ({
             return user ?? null
         } catch (error) {
             console.error('Auth check error:', error)
-            set({user: null})
+            set({user: null, loading: false})
             return null
         }
     },
+
+    register: async (email: string, password: string) => {
+        try {
+            await http.post(
+                `auth/register`,
+                {email, password, confirm_password: password}
+            )
+            const store = get()
+            await store.checkAuth()
+        } catch (errpr) {
+            console.error('Register error:', error)
+            throw error
+        }
+    }
 }))

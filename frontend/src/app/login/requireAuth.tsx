@@ -18,6 +18,7 @@ export function RequireAuth(props: { children: ReactNode }) {
         return (
             <>
                 <div className="w-full h-screen flex place-content-center items-center">
+                    {loading && <div className="text-2xl font-medium">Loading...</div>}
                     <Spinner />
                 </div>
             </>

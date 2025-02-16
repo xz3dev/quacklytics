@@ -11,17 +11,14 @@ import (
 func CurrentUser(w http.ResponseWriter, r *http.Request) {
 	ab := sv_mw.GetAuthboss(r)
 	user, err := ab.CurrentUser(r)
-	util.HandleError(w, err)
-
-	// Cast the user to your custom User type
-	if user == nil {
-		util.WriteError(w, http.StatusUnauthorized, "No user logged in")
+	if err != nil || user == nil {
+		util.WriteError(w, http.StatusUnauthorized, "Failed to get current user")
 		return
 	}
 
 	currentUser, ok := user.(*auth.User)
 	if !ok {
-		util.WriteError(w, http.StatusInternalServerError, "Failed to cast user to User")
+		util.WriteError(w, http.StatusUnauthorized, "Failed to cast user to User")
 		return
 	}
 

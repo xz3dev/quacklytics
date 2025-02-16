@@ -6,7 +6,7 @@ import {Label} from "@/components/ui/label"
 import reactImage from "@assets/react.svg"
 import {useAuthStore} from "@/services/auth.ts";
 import {FormEvent, useState} from "react";
-import {useNavigate} from "react-router";
+import {Link, useNavigate} from "react-router";
 
 export function LoginForm({
                               className,
@@ -78,9 +78,11 @@ export function LoginForm({
                             </Button>
                             <div className="text-center text-sm">
                                 Don&apos;t have an account?{" "}
-                                <a href="#" className="underline underline-offset-4">
+                                <Link
+                                    className="underline underline-offset-4"
+                                    to="/register">
                                     Sign up
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     </form>
