@@ -12,7 +12,7 @@ interface AuthState {
     logout: () => Promise<void>
     checkAuth: () => Promise<User | null>
     setUser: (user: User | null) => void
-    register: (email: string, password: string) => Promise<void>
+    register: (email: string, password: string) => Promise<string>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -59,15 +59,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     register: async (email: string, password: string) => {
         try {
-            await http.post(
+            const resp = await http.post<RegisterResponse>(
                 `auth/register`,
                 {email, password, confirm_password: password}
             )
             const store = get()
             await store.checkAuth()
+            return resp.location
         } catch (errpr) {
             console.error('Register error:', error)
             throw error
         }
     }
 }))
+
+interface RegisterResponse {
+    location: string
+}

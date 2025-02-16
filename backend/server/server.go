@@ -1,6 +1,7 @@
 package server
 
 import (
+	"analytics/actions"
 	"analytics/auth"
 	"analytics/config"
 	"analytics/database/appdb"
@@ -37,6 +38,11 @@ func Start(appDb *gorm.DB, projectDbs appdb.ProjectDBLookup) {
 		Handler:  setupMux(projectDbs, appDb),
 		ErrorLog: zap.NewStdLog(log.Logger),
 	}
+
+	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		actions.CreateDefaultProject()
+		return false, nil
+	})
 
 	log.Info("Starting server on port %d", config.Config.Port)
 	if err := server.ListenAndServe(); err != nil {

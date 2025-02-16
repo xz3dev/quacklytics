@@ -22,6 +22,18 @@ func QuerySettings(db *gorm.DB) (map[model.ProjectSettingKey]string, error) {
 	for _, setting := range settings {
 		result[setting.Key] = setting.Value
 	}
+
+	defaults := map[model.ProjectSettingKey]string{
+		Name:          "Default Project",
+		Partition:     "",
+		AutoLoadRange: "6",
+	}
+
+	for key, defaultValue := range defaults {
+		if _, exists := result[key]; !exists {
+			result[key] = defaultValue
+		}
+	}
 	return result, nil
 }
 

@@ -28,11 +28,12 @@ var (
 	assertUser   = &User{}
 	assertStorer = &ServerStore{}
 
-	_ authboss.User           = assertUser
-	_ authboss.AuthableUser   = assertUser
-	_ authboss.RememberValuer = assertUser
-	_ authboss.UserValuer     = assertUser
-	_ authboss.ArbitraryUser  = assertUser
+	_ authboss.User            = assertUser
+	_ authboss.AuthableUser    = assertUser
+	_ authboss.RememberValuer  = assertUser
+	_ authboss.UserValuer      = assertUser
+	_ authboss.ArbitraryUser   = assertUser
+	_ authboss.ArbitraryValuer = assertUser
 	//_ authboss.ConfirmableUser = assertUser
 	//_ authboss.LockableUser    = assertUser
 	//_ authboss.RecoverableUser = assertUser
@@ -61,13 +62,14 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 		FormValueName:      authboss.FormValueRedirect,
 		CorceRedirectTo200: true,
 	}
+	ab.Config.Modules.RegisterPreserveFields = []string{"email"}
 	ab.Config.Core.BodyReader = defaults.NewHTTPBodyReader(true, false)
 	ab.Config.Core.Mailer = defaults.NewLogMailer(os.Stdout)
 	ab.Config.Core.Logger = log.AuthbossLogger
 	ab.Config.Paths.RootURL = "http://localhost:3000"
 	ab.Config.Paths.Mount = "/auth"
 	ab.Config.Paths.AuthLoginOK = "/projects"
-	ab.Config.Paths.RegisterOK = "/login"
+	ab.Config.Paths.RegisterOK = "/projects"
 	//ab.Config.Core.Redirector = defaults.Redirector{}
 
 	ab.Config.Storage.Server = NewAuthStore(db)

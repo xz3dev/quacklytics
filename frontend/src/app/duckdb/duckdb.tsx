@@ -35,6 +35,10 @@ export function DuckDB(props: { children: React.ReactNode }) {
             ?? []
     }, [availableFiles])
 
+    if(availableFiles.data !== undefined && autoloadFiles.length === 0 && isImportingData) {
+        setIsImportingData(false)
+    }
+
     const fileQueries = useQueries({
         queries: autoloadFiles.map((f) => ({
             queryFn: () => FileCatalogApi.downloadFile(f),

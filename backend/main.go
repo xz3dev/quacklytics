@@ -5,10 +5,12 @@ import (
 	"analytics/cron"
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
+	"analytics/filecatalog"
 	"analytics/log"
 	"analytics/projects"
 	"analytics/server"
 	_ "github.com/marcboeker/go-duckdb"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -29,6 +31,8 @@ func initCronJobs(
 	projectDbs appdb.ProjectDBLookup,
 ) {
 	for projectId, db := range projectDbs {
-		cron.InitCatalogCron(projectId, db)
+		cron.InitProjectCron(projectId, db, func(projectId string, db *gorm.DB) {
+			filecatalog.GenerateParquetFiles(projectId, db)
+		})
 	}
 }

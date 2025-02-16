@@ -1,15 +1,14 @@
 package cron
 
 import (
-	"analytics/filecatalog"
 	"github.com/go-co-op/gocron/v2"
 	"gorm.io/gorm"
 )
 
-func InitCatalogCron(projectId string, db *gorm.DB) {
+func InitProjectCron(projectId string, db *gorm.DB, taskFn func(string, *gorm.DB)) {
 	task := gocron.NewTask(
 		func(pid string, db *gorm.DB) {
-			filecatalog.GenerateParquetFiles(projectId, db)
+			taskFn(pid, db)
 		},
 		projectId,
 		db,

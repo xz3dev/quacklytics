@@ -15,6 +15,7 @@ export function RegisterForm({
     // Assuming your auth store provides a register method. If it doesn't, update accordingly.
     const {register: registerUser} = useAuthStore();
     const [error, setError] = useState<string>("");
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -31,7 +32,8 @@ export function RegisterForm({
         }
 
         try {
-            await registerUser(email, password);
+            const newLocation = await registerUser(email, password);
+            navigate(newLocation);
         } catch (err) {
             setError("Registration failed. Please check your details.");
             console.error("Registration error:", err);
@@ -69,6 +71,7 @@ export function RegisterForm({
                                     id="password"
                                     name="password"
                                     type="password"
+                                    autoComplete="new-password"
                                     required
                                 />
                             </div>
@@ -78,6 +81,7 @@ export function RegisterForm({
                                     id="confirmPassword"
                                     name="confirmPassword"
                                     type="password"
+                                    autoComplete="new-password"
                                     required
                                 />
                             </div>

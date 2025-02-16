@@ -5,6 +5,7 @@ import (
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
 	"analytics/model"
+	"analytics/projects"
 	"path/filepath"
 )
 
@@ -19,4 +20,11 @@ func CreateProject(projectName string) model.ProjectFiles {
 	appdb.InitProjectDB(project)
 
 	return project
+}
+
+func CreateDefaultProject() {
+	p := projects.ListProjects()
+	if len(p) == 0 {
+		CreateProject("default")
+	}
 }

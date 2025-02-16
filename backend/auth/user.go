@@ -17,6 +17,11 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt"`
 }
 
+func (u *User) GetValues() map[string]string {
+	values := map[string]string{}
+	return values
+}
+
 type RememberToken struct {
 	model.Base
 	UserID UUID   `gorm:"type:varchar(36);index;not null"`
@@ -45,7 +50,7 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 }
 
 func (u *User) GetPID() string {
-	return u.ID.String()
+	return u.Email
 }
 
 func (u *User) GetShouldRemember() bool {
@@ -53,11 +58,7 @@ func (u *User) GetShouldRemember() bool {
 }
 
 func (u *User) PutPID(pid string) {
-	uuid, err := uuid.Parse(pid)
-	if err != nil {
-		return
-	}
-	u.ID = UUID{uuid}
+	u.Email = pid
 }
 
 func (u *User) GetPassword() string {
@@ -69,11 +70,9 @@ func (u *User) PutPassword(password string) {
 }
 
 func (u *User) PutArbitrary(arbitrary map[string]string) {
-	u.Email = arbitrary["email"]
 }
 
 func (u *User) GetArbitrary() map[string]string {
 	data := make(map[string]string)
-	data["email"] = u.Email
 	return data
 }

@@ -24,10 +24,6 @@ GET http://{{host}}/auth/me
 
 ###
 
-GET http://{{host}}/me
-
-###
-
 GET http://{{host}}/auth/logout
 
 ###

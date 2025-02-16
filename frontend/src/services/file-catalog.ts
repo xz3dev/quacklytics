@@ -21,8 +21,8 @@ export type FileDownload = FileMetadata & {
 }
 // API functions
 export const FileCatalogApi = {
-    getFileChecksums: async (): Promise<FileMetadata[]> => {
-        return http.get<any>(`test/events/catalog`)
+    getFileChecksums: async (projectId: string): Promise<FileMetadata[]> => {
+        return http.get<any>(`${projectId}/events/catalog`)
     },
     downloadFile: async (file: FileMetadata): Promise<FileDownload> => {
         const blob = await http.getBlob(`test/events/download?file=${file.name}&checksum=${file.checksum}`)
@@ -36,7 +36,7 @@ export const FileCatalogApi = {
 export function useFileCatalog(projectId: string) {
     return useQuery({
         queryKey: FILE_CATALOG_KEY(projectId),
-        queryFn: () => FileCatalogApi.getFileChecksums(),
+        queryFn: () => FileCatalogApi.getFileChecksums(projectId),
     })
 }
 

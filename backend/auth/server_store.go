@@ -4,7 +4,6 @@ import (
 	"analytics/log"
 	"context"
 	"errors"
-	"github.com/google/uuid"
 	"github.com/volatiletech/authboss/v3"
 	"gorm.io/gorm"
 )
@@ -28,16 +27,18 @@ func (a *ServerStore) Load(ctx context.Context, key string) (authboss.User, erro
 
 func (a *ServerStore) Save(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
+	log.Debug("Saving user %v", u)
 	return a.db.Save(u).Error
 }
 
 func (a *ServerStore) AddRememberToken(ctx context.Context, pid string, token string) error {
-	uuid, err := uuid.Parse(pid) // Assuming pid is now the UUID string
+	var user User
+	err := a.db.Find(&user, "email = ?", pid).Error
 	if err != nil {
 		return err
 	}
 	rememberToken := RememberToken{
-		UserID: UUID{uuid},
+		UserID: user.ID,
 		Token:  token,
 	}
 	return a.db.Create(&rememberToken).Error
