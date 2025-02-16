@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/klauspost/compress/gzhttp/writer"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
@@ -85,6 +86,7 @@ func loadDashboards(db *gorm.DB) ([]model.Dashboard, error) {
 
 func listDashboards(w http.ResponseWriter, r *http.Request) {
 	db := sv_mw.GetProjectDB(r, w)
+	w.Header().Set("Content-Type", "application/json")
 
 	dashboards, err := loadDashboards(db)
 	if err != nil {
@@ -119,6 +121,7 @@ func createDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(fullDashboard); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -135,6 +138,7 @@ func getDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -164,6 +168,7 @@ func updateDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -269,6 +274,7 @@ func setHomeDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return the updated dashboard
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(dashboard)
 }
