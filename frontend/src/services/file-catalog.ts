@@ -24,8 +24,8 @@ export const FileCatalogApi = {
     getFileChecksums: async (projectId: string): Promise<FileMetadata[]> => {
         return http.get<any>(`${projectId}/events/catalog`)
     },
-    downloadFile: async (file: FileMetadata): Promise<FileDownload> => {
-        const blob = await http.getBlob(`test/events/download?file=${file.name}&checksum=${file.checksum}`)
+    downloadFile: async (projectId: string, file: FileMetadata): Promise<FileDownload> => {
+        const blob = await http.getBlob(`${projectId}/events/download?file=${file.name}&checksum=${file.checksum}`)
         return {
             ...file,
             blob,
@@ -51,7 +51,7 @@ export function useDownloadFile() {
                 return cache
             }
             console.log(`downloading ${file.name}`)
-            return await FileCatalogApi.downloadFile(file)
+            return await FileCatalogApi.downloadFile(projectId, file)
         },
         onSuccess: async (file: FileDownload | null, {projectId}) => {
             console.log(`Downloaded ${file} from ${projectId}`, file)

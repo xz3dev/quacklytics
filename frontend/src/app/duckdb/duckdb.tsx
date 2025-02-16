@@ -41,7 +41,7 @@ export function DuckDB(props: { children: React.ReactNode }) {
 
     const fileQueries = useQueries({
         queries: autoloadFiles.map((f) => ({
-            queryFn: () => FileCatalogApi.downloadFile(f),
+            queryFn: () => FileCatalogApi.downloadFile(projectId, f),
             queryKey: FILE_KEY(projectId, f),
             staleTime: Infinity,
             gcTime: 1000 * 60 * 60 * 24 * 14, // 14 days
