@@ -1,9 +1,12 @@
 package auth
 
 import (
+	errors2 "analytics/errors"
 	"analytics/log"
+	"errors"
 	"fmt"
 	"github.com/volatiletech/authboss/v3"
+	"go.uber.org/zap/zapcore"
 	"net/http"
 )
 
@@ -24,6 +27,20 @@ type errorHandler struct {
 func (e errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := e.Handler(w, r)
 	if err == nil {
+		return
+	}
+
+	var logLevelError errors2.HttpError
+	if errors.As(err, &logLevelError) {
+		lvl := logLevelError.GetLevel()
+		log.AuthbossLogger.Logger.Log(lvl, fmt.Sprintf("request error from (%s) %s: %s", r.RemoteAddr, r.URL.String(), err.Error()))
+		if lvl >= zapcore.ErrorLevel {
+			status := logLevelError.GetStatusCode()
+			if status == 0 {
+				status = http.StatusInternalServerError
+			}
+			http.Error(w, err.Error(), status)
+		}
 		return
 	}
 

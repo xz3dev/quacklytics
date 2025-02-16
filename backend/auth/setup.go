@@ -54,7 +54,6 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	defaults.SetCore(&ab.Config, true, false)
 
 	ab.Config.Core.Router = defaults.NewRouter()
-	ab.Config.Core.ErrorHandler = ABErrorHandler{}
 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 	ab.Config.Core.Responder = defaults.NewResponder(ab.Config.Core.ViewRenderer)
 	ab.Config.Core.Redirector = &defaults.Redirector{
@@ -79,6 +78,7 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 
 	ab.Config.Modules.RegisterPreserveFields = []string{"email"}
 	ab.Config.Modules.LogoutMethod = "GET"
+	ab.Config.Core.ErrorHandler = ABErrorHandler{}
 
 	registerHooks(ab)
 

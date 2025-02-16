@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/klauspost/compress/gzhttp/writer"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"

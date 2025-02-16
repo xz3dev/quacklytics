@@ -20,7 +20,7 @@ func (a *ServerStore) Load(ctx context.Context, key string) (authboss.User, erro
 	var user User
 	log.Debug("Loading user with key %s", key)
 	if err := a.db.Where("email = ?", key).Or("id = ?", key).First(&user).Error; err != nil {
-		return nil, err
+		return nil, authboss.ErrUserNotFound
 	}
 	return &user, nil
 }
@@ -51,7 +51,10 @@ func (a *ServerStore) DelRememberTokens(ctx context.Context, pid string) error {
 func (a *ServerStore) UseRememberToken(ctx context.Context, pid string, token string) error {
 	var rememberToken RememberToken
 	if err := a.db.Preload("User").Where("token = ?", token).First(&rememberToken).Error; err != nil {
-		return err
+		return authboss.ErrTokenNotFound
+	}
+	if rememberToken.Token == "" {
+		return authboss.ErrTokenNotFound
 	}
 	if err := a.db.Delete(&rememberToken).Error; err != nil {
 		return err
@@ -63,7 +66,7 @@ func (a *ServerStore) UseRememberToken(ctx context.Context, pid string, token st
 
 func (a *ServerStore) Create(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	log.Info("Creating user %v", u)
+	log.Debug("Creating user %v", u)
 	var existingUsers []User
 	a.db.Find(&existingUsers)
 	if len(existingUsers) > 0 {
