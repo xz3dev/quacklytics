@@ -2,6 +2,7 @@ package projects
 
 import (
 	"analytics/config"
+	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
 	"analytics/log"
 	"analytics/model"
@@ -51,6 +52,7 @@ func Init() appdb.ProjectDBLookup {
 
 	for _, project := range projectList {
 		appdb.InitProjectDB(project.ID, project.DbFile)
+		analyticsdb.InitProjectDB(project.ID, project.AnalyticsDbFile)
 	}
 
 	return appdb.ProjectDBs

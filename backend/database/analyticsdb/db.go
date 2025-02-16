@@ -3,8 +3,6 @@ package analyticsdb
 import (
 	"analytics/database/analyticsdb/analyticsmigrations"
 	"analytics/log"
-	"analytics/model"
-	"analytics/projects"
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -39,19 +37,8 @@ func Tx(projectID string) (*sql.Tx, error) {
 	return proj.db.BeginTx(context.Background(), nil)
 }
 
-func InitProjects() {
-	projectList := projects.ListProjects()
-
-	for _, project := range projectList {
-		if err := InitProjectDB(project); err != nil {
-			log.Error("Error initializing project DB %s: %v", project.ID, err)
-			panic(err)
-		}
-	}
-}
-
-func InitProjectDB(project model.ProjectFiles) error {
-	connector, err := duckdb.NewConnector(project.AnalyticsDbFile+"?"+"access_mode=READ_WRITE", nil)
+func InitProjectDB(projectId string, analyticsDbFilePath string) error {
+	connector, err := duckdb.NewConnector(analyticsDbFilePath+"?"+"access_mode=READ_WRITE", nil)
 	if err != nil {
 		return err
 	}
@@ -63,7 +50,7 @@ func InitProjectDB(project model.ProjectFiles) error {
 
 	projectDB := sql.OpenDB(connector)
 
-	LookupTable[project.ID] = &DBConnection{
+	LookupTable[projectId] = &DBConnection{
 		db:         projectDB,
 		connection: con,
 	}
@@ -72,7 +59,7 @@ func InitProjectDB(project model.ProjectFiles) error {
 		return err
 	}
 
-	analyticsmigrations.MigrateDBIfNeeded(project.ID, projectDB)
+	analyticsmigrations.MigrateDBIfNeeded(projectId, projectDB)
 
 	return nil
 }

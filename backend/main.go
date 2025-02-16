@@ -1,12 +1,11 @@
 package main
 
 import (
+	"analytics/actions"
 	"analytics/auth"
 	"analytics/config"
 	"analytics/cron"
-	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
-	"analytics/filecatalog"
 	"analytics/log"
 	"analytics/model"
 	"analytics/projects"
@@ -24,7 +23,6 @@ func main() {
 	cron.Init()
 	appDb := appdb.Init()
 	projectDbs := projects.Init()
-	analyticsdb.InitProjects()
 
 	initCronJobs(projectDbs)
 
@@ -36,7 +34,7 @@ func initCronJobs(
 ) {
 	for projectId, db := range projectDbs {
 		cron.InitProjectCron(projectId, db, func(projectId string, db *gorm.DB) {
-			filecatalog.GenerateParquetFiles(projectId, db)
+			actions.GenerateParquetFiles(projectId, db)
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"analytics/actions"
 	"analytics/config"
 	"analytics/filecatalog"
 	"analytics/log"
@@ -103,7 +104,7 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 func RegenerateFiles(w http.ResponseWriter, r *http.Request) {
 	db := svmw.GetProjectDB(r, w)
 	projectId := svmw.GetProjectID(r)
-	err := filecatalog.GenerateParquetFiles(projectId, db)
+	err := actions.GenerateParquetFiles(projectId, db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

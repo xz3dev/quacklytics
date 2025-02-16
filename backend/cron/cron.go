@@ -4,6 +4,7 @@ import (
 	"analytics/log"
 	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 var Scheduler gocron.Scheduler
@@ -44,4 +45,26 @@ func (c cronLogger) Warn(msg string, args ...any) {
 
 func (c cronLogger) Error(msg string, args ...any) {
 	logger().Errorf(msg, args...)
+}
+
+func InitProjectCron(projectId string, db *gorm.DB, taskFn func(string, *gorm.DB)) {
+	task := gocron.NewTask(
+		func(pid string, db *gorm.DB) {
+			taskFn(pid, db)
+		},
+		projectId,
+		db,
+	)
+	Scheduler.NewJob(
+		gocron.DailyJob(1,
+			gocron.NewAtTimes(
+				gocron.NewAtTime(0, 0, 0),
+			),
+		),
+		task,
+	)
+	Scheduler.NewJob(
+		gocron.OneTimeJob(gocron.OneTimeJobStartImmediately()),
+		task,
+	)
 }
