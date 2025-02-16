@@ -56,7 +56,9 @@ func Logger(logger *zap.Logger, opts *LoggerOpts) func(next http.Handler) http.H
 					}
 				}
 				lvl := zap.InfoLevel
-				if ww.Status() > 400 {
+				if ww.Status() == http.StatusUnauthorized {
+					lvl = zap.WarnLevel
+				} else if ww.Status() > 400 {
 					lvl = zap.ErrorLevel
 				}
 				reqLogger.Log(lvl, http.StatusText(ww.Status()))

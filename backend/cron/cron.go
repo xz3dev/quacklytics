@@ -47,7 +47,7 @@ func (c cronLogger) Error(msg string, args ...any) {
 	logger().Errorf(msg, args...)
 }
 
-func InitProjectCron(projectId string, db *gorm.DB, taskFn func(string, *gorm.DB)) {
+func InitProjectCron(projectId string, db *gorm.DB, taskFn func(string, *gorm.DB)) error {
 	task := gocron.NewTask(
 		func(pid string, db *gorm.DB) {
 			taskFn(pid, db)
@@ -62,9 +62,17 @@ func InitProjectCron(projectId string, db *gorm.DB, taskFn func(string, *gorm.DB
 			),
 		),
 		task,
+		gocron.WithTags(projectId),
 	)
 	Scheduler.NewJob(
 		gocron.OneTimeJob(gocron.OneTimeJobStartImmediately()),
 		task,
+		gocron.WithTags(projectId),
 	)
+	return nil
+}
+
+func StopProjectCrons(projectId string) error {
+	Scheduler.RemoveByTags(projectId)
+	return nil
 }

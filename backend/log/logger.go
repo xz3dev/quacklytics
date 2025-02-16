@@ -15,6 +15,7 @@ func Init() {
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	Logger, err = config.Build(
 		zap.AddCallerSkip(1),
+		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
 	if err != nil {
 		panic("failed to initialize zap logger: " + err.Error())
