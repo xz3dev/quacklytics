@@ -33,7 +33,7 @@ func ListProjects(writer http.ResponseWriter, request *http.Request) {
 			http.Error(writer, fmt.Sprintf("Project DB not found: %s", project.ID), http.StatusInternalServerError)
 			return
 		}
-		settings, err := projects.QuerySettings(projDb)
+		settings, err := projects.QuerySettings(project.ID, projDb)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return

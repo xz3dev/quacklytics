@@ -42,7 +42,7 @@ func FileChecksums(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	settings, err := projects.QuerySettings(db)
+	settings, err := projects.QuerySettings(projectId, db)
 	if err != nil {
 		http.Error(w, "cannot query project settings", http.StatusInternalServerError)
 		return

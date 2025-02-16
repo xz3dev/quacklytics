@@ -42,7 +42,7 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) error {
 		existingFilenames[entry.Name] = true
 	}
 
-	log.Info("Found %d existing files", len(existingFilenames))
+	log.Info("FileGen %s: Found %d existing files", projectId, len(existingFilenames))
 
 	var missingSegments []model.DataSegment
 	for _, segment := range segments {
@@ -51,7 +51,7 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) error {
 		}
 	}
 
-	log.Info("Found %d missing files", len(missingSegments))
+	log.Info("FileGen %s: Found %d missing files", projectId, len(missingSegments))
 
 	for _, segment := range missingSegments {
 		ExportEventsToParquet(projectId, db, segment)

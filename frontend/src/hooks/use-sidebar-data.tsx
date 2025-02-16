@@ -12,10 +12,9 @@ export function useSidebarData(): SidebarData {
     const isDashboard = useMatch('/app/:projectid/dashboards/:dashboardid')
     const isEvents = useMatch('/app/:projectid/events')
     const isData = useMatch('/app/:projectid/data')
-    // const isSchema = useMatch('/app/:projectid/data/schema')
     // const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
-    const isAnalytics = !!isHome || !!isEvents || !!isInsights || !!isInsight || !!isDashboards || !!isDashboard
     const isSettings = useMatch('/app/:projectid/settings')
+    const isAnalytics = !!isHome || !!isEvents || !!isInsights || !!isInsight || !!isDashboards || !!isDashboard || !!isData || !!isSettings
 
     const breadcrumbs = useMemo(() => {
         const items: BreadcrumbItem[] = []
@@ -52,8 +51,16 @@ export function useSidebarData(): SidebarData {
             items.push({title: 'Events', url: `/app/${projectId}/events`, isActive: true})
         }
 
+        if  (isData) {
+            items.push({title: 'Data', url: `/app/${projectId}/data`, isActive: true})
+        }
+
+        if (isSettings) {
+            items.push({title: 'Settings', url: `/app/${projectId}/settings`, isActive: true})
+        }
+
         return items
-    }, [isAnalytics, isInsights, isEvents, projectId])
+    }, [isAnalytics, isInsights, isEvents, projectId, isHome, isData, isInsight, isDashboard, isDashboards, isSettings])
 
     const projectUrl = `/app/${projectId}`
 

@@ -23,7 +23,7 @@ func QueryEvents(projectId string, params *queries.QueryParams) (*[]model.Event,
 
 	query, args := queries.BuildSQL(params)
 
-	log.Info("Query: %s, args: %v", query, args)
+	log.Debug("Query: %s, args: %v", query, args)
 
 	rows, err := tx.Query(query, args...)
 	if err != nil {

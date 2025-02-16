@@ -78,7 +78,7 @@ export function DashboardList({filter, sort, title}: Props) {
 
     return (
         <>
-            <div className="mb-4 flex justify-between items-center">
+            <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">{title ?? "Dashboards"}</h2>
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>

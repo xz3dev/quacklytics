@@ -12,7 +12,7 @@ const (
 	AutoLoadRange model.ProjectSettingKey = "autoload"
 )
 
-func QuerySettings(db *gorm.DB) (map[model.ProjectSettingKey]string, error) {
+func QuerySettings(projectId string, db *gorm.DB) (map[model.ProjectSettingKey]string, error) {
 	var settings []model.ProjectSetting
 	err := db.Find(&settings).Error
 	if err != nil {
@@ -24,7 +24,7 @@ func QuerySettings(db *gorm.DB) (map[model.ProjectSettingKey]string, error) {
 	}
 
 	defaults := map[model.ProjectSettingKey]string{
-		Name:          "Default Project",
+		Name:          projectId,
 		Partition:     "",
 		AutoLoadRange: "6",
 	}
