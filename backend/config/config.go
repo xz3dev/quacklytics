@@ -9,9 +9,9 @@ import (
 //go:embed default.conf
 var defaultConfig string
 
-var Config *AppConfig
+var Config *appConfig
 
-func Load() *AppConfig {
+func Load() *appConfig {
 
 	if _, err := os.Stat("application.conf"); os.IsNotExist(err) {
 		file, createErr := os.Create("application.conf")
@@ -29,14 +29,14 @@ func Load() *AppConfig {
 	if err != nil {
 		panic(err)
 	}
-	Config = &AppConfig{
+	Config = &appConfig{
 		Port:          conf.GetInt("app.port"),
 		ServeFrontend: conf.GetBoolean("app.serve_frontend"),
-		Paths: Paths{
+		Paths: paths{
 			Parquet:  getString(conf, "paths.parquet"),
 			Database: getString(conf, "paths.database"),
 		},
-		Database: Database{
+		Database: database{
 			ProjectPrefix:   getString(conf, "database.project_prefix"),
 			AnalyticsPrefix: getString(conf, "database.analytics_prefix"),
 		},
@@ -52,19 +52,19 @@ func getString(c *hocon.Config, key string) string {
 	return val
 }
 
-type AppConfig struct {
+type appConfig struct {
 	Port          int
 	ServeFrontend bool
-	Paths         Paths
-	Database      Database
+	Paths         paths
+	Database      database
 }
 
-type Paths struct {
+type paths struct {
 	Parquet  string
 	Database string
 }
 
-type Database struct {
+type database struct {
 	ProjectPrefix   string
 	AnalyticsPrefix string
 }

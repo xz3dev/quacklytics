@@ -1,10 +1,8 @@
 package appdb
 
 import (
-	"analytics/auth"
+	"analytics/config"
 	"analytics/log"
-	"analytics/model"
-	"analytics/schema"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"
@@ -13,52 +11,39 @@ import (
 
 const DbFile = "_data/app.db"
 
-const DbFilePrefix = "project_"
-const DbDir = "_data"
-
 type ProjectDBLookup = map[string]*gorm.DB
 
 var ProjectDBs = make(ProjectDBLookup)
 
-var projectTables = []interface{}{
-	&model.Dashboard{},
-	&model.DashboardInsight{},
-	&model.Insight{},
-	&model.Series{},
-	&schema.EventSchema{},
-	&schema.EventSchemaProperty{},
-	&schema.EventSchemaPropertyValue{},
-	&model.InsightMeta{},
-	&model.ProjectSetting{},
-	&model.FileCatalogEntry{},
+var appTablesRegistry []interface{}
+var projectTablesRegistry []interface{}
+
+func RegisterTables(projectTables []interface{}, appTables []interface{}) {
+	projectTablesRegistry = make([]interface{}, len(projectTables))
+	appTablesRegistry = make([]interface{}, len(appTables))
+	copy(projectTablesRegistry, projectTables)
+	copy(appTablesRegistry, appTables)
 }
 
-var appTables = []interface{}{
-	&auth.User{},
-	&auth.RememberToken{},
-	&auth.RecoveryToken{},
-	&auth.RealtimeToken{},
-}
-
-func InitProjectDB(project model.ProjectFiles) *gorm.DB {
+func InitProjectDB(projectId string, projectDbFilePath string) *gorm.DB {
 	var err error
-	ProjectDBs[project.ID], err = gorm.Open(sqlite.Open(project.DbFile), &gorm.Config{})
+	ProjectDBs[projectId], err = gorm.Open(sqlite.Open(projectDbFilePath), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Error opening database: ", err)
 	}
-	log.Info("----- Initializing DB for project: %s -----", project.ID)
-	err = ProjectDBs[project.ID].AutoMigrate(projectTables...)
+	log.Info("----- Initializing DB for project: %s -----", projectId)
+	err = ProjectDBs[projectId].AutoMigrate(projectTablesRegistry...)
 	if err != nil {
 		log.Fatal("Error migrating database: ", err)
 	}
-	log.Info("Migrated DB for project: %s", project.ID)
-	log.Info("----- End initializing DB for project: %s -----", project.ID)
-	return ProjectDBs[project.ID]
+	log.Info("Migrated DB for project: %s", projectId)
+	log.Info("----- End initializing DB for project: %s -----", projectId)
+	return ProjectDBs[projectId]
 }
 
 func Init() *gorm.DB {
 	// Ensure the directory exists
-	dir := filepath.Dir(DbDir)
+	dir := filepath.Dir(config.Config.Paths.Database)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		log.Fatal("Error creating directory for database: ", err)
 	}
@@ -71,7 +56,7 @@ func Init() *gorm.DB {
 	}
 
 	// Auto Migrate the schema
-	err = appDb.AutoMigrate(appTables...)
+	err = appDb.AutoMigrate(appTablesRegistry...)
 	if err != nil {
 		log.Fatal("Error migrating database: ", err)
 	}

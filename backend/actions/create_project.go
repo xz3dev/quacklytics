@@ -17,7 +17,7 @@ func CreateProject(projectName string) model.ProjectFiles {
 	}
 
 	analyticsdb.InitProjectDB(project)
-	appdb.InitProjectDB(project)
+	appdb.InitProjectDB(project.ID, project.DbFile)
 
 	return project
 }

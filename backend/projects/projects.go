@@ -50,7 +50,7 @@ func Init() appdb.ProjectDBLookup {
 	projectList := ListProjects()
 
 	for _, project := range projectList {
-		appdb.InitProjectDB(project)
+		appdb.InitProjectDB(project.ID, project.DbFile)
 	}
 
 	return appdb.ProjectDBs
