@@ -24,6 +24,7 @@ export default function Settings() {
     }
 
 
+
     const handleProjectNameChange = () => {
         updater.mutate({projectId, value: (document.getElementById("project-name") as HTMLInputElement).value})
     };
