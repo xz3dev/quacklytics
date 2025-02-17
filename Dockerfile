@@ -39,6 +39,9 @@ ENV GOOS=$GOOS
 ARG GOARCH=arm64
 ENV GOARCH=$GOARCH
 
+RUN echo "ARCH: $GOARCH"
+RUN echo "OS: $GOOS"
+
 # Build the Go application
 RUN go build -o app main.go
 

@@ -34,7 +34,9 @@ jobs:
           push: true
           platforms: linux/arm64
           provenance: false
-          build-args: GOOS=linux,GOARCH=arm64
+          build-args: |
+            GOOS=linux
+            GOARCH=arm64
           tags: |
             ghcr.io/xz3dev/quacklytics/main/arm64:latest
             ghcr.io/xz3dev/quacklytics/main/arm64:${{ github.run_id }}-${{ github.sha }}
@@ -63,7 +65,9 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          build-args: GOOS=linux,GOARCH=amd64
+          build-args: |
+            GOOS=linux
+            GOARCH=amd64
           tags: |
             ghcr.io/xz3dev/quacklytics/main/amd64:latest
             ghcr.io/xz3dev/quacklytics/main/amd64:${{ github.run_id }}-${{ github.sha }}
