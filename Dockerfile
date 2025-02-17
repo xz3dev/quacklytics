@@ -32,8 +32,12 @@ COPY --from=frontend-builder /backend/server/public/frontend ./server/public/fro
 
 # Build Options
 ENV CGO_ENABLED=1
-ENV GOOS=linux
-ENV GOARCH=arm64
+
+ARG GOOS=linux
+ENV GOOS=$GOOS
+
+ARG GOARCH=arm64
+ENV GOARCH=$GOARCH
 
 # Build the Go application
 RUN go build -o app main.go
