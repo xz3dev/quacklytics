@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build Docker Image
 
 on:
   push:
@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag quacklytics:$(date +%s)
+      run: docker build --platform linux/arm64 --file Dockerfile --tag quacklytics:$(date +%s) .
