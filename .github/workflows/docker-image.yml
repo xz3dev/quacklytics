@@ -38,8 +38,8 @@ jobs:
             GOOS=linux
             GOARCH=arm64
           tags: |
-            ghcr.io/xz3dev/quacklytics/main/arm64:latest
-            ghcr.io/xz3dev/quacklytics/main/arm64:${{ github.run_id }}-${{ github.sha }}
+            ghcr.io/xz3dev/quacklytics/arm64:latest
+            ghcr.io/xz3dev/quacklytics/arm64:${{ github.run_id }}-${{ github.sha }}
           file: Dockerfile
 
   build-amd:
@@ -69,6 +69,6 @@ jobs:
             GOOS=linux
             GOARCH=amd64
           tags: |
-            ghcr.io/xz3dev/quacklytics/main/amd64:latest
-            ghcr.io/xz3dev/quacklytics/main/amd64:${{ github.run_id }}-${{ github.sha }}
+            ghcr.io/xz3dev/quacklytics/amd64:latest
+            ghcr.io/xz3dev/quacklytics/amd64:${{ github.run_id }}-${{ github.sha }}
           file: Dockerfile
