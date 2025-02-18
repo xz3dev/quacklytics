@@ -75,7 +75,7 @@ func serveFrontend(mux *chi.Mux) {
 		files = append(files, path)
 		return nil
 	})
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		log.Fatal(err.Error(), err)
 	}
 	log.Info("Serving frontend files: %v", files)

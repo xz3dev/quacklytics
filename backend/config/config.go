@@ -1,9 +1,11 @@
 package config
 
 import (
+	"analytics/util"
 	_ "embed"
 	"github.com/gurkankaymak/hocon"
 	"os"
+	"strings"
 )
 
 //go:embed default.conf
@@ -20,6 +22,12 @@ func Load() *appConfig {
 		}
 		defer file.Close()
 
+		secret, err := util.GenerateRandomString(32)
+		if err != nil {
+			panic(err)
+		}
+
+		defaultConfig = strings.ReplaceAll(defaultConfig, "replace-me-with-random-string", secret)
 		_, writeErr := file.WriteString(defaultConfig)
 		if writeErr != nil {
 			panic(writeErr)
@@ -40,6 +48,10 @@ func Load() *appConfig {
 			ProjectPrefix:   getString(conf, "database.project_prefix"),
 			AnalyticsPrefix: getString(conf, "database.analytics_prefix"),
 		},
+		Auth: auth{
+			Secret:       getString(conf, "auth.secret"),
+			SecureCookie: conf.GetBoolean("auth.secure_cookie"),
+		},
 	}
 	return Config
 }
@@ -57,6 +69,7 @@ type appConfig struct {
 	ServeFrontend bool
 	Paths         paths
 	Database      database
+	Auth          auth
 }
 
 type paths struct {
@@ -67,4 +80,9 @@ type paths struct {
 type database struct {
 	ProjectPrefix   string
 	AnalyticsPrefix string
+}
+
+type auth struct {
+	Secret       string
+	SecureCookie bool
 }

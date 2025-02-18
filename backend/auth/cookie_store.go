@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"analytics/config"
 	"github.com/gorilla/sessions"
 	"github.com/volatiletech/authboss/v3"
 	"net/http"
@@ -9,14 +10,14 @@ import (
 var sessionStore *sessions.CookieStore
 
 func initAuthStores() {
-	sessionStoreKey := []byte("very-secret")
+	sessionStoreKey := []byte(config.Config.Auth.Secret)
 
 	sessionStore = sessions.NewCookieStore(sessionStoreKey)
 	sessionStore.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 30, // 30 days
 		HttpOnly: true,
-		Secure:   false, // Set to true if using HTTPS
+		Secure:   config.Config.Auth.SecureCookie, // Set to true if using HTTPS
 		SameSite: http.SameSiteLaxMode,
 	}
 }
