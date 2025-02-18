@@ -46,6 +46,7 @@ jobs:
           tags: |
             ghcr.io/xz3dev/quacklytics/arm64:latest
             ghcr.io/xz3dev/quacklytics/arm64:${{ github.sha }}
+            ghcr.io/xz3dev/quacklytics/amd64:${{ github.ref_name }}
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: Dockerfile
@@ -85,6 +86,7 @@ jobs:
           tags: |
             ghcr.io/xz3dev/quacklytics/amd64:latest
             ghcr.io/xz3dev/quacklytics/amd64:${{ github.sha }}
+            ghcr.io/xz3dev/quacklytics/amd64:${{ github.ref_name }}
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: Dockerfile
