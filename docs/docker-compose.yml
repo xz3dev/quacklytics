@@ -1,0 +1,12 @@
+services:
+  quacklytics:
+    image: ghcr.io/xz3dev/quacklytics/amd64:latest # arm64 or amd64
+    ports:
+      - "3001:3000"
+    volumes:
+      - data:/app/_data
+      - tmp:/app/_tmp
+      - ./application.conf:/app/application.conf
+volumes:
+  data:
+  tmp:
