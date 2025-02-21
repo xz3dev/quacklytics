@@ -4,12 +4,12 @@ _Quacklytics_ is an open-source analytics service built using **DuckDB** and des
 your browser. It provides a seamless, lightweight, and high-performance way to process your data without the need for
 expensive server-side compute resources.
 
-## Features
+## Why does this exist?
 
-**Browser-Based Analytics**: Perform analytics entirely in the browser.  
-**High Performance**: Optimized for modern data processing needs.  
-**Open Source**: Free to use and extend.  
+**Save Resources**: Leverage your existing computers performance by running analytical queries entirely in the browser.  
 **Easy to Deploy**: One Binary / Docker Image: No need to install or manage a database. All data is stored in simple files on your filesystem by leveraging sqlite and duckdb.
+**Open Source**: Free to use and extend.
+**Cheap**: Storage is cheap, compute is expensive. That's why everything is a file and as much work happens inside the browser as possible.
 
 ## Getting Started
 
@@ -17,14 +17,14 @@ Currently only deployment via docker is supported. Single binaries will be avail
 
 ### Preparations (required for both methods)
 
-You must create an empty configuration file called `application.conf` in your working directory.  
+You must create an empty configuration file called `application.conf` in your working directory.
 
 ```shell
 touch application.conf
 ```
 
-This file will be populated with the default config on first start. 
-If you want to modify the config before that, you can grab 
+This file will be populated with the default config on first start.
+If you want to modify the config before that, you can grab
 the [default config](backend/config/default.conf) from the git repo.
 
 ### Using Docker Compose
