@@ -72,6 +72,11 @@ Please make sure to follow our [contribution guidelines](CONTRIBUTING.md).
 
 Quacklytics is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
+## Screenshots
+
+![Screenshot](docs/screenshots/insight.png)
+![Screenshot](docs/screenshots/dashboard.png)
+
 ---
 ```
 Happy Quacking! 🦆
