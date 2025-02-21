@@ -13,15 +13,12 @@ expensive server-side compute resources.
 
 ## Getting Started
 
-Simply deploy the application using docker.  
-
-Single binaries to run will be available at a later stage.
+Currently only deployment via docker is supported. Single binaries will be available at a later stage.
 
 ### Preparations (required for both methods)
 
 You must create an empty configuration file called `application.conf` in your working directory.  
 
-Simply run:
 ```shell
 touch application.conf
 ```
