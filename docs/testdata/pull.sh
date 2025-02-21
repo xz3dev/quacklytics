@@ -15,14 +15,14 @@ QUERY="
     format CSVWithNames;
 "
 echo "Exporting from DB..."
-ssh root@ph.fmennen.de "docker container exec posthog-clickhouse-1 clickhouse-client --query \"$QUERY\""
+ssh root@$POSTHOG_HOMESERVER "docker container exec posthog-clickhouse-1 clickhouse-client --query \"$QUERY\""
 echo "Copy to server..."
-ssh root@ph.fmennen.de "docker container cp posthog-clickhouse-1:/events.csv.gz /events.csv.gz"
+ssh root@$POSTHOG_HOMESERVER "docker container cp posthog-clickhouse-1:/events.csv.gz /events.csv.gz"
 
 echo "Downloading to client..."
 rm -f events.csv.gz
 
-rsync --progress -e ssh root@ph.fmennen.de:/events.csv.gz .
+rsync --progress -e ssh root@$POSTHOG_HOMESERVER:/events.csv.gz .
 
 echo "Download complete. Importing..."
 
