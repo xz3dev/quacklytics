@@ -27,6 +27,11 @@ This file will be populated with the default config on first start.
 If you want to modify the config before that, you can grab
 the [default config](backend/config/default.conf) from the git repo.
 
+### Architecture
+There are 2 image variants: ARM64 and AMD64. Choose whatever you need depending on your servers architecture:
+- `ghcr.io/xz3dev/quacklytics/amd64` for Intel/AMD based CPUs
+- `ghcr.io/xz3dev/quacklytics/arm64` for ARM / Apple Silicon based CPUs
+
 ### Using Docker Compose
 ```yaml
 services:
