@@ -60,6 +60,51 @@ docker run -d \
   ghcr.io/xz3dev/quacklytics/amd64:latest
 ```
 
+## Sending Data
+
+The **AppendEvent** endpoint allows you to send an event to the server for processing. The endpoint is defined as a **POST** request and expects a JSON payload that follows the `EventInput` structure. Additionally, the URL includes a project identifier as a parameter.
+
+### Endpoint URL
+
+Replace `{projectid}` with your actual project identifier.
+
+```
+POST /api/{projectid}/event
+```
+
+### Request Format
+
+Replace `{projectid}` with your actual project identifier.
+
+**Request Headers**
+
+- **Content-Type:** `application/json`
+
+**Request Body**
+
+The endpoint accepts an array of events as payload. The payload should include the following fields:
+
+- **eventType**: The type of event (e.g., `"user_signup"`).
+- **userId**: The unique identifier of the person related to the event. Can be null if unknown.
+- **distinctId**: A distinct identifier for the session. This can later be connected to a userId if subsequent events are sent with a userId.
+- **timestamp** (ISO 8601 datetime): The time when the event occurred.
+- **properties**: A map of additional properties. This is stored as JSON and can be queried. 
+
+### Example
+
+```json
+{
+  "eventType": "user_signup",
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "distinctId": "unique_user_123",
+  "timestamp": "2025-02-23T10:00:00Z",
+  "properties": {
+    "plan": "premium",
+    "referrer": "google"
+  }
+}
+```
+
 ## Contributing
 
 We welcome contributions from the community! If you'd like to contribute:

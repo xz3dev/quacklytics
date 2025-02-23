@@ -98,7 +98,6 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
 	mux.Get("/auth/me", routes.CurrentUser)
-	mux.Post("/event", routes.AppendEvent)
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
@@ -123,6 +122,7 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 		mux.Group(func(mux chi.Router) {
 			mux.Use(svmw.NewWebSocketMiddleware().Middleware)
 			mux.Get("/realtime", routes.RealtimeWebSocketEndpoint)
+			mux.Post("/event", routes.AppendEvent)
 		})
 	})
 
