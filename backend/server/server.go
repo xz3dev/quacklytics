@@ -7,6 +7,7 @@ import (
 	"analytics/database/appdb"
 	"analytics/log"
 	svmw "analytics/server/middlewares"
+	"analytics/server/posthog"
 	"analytics/server/routes"
 	"embed"
 	"fmt"
@@ -125,6 +126,7 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 			mux.Post("/event", routes.AppendEvent)
 		})
 	})
+	posthog.SetupPosthogRoutes(mux)
 
 	return mux
 }
