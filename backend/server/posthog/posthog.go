@@ -1,23 +1,24 @@
 package posthog
 
 import (
-	"analytics/log"
 	"analytics/model"
-	"compress/gzip"
+	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"io"
 	"net/http"
 	"time"
 )
 
 func SetupPosthogRoutes(mux *chi.Mux) {
-	mux.Post("/e/", PosthogHandler)
-	mux.Post("/decide/", EmptyOkResponse)
-	mux.Get("/array/{apikey}/config.js", EmptyOkResponse)
-	mux.Get("/array/{apikey}/config", EmptyOkResponse)
+	mux.Group(func(mux chi.Router) {
+		mux.Use(svmw.DecompressionMiddleware)
+		mux.Post("/e/", PosthogHandler)
+		mux.Post("/decide/", EmptyOkResponse)
+		mux.Get("/array/{apikey}/config.js", EmptyOkResponse)
+		mux.Get("/array/{apikey}/config", EmptyOkResponse)
+	})
 }
 
 func EmptyOkResponse(writer http.ResponseWriter, request *http.Request) {
@@ -39,33 +40,9 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 
 	var events posthogEventList
 
-	compression := r.URL.Query().Get("compression")
-	if compression == "gzip-js" {
-		gzipReader, err := gzip.NewReader(r.Body)
-		if err != nil {
-			http.Error(w, "Unable to create gzip reader", http.StatusBadRequest)
-			return
-		}
-		defer gzipReader.Close()
-
-		bodyBytes, err := io.ReadAll(gzipReader)
-		if err != nil {
-			http.Error(w, "Unable to read gzip-compressed request body: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		bodyString := string(bodyBytes)
-
-		if err := json.Unmarshal([]byte(bodyString), &events); err != nil {
-			log.Warn(err.Error())
-			http.Error(w, "Unable to parse gzip-compressed request body: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-	} else {
-		if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
-			http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
-			return
-		}
+	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+		http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	eventInputs := make([]model.EventInput, len(events))
