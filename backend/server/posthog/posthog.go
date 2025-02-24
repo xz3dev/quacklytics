@@ -57,13 +57,13 @@ func extractIdentifiers(e posthogEvent) (string, string, bool) {
 		return "", "", false
 	}
 
-	distinctID, ok := e.Properties["distinct_id"].(string)
-	if !ok || distinctID == "" {
+	distinctId, ok := e.Properties["distinct_id"].(string)
+	if !ok || distinctId == "" {
 		log.Info("No distinct_id found in event properties. Skipping event: %s", e.UUID)
 		return "", "", false
 	}
 
-	return token, distinctID, true
+	return token, distinctId, true
 }
 
 func PosthogHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +79,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 	for _, e := range events {
 		eventTime := calculateEventTime(e, now)
 
-		token, distinctID, valid := extractIdentifiers(e)
+		token, distinctId, valid := extractIdentifiers(e)
 		if !valid {
 			continue
 		}
@@ -87,7 +87,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 		eventInput := model.EventInput{
 			EventType:  e.Event,
 			PersonId:   uuid.UUID{}, // Adjust this as appropriate for your logic.
-			DistinctId: distinctID,
+			DistinctId: distinctId,
 			Timestamp:  eventTime,
 			Properties: e.Properties,
 		}
