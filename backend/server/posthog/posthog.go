@@ -70,7 +70,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Events processed successfully"))
+	w.Write([]byte("Events added to Queue"))
 }
 
 func (p *posthogEventList) UnmarshalJSON(data []byte) error {
