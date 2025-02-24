@@ -22,9 +22,9 @@ func SetupPosthogRoutes(mux *chi.Mux) {
 	})
 }
 
-func EmptyOkResponse(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Set("Content-Type", "application/json")
-	writer.Write([]byte("{}"))
+func EmptyOkResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte("{}"))
 }
 
 type posthogEvent struct {
@@ -37,9 +37,37 @@ type posthogEvent struct {
 
 type posthogEventList []posthogEvent
 
+func calculateEventTime(e posthogEvent, baseTime time.Time) time.Time {
+	eventTime := baseTime
+	if e.Offset != nil {
+		eventTime = eventTime.Add(time.Duration(*e.Offset) * time.Millisecond)
+	}
+	if e.Timestamp != "" {
+		if parsedTime, err := time.Parse(time.RFC3339, e.Timestamp); err == nil && !parsedTime.IsZero() {
+			eventTime = parsedTime
+		}
+	}
+	return eventTime
+}
+
+func extractIdentifiers(e posthogEvent) (string, string, bool) {
+	token, ok := e.Properties["token"].(string)
+	if !ok || token == "" {
+		log.Info("No token found in event properties. Skipping event: %s", e.UUID)
+		return "", "", false
+	}
+
+	distinctID, ok := e.Properties["distinct_id"].(string)
+	if !ok || distinctID == "" {
+		log.Info("No distinct_id found in event properties. Skipping event: %s", e.UUID)
+		return "", "", false
+	}
+
+	return token, distinctID, true
+}
+
 func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 	var events posthogEventList
-
 	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
 		http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
 		return
@@ -48,47 +76,24 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 	// Create a map to group event inputs by token.
 	eventInputsByToken := make(map[string][]model.EventInput)
 	now := time.Now()
+	for _, e := range events {
+		eventTime := calculateEventTime(e, now)
 
-	for _, event := range events {
-		eventTime := now
-
-		if event.Offset != nil {
-			eventTime = eventTime.Add(time.Duration(*event.Offset) * time.Millisecond)
-		}
-		if event.Timestamp != "" {
-			parsedTime, err := time.Parse(time.RFC3339, event.Timestamp)
-			if err == nil && !parsedTime.IsZero() {
-				eventTime = parsedTime
-			}
-		}
-
-		// Extract token from properties. Use a default value if token is not present or is not a string.
-		token, ok := event.Properties["token"].(string)
-		if !ok || token == "" {
-			log.Info("No token found in event properties. Skipping event: %s", event.UUID)
-			// no token = skip
-			continue
-		}
-		_, ok = event.Properties["distinct_id"].(string)
-		if !ok {
-			log.Info("No distinct_id found in event properties. Skipping event: %s", event.UUID)
-			// no distinct_id = skip
+		token, distinctID, valid := extractIdentifiers(e)
+		if !valid {
 			continue
 		}
 
 		eventInput := model.EventInput{
-			EventType:  event.Event,
+			EventType:  e.Event,
 			PersonId:   uuid.UUID{}, // Adjust this as appropriate for your logic.
-			DistinctId: event.Properties["distinct_id"].(string),
+			DistinctId: distinctID,
 			Timestamp:  eventTime,
-			Properties: event.Properties,
+			Properties: e.Properties,
 		}
-
-		// Append the event input to the slice corresponding to the token.
 		eventInputsByToken[token] = append(eventInputsByToken[token], eventInput)
 	}
 
-	// Continue processing eventInputsByToken as needed.
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Events added to Queue"))
 }
