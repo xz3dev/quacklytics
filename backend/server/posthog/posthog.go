@@ -1,6 +1,7 @@
 package posthog
 
 import (
+	"analytics/log"
 	"analytics/model"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
@@ -37,7 +38,6 @@ type posthogEvent struct {
 type posthogEventList []posthogEvent
 
 func PosthogHandler(w http.ResponseWriter, r *http.Request) {
-
 	var events posthogEventList
 
 	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
@@ -45,10 +45,13 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventInputs := make([]model.EventInput, len(events))
+	// Create a map to group event inputs by token.
+	eventInputsByToken := make(map[string][]model.EventInput)
 	now := time.Now()
-	for i, event := range events {
+
+	for _, event := range events {
 		eventTime := now
+
 		if event.Offset != nil {
 			eventTime = eventTime.Add(time.Duration(*event.Offset) * time.Millisecond)
 		}
@@ -58,17 +61,34 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 				eventTime = parsedTime
 			}
 		}
-		eventInputs[i] = model.EventInput{
+
+		// Extract token from properties. Use a default value if token is not present or is not a string.
+		token, ok := event.Properties["token"].(string)
+		if !ok || token == "" {
+			log.Info("No token found in event properties. Skipping event: %s", event.UUID)
+			// no token = skip
+			continue
+		}
+		_, ok = event.Properties["distinct_id"].(string)
+		if !ok {
+			log.Info("No distinct_id found in event properties. Skipping event: %s", event.UUID)
+			// no distinct_id = skip
+			continue
+		}
+
+		eventInput := model.EventInput{
 			EventType:  event.Event,
-			PersonId:   uuid.UUID{},
+			PersonId:   uuid.UUID{}, // Adjust this as appropriate for your logic.
 			DistinctId: event.Properties["distinct_id"].(string),
 			Timestamp:  eventTime,
 			Properties: event.Properties,
 		}
-		// Processing logic for each event in your desired format
-		_ = event
+
+		// Append the event input to the slice corresponding to the token.
+		eventInputsByToken[token] = append(eventInputsByToken[token], eventInput)
 	}
 
+	// Continue processing eventInputsByToken as needed.
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Events added to Queue"))
 }
