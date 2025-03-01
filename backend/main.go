@@ -58,6 +58,7 @@ func registerTables() {
 		&auth.RememberToken{},
 		&auth.RecoveryToken{},
 		&auth.RealtimeToken{},
+		&model.ApiKey{},
 	}
 	appdb.RegisterTables(projectTablesRegistry, appTablesRegistry)
 }

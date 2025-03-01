@@ -130,7 +130,10 @@ func makePropertyMap(properties []schema.EventSchemaProperty) map[string]*schema
 }
 
 func updateProperty(key string, value interface{}, propsByKey map[string]*schema.EventSchemaProperty, schemaID int) {
-	observedType := determineType(key, value)
+	if value == nil {
+		return
+	}
+	observedType := determineType(value)
 
 	strValue := fmt.Sprintf("%v", value)
 
@@ -150,7 +153,7 @@ func updateProperty(key string, value interface{}, propsByKey map[string]*schema
 	addValueIfNotExists(prop, strValue)
 }
 
-func determineType(key string, value interface{}) string {
+func determineType(value interface{}) string {
 	_, isMap := value.(map[string]interface{})
 	if isMap {
 		return "json"

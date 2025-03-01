@@ -1,13 +1,14 @@
 package posthog
 
 import (
+	"analytics/actions"
+	events2 "analytics/events"
 	"analytics/log"
 	"analytics/model"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"net/http"
 	"time"
 )
@@ -74,7 +75,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a map to group event inputs by token.
-	eventInputsByToken := make(map[string][]model.EventInput)
+	eventInputsByToken := make(map[string][]*model.EventInput)
 	now := time.Now()
 	for _, e := range events {
 		eventTime := calculateEventTime(e, now)
@@ -86,12 +87,23 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 
 		eventInput := model.EventInput{
 			EventType:  e.Event,
-			PersonId:   uuid.UUID{}, // Adjust this as appropriate for your logic.
 			DistinctId: distinctId,
 			Timestamp:  eventTime,
 			Properties: e.Properties,
 		}
-		eventInputsByToken[token] = append(eventInputsByToken[token], eventInput)
+		eventInputsByToken[token] = append(eventInputsByToken[token], &eventInput)
+	}
+
+	appdb := svmw.GetAppDB(r)
+
+	for token, eventsByToken := range eventInputsByToken {
+		projectId, err := actions.ValidateAPIKey(appdb, token)
+		if err != nil {
+			log.Error("Error while validating API key: %v. Skipping %d events.", err, len(eventsByToken))
+			continue
+		}
+		events2.ProcessEvents(projectId, eventsByToken)
+
 	}
 
 	w.WriteHeader(http.StatusOK)

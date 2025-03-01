@@ -6,11 +6,10 @@ import (
 	"analytics/log"
 	"analytics/model"
 	"analytics/util"
-	"gorm.io/gorm"
 	"slices"
 )
 
-func FixupPersons(project string, db *gorm.DB) error {
+func FixupPersons(project string) error {
 	analyticsDb := analyticsdb.LookupTable[project]
 	if analyticsDb == nil {
 		return &FixupError{
@@ -22,7 +21,7 @@ func FixupPersons(project string, db *gorm.DB) error {
 		return err
 	}
 
-	p := events.GetOrCreateProcessor(project, db)
+	p := events.GetOrCreateProcessor(project)
 
 	slices.SortFunc(*e, func(i, j model.Event) int {
 		if i.Timestamp.Equal(j.Timestamp) {

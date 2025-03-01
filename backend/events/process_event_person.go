@@ -1,40 +1,69 @@
 package events
 
 import (
-	"analytics/database/analyticsdb"
 	db_ext "analytics/database/db-ext"
 	"analytics/log"
 	"analytics/model"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/marcboeker/go-duckdb"
 	"strings"
 	"time"
 )
 
-func getExistingPersons(projectID string, events []*model.EventInput) (map[uuid.UUID]*model.Person, error) {
-	tx, err := analyticsdb.Tx(projectID)
+func getExistingPersons(p *ProjectProcessor, events []*model.EventInput) (map[string]*model.Person, error) {
+	tx, err := p.dbd.Tx()
 	defer tx.Commit()
 
 	if err != nil {
 		log.Error("Error while creating transaction: ", err)
 		return nil, err
 	}
-	var ids db_ext.UUIDList
+
+	var distinctIds db_ext.StringList
 	for _, event := range events {
-		if event.PersonId != uuid.Nil {
-			ids = append(ids, mapUuid(event.PersonId))
+		if event.DistinctId != "" {
+			distinctIds = append(distinctIds, event.DistinctId)
 		}
 	}
+
+	idMappingRows, err := tx.Query(`
+		SELECT person_id, distinct_id
+		FROM person_distinct_ids
+		WHERE list_contains($1::TEXT[], distinct_id)
+	`, distinctIds)
+	if err != nil {
+		return make(map[string]*model.Person), err
+	}
+	defer idMappingRows.Close()
+	distinctIdMappings := make(map[string]uuid.UUID)
+	personIdsMap := make(map[uuid.UUID]bool)
+	for idMappingRows.Next() {
+		var personId uuid.UUID
+		var distinctId string
+		if err := idMappingRows.Scan(&personId, &distinctId); err != nil {
+			return nil, err
+		}
+		distinctIdMappings[distinctId] = personId
+		personIdsMap[personId] = true
+	}
+
+	personIds := make(db_ext.UUIDList, len(personIdsMap))
+	i := 0
+	for personId := range personIdsMap {
+		personIds[i] = duckdb.UUID(personId)
+		i++
+	}
+
+	persons := make(map[uuid.UUID]*model.Person)
 
 	rows, err := tx.Query(`
         SELECT id, first_seen, properties
         FROM persons
         WHERE list_contains($1::UUID[], id)
-    `, ids)
+    `, personIds)
 	defer rows.Close()
-
-	persons := make(map[uuid.UUID]*model.Person)
 	if err != nil {
 		log.Error("Error querying existing persons: %v", err)
 		return nil, err
@@ -50,42 +79,42 @@ func getExistingPersons(projectID string, events []*model.EventInput) (map[uuid.
 		persons[person.Id] = &person
 	}
 
-	return persons, nil
+	personsByDistinctId := make(map[string]*model.Person)
+	for k, v := range distinctIdMappings {
+		personsByDistinctId[k] = persons[v]
+	}
+
+	return personsByDistinctId, nil
 }
 
-func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
+func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([]*model.Event, error) {
 	startTime := time.Now()
 
-	// Maps to collect unique updates needed
-	//personIds := make(map[uuid.UUID]struct{})
-	distinctIdMappings := make(map[string]uuid.UUID)
+	eventsWithPerson := make([]*model.Event, len(events))
+
 	newPersons := make(map[uuid.UUID]*model.Person)
 	updatedPersons := make(map[uuid.UUID]*model.Person)
+	distinctIdMappings := make(map[string]uuid.UUID)
 
-	existingPersons, err := getExistingPersons(p.projectID, events)
+	existingPersons, err := getExistingPersons(p, events)
 	if err != nil {
 		log.Error("Error getting existing persons: %v", err)
-		return
+		return nil, err
 	}
 
-	log.Info("Project %s: Found %d existing persons", p.projectID, len(existingPersons))
-
-	tx, err := analyticsdb.Tx(p.projectID)
-	defer tx.Commit()
+	tx, err := p.dbd.Tx()
 	if err != nil {
 		log.Error("Error while creating transaction: ", err)
-		return
+		return nil, err
 	}
+	defer tx.Commit()
 
-	for _, event := range events {
-		if event.PersonId != uuid.Nil && event.DistinctId != "" {
-			distinctIdMappings[event.DistinctId] = event.PersonId
-
-			// Check if person exists
-			existing, exists := existingPersons[event.PersonId]
+	for index, event := range events {
+		if event.DistinctId != "" {
+			existing, personExists := existingPersons[event.DistinctId]
 
 			props := make(model.PersonProperties)
-			if exists {
+			if personExists {
 				props = existing.Properties
 			}
 
@@ -103,20 +132,33 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 				props.ApplySetOnceProps(setOncePropsSafe)
 				updated = true
 			}
-			if !exists {
-				newPersons[event.PersonId] = &model.Person{
-					Id:         event.PersonId,
+
+			eventsWithPerson[index] = &model.Event{
+				EventInput: *event,
+				EventId: model.EventId{
+					Id:       uuid.New(),
+					PersonId: uuid.Nil,
+				},
+			}
+			if !personExists {
+				id := uuid.New()
+				newPersons[id] = &model.Person{
+					Id:         id,
 					FirstSeen:  event.Timestamp,
 					Properties: props,
 				}
-			} else if updated {
-				updatedPersons[event.PersonId] = existing
-				props["test"] = "test"
-				updatedPersons[event.PersonId].Properties = props
+				existingPersons[event.DistinctId] = newPersons[id]
+				eventsWithPerson[index].EventId.PersonId = id
+			} else {
+				if updated {
+					updatedPersons[existing.Id] = existing
+					updatedPersons[existing.Id].Properties = props
+				}
+				eventsWithPerson[index].EventId.PersonId = existing.Id
 			}
 		}
 	}
-	personsAppender := analyticsdb.Appender(p.projectID, "persons")
+	personsAppender := p.dbd.Appender("persons")
 
 	if len(newPersons) > 0 {
 		for personId, person := range newPersons {
@@ -135,13 +177,13 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 	err = personsAppender.Close()
 	if err != nil {
 		log.Error("Error closing person appender: %v", err)
-		return
+		return nil, err
 	}
 
 	// Insert distinct ID mappings
-	var values strings.Builder
-	var params []any
 	if len(distinctIdMappings) > 0 {
+		var values strings.Builder
+		params := make([]interface{}, 0)
 		i := 1
 		for distinctId, personId := range distinctIdMappings {
 			if i > 1 {
@@ -151,12 +193,12 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 			params = append(params, personId.String(), distinctId)
 			i += 2
 		}
-	}
-	expandedQuery := fmt.Sprintf("INSERT OR IGNORE INTO person_distinct_ids (person_id, distinct_id) VALUES %s", values.String())
-	_, err = tx.Exec(expandedQuery, params...)
-	if err != nil {
-		log.Info("Error inserting person distinct IDs: %v", err)
-		return
+		expandedQuery := fmt.Sprintf("INSERT OR IGNORE INTO person_distinct_ids (person_id, distinct_id) VALUES %s", values.String())
+		_, err = tx.Exec(expandedQuery, params...)
+		if err != nil {
+			log.Info("Error inserting person distinct IDs: %v", err)
+			return nil, err
+		}
 	}
 
 	if len(updatedPersons) > 0 {
@@ -172,4 +214,5 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) {
 	duration := time.Since(startTime)
 	log.Info("Project %s: Processed people data batch in %v (persons: %d, mappings: %d)",
 		p.projectID, duration, len(newPersons), len(distinctIdMappings))
+	return eventsWithPerson, nil
 }

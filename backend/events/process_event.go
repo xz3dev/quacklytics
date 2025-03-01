@@ -1,8 +1,6 @@
 package events
 
 import (
-	"analytics/database/analyticsdb"
-	"analytics/database/appdb"
 	"analytics/log"
 	"analytics/model"
 	"encoding/json"
@@ -14,18 +12,19 @@ import (
 
 const (
 	batchSize    = 100
-	batchTimeout = 30 * time.Second
+	batchTimeout = 5 * time.Second
 )
 
 func ProcessEvent(projectID string, event *model.EventInput) {
-	db, exists := appdb.ProjectDBs[projectID]
-	if !exists {
-		log.Error("No database found for project: %s", projectID)
-		return
-	}
-
-	processor := GetOrCreateProcessor(projectID, db)
+	processor := GetOrCreateProcessor(projectID)
 	processor.eventQueue <- event
+}
+
+func ProcessEvents(projectID string, events []*model.EventInput) {
+	processor := GetOrCreateProcessor(projectID)
+	for _, event := range events {
+		processor.eventQueue <- event
+	}
 }
 
 // actions/process_event.go
@@ -77,7 +76,7 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 
 	p.ProcessPeopleDataBatch(events)
 
-	appender := analyticsdb.Appender(p.projectID, "events")
+	appender := p.dbd.Appender("events")
 	defer appender.Close()
 
 	for _, event := range events {
@@ -92,7 +91,7 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 			event.Timestamp,
 			event.EventType,
 			event.DistinctId,
-			mapUuid(event.PersonId),
+			mapUuid(uuid.New()), // todo
 			propertiesJson,
 		)
 		if err != nil {

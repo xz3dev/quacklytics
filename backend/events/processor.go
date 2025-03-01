@@ -1,7 +1,10 @@
 package events
 
 import (
+	"analytics/database/analyticsdb"
+	"analytics/database/appdb"
 	"analytics/model"
+	"fmt"
 	"gorm.io/gorm"
 	"sync"
 )
@@ -9,6 +12,7 @@ import (
 type ProjectProcessor struct {
 	projectID  string
 	db         *gorm.DB
+	dbd        analyticsdb.DuckDB
 	eventQueue chan *model.EventInput
 }
 
@@ -17,7 +21,7 @@ var (
 	processorsLock sync.RWMutex
 )
 
-func GetOrCreateProcessor(projectID string, db *gorm.DB) *ProjectProcessor {
+func GetOrCreateProcessor(projectID string) *ProjectProcessor {
 	processorsLock.Lock()
 	defer processorsLock.Unlock()
 
@@ -25,9 +29,20 @@ func GetOrCreateProcessor(projectID string, db *gorm.DB) *ProjectProcessor {
 		return proc
 	}
 
+	db, ok := appdb.ProjectDBs[projectID]
+	if !ok {
+		panic(fmt.Sprintf("Project %s not found", projectID))
+	}
+
+	dbd, ok := analyticsdb.LookupTable[projectID]
+	if !ok {
+		panic(fmt.Sprintf("Project %s not found", projectID))
+	}
+
 	proc := &ProjectProcessor{
 		projectID:  projectID,
 		db:         db,
+		dbd:        dbd,
 		eventQueue: make(chan *model.EventInput, 1000),
 	}
 

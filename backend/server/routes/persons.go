@@ -13,8 +13,7 @@ func SetupPersonsRoutes(mux chi.Router) {
 
 func fixupPersons(w http.ResponseWriter, r *http.Request) {
 	projectId := sv_mw.GetProjectID(r)
-	projectDb := sv_mw.GetProjectDB(r, w)
-	if err := actions.FixupPersons(projectId, projectDb); err != nil {
+	if err := actions.FixupPersons(projectId); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

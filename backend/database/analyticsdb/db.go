@@ -6,35 +6,30 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"fmt"
 	"github.com/marcboeker/go-duckdb"
 )
 
-type DBConnection struct {
-	db         *sql.DB
+type DuckDB interface {
+	Appender(table string) DuckDBAppender
+	Tx() (*sql.Tx, error)
+}
+type DuckDBConnection struct {
+	Db         *sql.DB
 	connection driver.Conn
 }
 
-var LookupTable = make(map[string]*DBConnection)
+var LookupTable = make(map[string]*DuckDBConnection)
 
-func Appender(projectID string, table string) *duckdb.Appender {
-	proj, exists := LookupTable[projectID]
-	if !exists {
-		log.Fatal("Project connection not found: ", projectID)
-	}
-	appender, err := duckdb.NewAppenderFromConn(proj.connection, "", table)
+func (c *DuckDBConnection) Appender(table string) DuckDBAppender {
+	appender, err := duckdb.NewAppenderFromConn(c.connection, "", table)
 	if err != nil {
 		log.Fatal("Error while creating duckdb appender: ", err)
 	}
 	return appender
 }
 
-func Tx(projectID string) (*sql.Tx, error) {
-	proj, exists := LookupTable[projectID]
-	if !exists {
-		return nil, fmt.Errorf("project connection not found: %s", projectID)
-	}
-	return proj.db.BeginTx(context.Background(), nil)
+func (c *DuckDBConnection) Tx() (*sql.Tx, error) {
+	return c.Db.BeginTx(context.Background(), nil)
 }
 
 func InitProjectDB(projectId string, analyticsDbFilePath string) error {
@@ -50,8 +45,8 @@ func InitProjectDB(projectId string, analyticsDbFilePath string) error {
 
 	projectDB := sql.OpenDB(connector)
 
-	LookupTable[projectId] = &DBConnection{
-		db:         projectDB,
+	LookupTable[projectId] = &DuckDBConnection{
+		Db:         projectDB,
 		connection: con,
 	}
 

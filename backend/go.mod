@@ -15,6 +15,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/marcboeker/go-duckdb v1.8.1
 	github.com/volatiletech/authboss/v3 v3.5.0
+	github.com/zeebo/assert v1.3.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/sqlite v1.5.6

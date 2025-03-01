@@ -123,7 +123,7 @@ func (d *DuckDB) SetVersion(version int, dirty bool) error {
 		return &database.Error{OrigErr: err, Query: []byte(query)}
 	}
 
-	log.Info("Upgraded to version: %d", version)
+	log.Info("Upgraded to version: %d (Dirty: %b)", version, dirty)
 	// Also re-write the schema version for nil dirty versions to prevent
 	// empty schema version for failed down migration on the first migration
 	// See: https://github.com/golang-migrate/migrate/issues/330

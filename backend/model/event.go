@@ -8,18 +8,18 @@ import (
 
 type EventInput struct {
 	EventType  string         `json:"eventType"`
-	PersonId   uuid.UUID      `json:"userId"`
 	DistinctId string         `json:"distinctId"`
 	Timestamp  time.Time      `json:"timestamp"`
 	Properties map[string]any `json:"properties"`
 }
 
-type eventId struct {
-	Id uuid.UUID `json:"id"`
+type EventId struct {
+	Id       uuid.UUID `json:"id"`
+	PersonId uuid.UUID `json:"userId"`
 }
 
 type Event struct {
-	eventId
+	EventId
 	EventInput
 }
 
