@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func (p *ProjectProcessor) getExistingPersons(events []*model.EventInput) (map[string]*model.Person, error) {
+func (p *ProjectProcessor) GetExistingPersons(events []*model.EventInput) (map[string]*model.Person, error) {
 	tx, err := p.dbd.Tx()
 	defer tx.Commit()
 
@@ -96,7 +96,7 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([
 	updatedPersons := make(map[uuid.UUID]*model.Person)
 	distinctIdMappings := make(map[string]uuid.UUID)
 
-	existingPersons, err := p.getExistingPersons(events)
+	existingPersons, err := p.GetExistingPersons(events)
 	if err != nil {
 		log.Error("Error getting existing persons: %v", err)
 		return nil, err

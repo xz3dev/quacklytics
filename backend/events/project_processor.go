@@ -39,15 +39,18 @@ func GetOrCreateProcessor(projectID string) *ProjectProcessor {
 		panic(fmt.Sprintf("Project %s not found", projectID))
 	}
 
-	proc := &ProjectProcessor{
+	proc := NewProjectProcessor(projectID, db, dbd)
+	go proc.processEventQueue()
+	processors[projectID] = &proc
+
+	return &proc
+}
+
+func NewProjectProcessor(projectID string, db *gorm.DB, dbd analyticsdb.DuckDB) ProjectProcessor {
+	return ProjectProcessor{
 		projectID:  projectID,
 		db:         db,
 		dbd:        dbd,
 		eventQueue: make(chan *model.EventInput, 1000),
 	}
-
-	go proc.processEventQueue()
-	processors[projectID] = proc
-
-	return proc
 }
