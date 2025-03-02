@@ -11,7 +11,6 @@ type EventProcessor struct {
 	Input  EventProcessorInput
 	Output EventProcessorOutput
 	state  EventProcessorState
-	Error  error
 }
 
 type EventProcessorInput struct {
@@ -26,55 +25,68 @@ type EventProcessorOutput struct {
 }
 
 type EventProcessorState struct {
-	knownPersons map[string]*model.Person // mapping distinctIds to personIds
+	knownPersons map[string]*model.Person // mapping distinctIds to persons
 }
 
-func (e *EventProcessor) Process() {
-	defer func() {
-		if r := recover(); r != nil {
-			e.Error = r.(error)
-		}
-	}()
-
+// Process initializes the state and then runs a series of pipeline stages.
+// If any stage returns an error, the process stops and the error is returned.
+func (e *EventProcessor) Process() error {
+	// Initialize state and output
 	e.state = EventProcessorState{
 		knownPersons: make(map[string]*model.Person),
 	}
-
 	e.Output = EventProcessorOutput{
 		NewPersons:     make(map[string]*model.Person),
 		UpdatedPersons: make(map[string]*model.Person),
 		NewEvents:      make([]*model.Event, 0),
 	}
 
-	e.loadExistingPeople()
-	e.dropInvalidEvents()
-	e.populateResultArray()
-	e.assignPeopleIdsToEvents()
-	e.processPeopleProperties()
-	e.verifyResults()
+	// Define pipeline stages
+	stages := []func() error{
+		e.loadExistingPeople,
+		e.dropInvalidEvents,
+		e.populateResultArray,
+		e.assignPeopleIdsToEvents,
+		e.processPeopleProperties,
+		e.verifyResults,
+	}
+
+	// Run each stage sequentially
+	for _, stage := range stages {
+		if err := stage(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (e *EventProcessor) loadExistingPeople() {
+// loadExistingPeople retrieves existing persons and loads them into state.
+func (e *EventProcessor) loadExistingPeople() error {
 	existingPersons, err := getExistingPersons(e.Input.P, e.Input.Events)
-	panicNN(err)
-
+	if err != nil {
+		return err
+	}
 	for k, v := range existingPersons {
 		e.state.knownPersons[k] = v
 	}
+	return nil
 }
 
-func (e *EventProcessor) dropInvalidEvents() {
-	var newSlice []*model.EventInput
+// dropInvalidEvents filters out events with an empty DistinctId.
+func (e *EventProcessor) dropInvalidEvents() error {
+	validEvents := make([]*model.EventInput, 0, len(e.Input.Events))
 	for _, event := range e.Input.Events {
 		if event.DistinctId == "" {
 			continue
 		}
-		newSlice = append(newSlice, event)
+		validEvents = append(validEvents, event)
 	}
-	e.Input.Events = newSlice
+	e.Input.Events = validEvents
+	return nil
 }
 
-func (e *EventProcessor) populateResultArray() {
+// populateResultArray creates new event objects from the filtered events.
+func (e *EventProcessor) populateResultArray() error {
 	e.Output.NewEvents = make([]*model.Event, 0, len(e.Input.Events))
 	for _, event := range e.Input.Events {
 		e.Output.NewEvents = append(e.Output.NewEvents, &model.Event{
@@ -85,17 +97,21 @@ func (e *EventProcessor) populateResultArray() {
 			EventInput: *event,
 		})
 	}
+	return nil
 }
 
+// determinePerson checks for an existing person by distinctId.
 func (e *EventProcessor) determinePerson(distinctId string) (*model.Person, bool) {
-	existing, doesExist := e.state.knownPersons[distinctId]
-	if doesExist {
-		return existing, true
+	if person, ok := e.state.knownPersons[distinctId]; ok {
+		return person, true
 	}
-	existing, doesExist = e.Output.NewPersons[distinctId]
-	return existing, doesExist
+	if person, ok := e.Output.NewPersons[distinctId]; ok {
+		return person, true
+	}
+	return nil, false
 }
 
+// createNewPersonForEventAndAssignPersonId creates a new person and assigns its id to the event.
 func (e *EventProcessor) createNewPersonForEventAndAssignPersonId(event *model.Event) {
 	person := &model.Person{
 		Id:         uuid.New(),
@@ -106,53 +122,45 @@ func (e *EventProcessor) createNewPersonForEventAndAssignPersonId(event *model.E
 	event.PersonId = person.Id
 }
 
-func (e *EventProcessor) assignPeopleIdsToEvents() {
+// assignPeopleIdsToEvents assigns a person ID to each event by either using an existing person
+// or creating a new one.
+func (e *EventProcessor) assignPeopleIdsToEvents() error {
 	for _, event := range e.Output.NewEvents {
-		existing, doesExist := e.determinePerson(event.DistinctId)
-		if doesExist {
-			event.PersonId = existing.Id
+		if person, exists := e.determinePerson(event.DistinctId); exists {
+			event.PersonId = person.Id
 		} else {
 			e.createNewPersonForEventAndAssignPersonId(event)
 		}
 	}
+	return nil
 }
 
-func (e *EventProcessor) verifyResults() {
-	for _, e := range e.Output.NewEvents {
-		if e.EventId.PersonId == uuid.Nil {
-			panic(fmt.Sprintf("New event %s has no personId", e.Timestamp.String()))
-		}
-	}
-}
-
-func (e *EventProcessor) processPeopleProperties() {
+// processPeopleProperties applies property changes to persons based on event properties.
+func (e *EventProcessor) processPeopleProperties() error {
 	for _, event := range e.Output.NewEvents {
 		var person *model.Person
+		// Check if the person was updated already
 		person, personExists := e.Output.UpdatedPersons[event.DistinctId]
+		// Otherwise, look in the known persons list
 		if !personExists {
 			person, personExists = e.state.knownPersons[event.DistinctId]
 		}
+		// Otherwise, use the new persons created
 		if !personExists {
 			person = e.Output.NewPersons[event.DistinctId]
 		}
 		if person == nil {
-			// error here ?
 			log.Error("Error processing people properties: person is nil")
 			continue
 		}
 
-		setProps := event.Properties["$set"]
-		setOnceProps := event.Properties["$set_once"]
-
-		setPropsSafe, ok := setProps.(map[string]any)
 		updated := false
-		if ok {
-			person.Properties.ApplySetProps(setPropsSafe)
+		if setProps, ok := event.Properties["$set"].(map[string]any); ok {
+			person.Properties.ApplySetProps(setProps)
 			updated = true
 		}
-		setOncePropsSafe, ok := setOnceProps.(map[string]any)
-		if ok {
-			person.Properties.ApplySetOnceProps(setOncePropsSafe)
+		if setOnceProps, ok := event.Properties["$set_once"].(map[string]any); ok {
+			person.Properties.ApplySetOnceProps(setOnceProps)
 			updated = true
 		}
 
@@ -160,10 +168,15 @@ func (e *EventProcessor) processPeopleProperties() {
 			e.Output.UpdatedPersons[event.DistinctId] = person
 		}
 	}
+	return nil
 }
 
-func panicNN(err error) {
-	if err != nil {
-		panic(err)
+// verifyResults ensures that all new events have a valid person ID.
+func (e *EventProcessor) verifyResults() error {
+	for _, event := range e.Output.NewEvents {
+		if event.EventId.PersonId == uuid.Nil {
+			return fmt.Errorf("new event %s has no personId", event.Timestamp.String())
+		}
 	}
+	return nil
 }

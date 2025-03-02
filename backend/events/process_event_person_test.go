@@ -41,7 +41,7 @@ func TestSameDistinctIdResultsInSamePersonId(t *testing.T) {
 	assert.Equal(t, results2[0].PersonId, results2[1].PersonId)
 }
 
-func Test2(t *testing.T) {
+func TestSettingAndOverwritingPersonProperties(t *testing.T) {
 	s := testsetup.Setup(t)
 	defer s.Dispose()
 
@@ -54,6 +54,7 @@ func Test2(t *testing.T) {
 			Timestamp:  time.Time{},
 			Properties: map[string]any{
 				"$set": map[string]any{
+					"prop_0": 0,
 					"prop_1": 1,
 				},
 			},
@@ -85,13 +86,23 @@ func Test2(t *testing.T) {
 		},
 	}
 
-	e.Process()
+	err := e.Process()
 
-	assert.NoError(t, e.Error)
-
-	results2, err := p.ProcessPeopleDataBatch(testEvents)
 	assert.NoError(t, err)
-	assert.NotNil(t, results2)
 
-	assert.Equal(t, results2[0].PersonId, results2[1].PersonId)
+	expectedNewPersonProperties := model.PersonProperties{
+		"prop_0": 0,
+		"prop_1": "a",
+		"prop_2": 2,
+	}
+
+	actualNewPersonDistinctIds := make([]string, 0)
+	for distinctId, _ := range e.Output.NewPersons {
+		actualNewPersonDistinctIds = append(actualNewPersonDistinctIds, distinctId)
+	}
+
+	assert.Equal(t, len(actualNewPersonDistinctIds), 1)
+	person1 := e.Output.NewPersons["id_1"]
+	assert.NotNil(t, person1)
+	assert.DeepEqual(t, person1.Properties, expectedNewPersonProperties)
 }
