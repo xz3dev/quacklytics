@@ -81,17 +81,8 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 	t1 := time.Now()
 	t2 := t1.Add(1 * time.Minute)
 
+	// intentionally wrong order
 	testEvents := []*model.EventInput{
-		{
-			EventType:  "test_type",
-			DistinctId: "id_1",
-			Timestamp:  t1,
-			Properties: map[string]any{
-				"$set": map[string]any{
-					"prop_a": "first",
-				},
-			},
-		},
 		{
 			EventType:  "test_type",
 			DistinctId: "id_1",
@@ -99,6 +90,16 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 			Properties: map[string]any{
 				"$set": map[string]any{
 					"prop_a": "second",
+				},
+			},
+		},
+		{
+			EventType:  "test_type",
+			DistinctId: "id_1",
+			Timestamp:  t1,
+			Properties: map[string]any{
+				"$set": map[string]any{
+					"prop_a": "first",
 				},
 			},
 		},
