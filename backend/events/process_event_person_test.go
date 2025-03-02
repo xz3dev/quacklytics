@@ -1,6 +1,7 @@
 package events
 
 import (
+	"analytics/events/eventprocessor"
 	"analytics/internal/testsetup"
 	"analytics/model"
 	"github.com/zeebo/assert"
@@ -60,8 +61,8 @@ func TestEventProcessorWithEmptyEventList(t *testing.T) {
 	existingPersons, err := p.getExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := EventProcessor{
-		Input: EventProcessorInput{
+	e := eventprocessor.EventProcessor{
+		Input: eventprocessor.Input{
 			Events:          testEvents,
 			ExistingPersons: existingPersons,
 		},
@@ -115,8 +116,8 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 	existingPersons, err := p.getExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := EventProcessor{
-		Input: EventProcessorInput{
+	e := eventprocessor.EventProcessor{
+		Input: eventprocessor.Input{
 			Events:          testEvents,
 			ExistingPersons: existingPersons,
 		},
@@ -161,8 +162,8 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 	existingPersons, err := p.getExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := EventProcessor{
-		Input: EventProcessorInput{
+	e := eventprocessor.EventProcessor{
+		Input: eventprocessor.Input{
 			Events:          testEvents,
 			ExistingPersons: existingPersons,
 		},

@@ -1,4 +1,4 @@
-package events
+package eventprocessor
 
 import (
 	"analytics/log"
@@ -11,35 +11,35 @@ import (
 
 // EventProcessor orchestrates the processing of events.
 type EventProcessor struct {
-	Input  EventProcessorInput
-	Output EventProcessorOutput
-	state  *EventProcessorState
+	Input  Input
+	Output Output
+	state  *State
 }
 
-// EventProcessorInput holds the incoming events and project context.
-type EventProcessorInput struct {
+// Input holds the incoming events and project context.
+type Input struct {
 	Events          []*model.EventInput
 	ExistingPersons map[string]*model.Person
 }
 
-// EventProcessorOutput holds the resulting events and the changes to persons.
-type EventProcessorOutput struct {
+// Output holds the resulting events and the changes to persons.
+type Output struct {
 	NewPersons     map[string]*model.Person
 	UpdatedPersons map[string]*model.Person
 	NewEvents      []*model.Event
 }
 
-// EventProcessorState holds the unified cache of persons as well as markers
+// State holds the unified cache of persons as well as markers
 // for newly created and updated persons.
-type EventProcessorState struct {
+type State struct {
 	persons        map[string]*model.Person // All persons processed (existing and new)
-	newPersons     map[string]*model.Person // Persons created during this run
+	newPersons     map[string]*model.Person // persons created during this run
 	updatedPersons map[string]*model.Person // Existing persons updated during this run
 }
 
 // newEventProcessorState initializes a new state.
-func newEventProcessorState() *EventProcessorState {
-	return &EventProcessorState{
+func newEventProcessorState() *State {
+	return &State{
 		persons:        make(map[string]*model.Person),
 		newPersons:     make(map[string]*model.Person),
 		updatedPersons: make(map[string]*model.Person),
@@ -48,7 +48,7 @@ func newEventProcessorState() *EventProcessorState {
 
 // GetOrCreatePerson retrieves an existing person by distinctId or creates one if absent.
 // It adds newly created persons to both the unified cache and the newPersons map.
-func (s *EventProcessorState) GetOrCreatePerson(distinctId string, timestamp time.Time) *model.Person {
+func (s *State) GetOrCreatePerson(distinctId string, timestamp time.Time) *model.Person {
 	if person, ok := s.persons[distinctId]; ok {
 		return person
 	}
@@ -63,7 +63,7 @@ func (s *EventProcessorState) GetOrCreatePerson(distinctId string, timestamp tim
 }
 
 // MarkUpdated records a person as updated (if not new).
-func (s *EventProcessorState) MarkUpdated(distinctId string, person *model.Person) {
+func (s *State) MarkUpdated(distinctId string, person *model.Person) {
 	// Only mark as updated if this person wasn't created in this run.
 	if _, isNew := s.newPersons[distinctId]; !isNew {
 		s.updatedPersons[distinctId] = person
@@ -74,7 +74,7 @@ func (s *EventProcessorState) MarkUpdated(distinctId string, person *model.Perso
 func (e *EventProcessor) Process() error {
 	// Initialize state and minimal output.
 	e.state = newEventProcessorState()
-	e.Output = EventProcessorOutput{
+	e.Output = Output{
 		NewEvents: make([]*model.Event, 0),
 	}
 
