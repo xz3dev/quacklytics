@@ -78,6 +78,17 @@ func Test2(t *testing.T) {
 		eventQueue: make(chan *model.EventInput, 1),
 	}
 
+	e := EventProcessor{
+		Input: EventProcessorInput{
+			Events: testEvents,
+			P:      &p,
+		},
+	}
+
+	e.Process()
+
+	assert.NoError(t, e.Error)
+
 	results2, err := p.ProcessPeopleDataBatch(testEvents)
 	assert.NoError(t, err)
 	assert.NotNil(t, results2)

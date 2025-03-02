@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
+	"slices"
 	"strings"
 	"time"
 )
@@ -215,4 +216,16 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([
 	log.Info("Project %s: Processed people data batch in %v (persons: %d, mappings: %d)",
 		p.projectID, duration, len(newPersons), len(distinctIdMappings))
 	return eventsWithPerson, nil
+}
+
+func sortEventInputsByTimeAsc(events []*model.EventInput) {
+	slices.SortFunc(events, func(i, j *model.EventInput) int {
+		if i.Timestamp.Equal(j.Timestamp) {
+			return 0
+		}
+		if i.Timestamp.Before(j.Timestamp) {
+			return -1
+		}
+		return 1
+	})
 }
