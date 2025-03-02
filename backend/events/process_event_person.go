@@ -8,12 +8,11 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
-	"slices"
 	"strings"
 	"time"
 )
 
-func getExistingPersons(p *ProjectProcessor, events []*model.EventInput) (map[string]*model.Person, error) {
+func (p *ProjectProcessor) getExistingPersons(events []*model.EventInput) (map[string]*model.Person, error) {
 	tx, err := p.dbd.Tx()
 	defer tx.Commit()
 
@@ -97,7 +96,7 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([
 	updatedPersons := make(map[uuid.UUID]*model.Person)
 	distinctIdMappings := make(map[string]uuid.UUID)
 
-	existingPersons, err := getExistingPersons(p, events)
+	existingPersons, err := p.getExistingPersons(events)
 	if err != nil {
 		log.Error("Error getting existing persons: %v", err)
 		return nil, err
@@ -216,16 +215,4 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([
 	log.Info("Project %s: Processed people data batch in %v (persons: %d, mappings: %d)",
 		p.projectID, duration, len(newPersons), len(distinctIdMappings))
 	return eventsWithPerson, nil
-}
-
-func sortEventInputsByTimeAsc(events []*model.EventInput) {
-	slices.SortFunc(events, func(i, j *model.EventInput) int {
-		if i.Timestamp.Equal(j.Timestamp) {
-			return 0
-		}
-		if i.Timestamp.Before(j.Timestamp) {
-			return -1
-		}
-		return 1
-	})
 }

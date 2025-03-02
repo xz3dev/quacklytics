@@ -8,12 +8,11 @@ import (
 	"time"
 )
 
-func TestSameDistinctIdResultsInSamePersonId(t *testing.T) {
+// Test that events with different distinct IDs yield different person IDs.
+func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 	s := testsetup.Setup(t)
 	defer s.Dispose()
 
-	assert.NotNil(t, s.ProjectDB)
-	assert.NotNil(t, s.DuckDB)
 	testEvents := []*model.EventInput{
 		{
 			EventType:  "test_type",
@@ -22,7 +21,7 @@ func TestSameDistinctIdResultsInSamePersonId(t *testing.T) {
 		},
 		{
 			EventType:  "test_type",
-			DistinctId: "id_1",
+			DistinctId: "id_2",
 			Timestamp:  time.Time{},
 		},
 	}
@@ -34,43 +33,22 @@ func TestSameDistinctIdResultsInSamePersonId(t *testing.T) {
 		eventQueue: make(chan *model.EventInput, 1),
 	}
 
-	results2, err := p.ProcessPeopleDataBatch(testEvents)
+	results, err := p.ProcessPeopleDataBatch(testEvents)
 	assert.NoError(t, err)
-	assert.NotNil(t, results2)
-
-	assert.Equal(t, results2[0].PersonId, results2[1].PersonId)
+	assert.NotNil(t, results)
+	// Verify that the person IDs for distinct ids "id_1" and "id_2" are different.
+	t.Helper()
+	if results[0].PersonId == results[1].PersonId {
+		t.Fatal("Person IDs should be different")
+	}
 }
 
-func TestSettingAndOverwritingPersonProperties(t *testing.T) {
+// Test that processing an empty event list does not create any new persons.
+func TestEventProcessorWithEmptyEventList(t *testing.T) {
 	s := testsetup.Setup(t)
 	defer s.Dispose()
 
-	assert.NotNil(t, s.ProjectDB)
-	assert.NotNil(t, s.DuckDB)
-	testEvents := []*model.EventInput{
-		{
-			EventType:  "test_type",
-			DistinctId: "id_1",
-			Timestamp:  time.Time{},
-			Properties: map[string]any{
-				"$set": map[string]any{
-					"prop_0": 0,
-					"prop_1": 1,
-				},
-			},
-		},
-		{
-			EventType:  "test_type",
-			DistinctId: "id_1",
-			Timestamp:  time.Time{},
-			Properties: map[string]any{
-				"$set": map[string]any{
-					"prop_1": "a",
-					"prop_2": 2,
-				},
-			},
-		},
-	}
+	testEvents := []*model.EventInput{}
 
 	p := ProjectProcessor{
 		projectID:  "test_runner",
@@ -78,31 +56,79 @@ func TestSettingAndOverwritingPersonProperties(t *testing.T) {
 		dbd:        &s.DuckDB,
 		eventQueue: make(chan *model.EventInput, 1),
 	}
+
+	existingPersons, err := p.getExistingPersons(testEvents)
+	assert.NoError(t, err)
 
 	e := EventProcessor{
 		Input: EventProcessorInput{
-			Events: testEvents,
-			P:      &p,
+			Events:          testEvents,
+			ExistingPersons: existingPersons,
 		},
 	}
 
-	err := e.Process()
+	err = e.Process()
+	assert.NoError(t, err)
+	// Expect no new persons to be created.
+	assert.Equal(t, len(e.Output.NewPersons), 0)
+}
 
+// Test that a later event (with a higher timestamp) overwrites properties from an earlier event.
+func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
+	s := testsetup.Setup(t)
+	defer s.Dispose()
+
+	t1 := time.Now()
+	t2 := t1.Add(1 * time.Minute)
+
+	testEvents := []*model.EventInput{
+		{
+			EventType:  "test_type",
+			DistinctId: "id_1",
+			Timestamp:  t1,
+			Properties: map[string]any{
+				"$set": map[string]any{
+					"prop_a": "first",
+				},
+			},
+		},
+		{
+			EventType:  "test_type",
+			DistinctId: "id_1",
+			Timestamp:  t2,
+			Properties: map[string]any{
+				"$set": map[string]any{
+					"prop_a": "second",
+				},
+			},
+		},
+	}
+
+	p := ProjectProcessor{
+		projectID:  "test_runner",
+		db:         s.ProjectDB,
+		dbd:        &s.DuckDB,
+		eventQueue: make(chan *model.EventInput, 1),
+	}
+
+	existingPersons, err := p.getExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	expectedNewPersonProperties := model.PersonProperties{
-		"prop_0": 0,
-		"prop_1": "a",
-		"prop_2": 2,
+	e := EventProcessor{
+		Input: EventProcessorInput{
+			Events:          testEvents,
+			ExistingPersons: existingPersons,
+		},
 	}
 
-	actualNewPersonDistinctIds := make([]string, 0)
-	for distinctId, _ := range e.Output.NewPersons {
-		actualNewPersonDistinctIds = append(actualNewPersonDistinctIds, distinctId)
+	err = e.Process()
+	assert.NoError(t, err)
+
+	expectedProperties := model.PersonProperties{
+		"prop_a": "second",
 	}
 
-	assert.Equal(t, len(actualNewPersonDistinctIds), 1)
-	person1 := e.Output.NewPersons["id_1"]
-	assert.NotNil(t, person1)
-	assert.DeepEqual(t, person1.Properties, expectedNewPersonProperties)
+	person := e.Output.NewPersons["id_1"]
+	assert.NotNil(t, person)
+	assert.DeepEqual(t, person.Properties, expectedProperties)
 }

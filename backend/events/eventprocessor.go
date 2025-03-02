@@ -6,43 +6,79 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"slices"
+	"time"
 )
 
+// EventProcessor orchestrates the processing of events.
 type EventProcessor struct {
 	Input  EventProcessorInput
 	Output EventProcessorOutput
-	state  EventProcessorState
+	state  *EventProcessorState
 }
 
+// EventProcessorInput holds the incoming events and project context.
 type EventProcessorInput struct {
-	Events []*model.EventInput
-	P      *ProjectProcessor
+	Events          []*model.EventInput
+	ExistingPersons map[string]*model.Person
 }
 
+// EventProcessorOutput holds the resulting events and the changes to persons.
 type EventProcessorOutput struct {
 	NewPersons     map[string]*model.Person
 	UpdatedPersons map[string]*model.Person
 	NewEvents      []*model.Event
 }
 
+// EventProcessorState holds the unified cache of persons as well as markers
+// for newly created and updated persons.
 type EventProcessorState struct {
-	knownPersons map[string]*model.Person // mapping distinctIds to persons
+	persons        map[string]*model.Person // All persons processed (existing and new)
+	newPersons     map[string]*model.Person // Persons created during this run
+	updatedPersons map[string]*model.Person // Existing persons updated during this run
 }
 
-// Process initializes the state and then runs a series of pipeline stages.
-// If any stage returns an error, the process stops and the error is returned.
-func (e *EventProcessor) Process() error {
-	// Initialize state and output
-	e.state = EventProcessorState{
-		knownPersons: make(map[string]*model.Person),
+// newEventProcessorState initializes a new state.
+func newEventProcessorState() *EventProcessorState {
+	return &EventProcessorState{
+		persons:        make(map[string]*model.Person),
+		newPersons:     make(map[string]*model.Person),
+		updatedPersons: make(map[string]*model.Person),
 	}
+}
+
+// GetOrCreatePerson retrieves an existing person by distinctId or creates one if absent.
+// It adds newly created persons to both the unified cache and the newPersons map.
+func (s *EventProcessorState) GetOrCreatePerson(distinctId string, timestamp time.Time) *model.Person {
+	if person, ok := s.persons[distinctId]; ok {
+		return person
+	}
+	person := &model.Person{
+		Id:         uuid.New(),
+		FirstSeen:  timestamp,
+		Properties: make(model.PersonProperties),
+	}
+	s.persons[distinctId] = person
+	s.newPersons[distinctId] = person
+	return person
+}
+
+// MarkUpdated records a person as updated (if not new).
+func (s *EventProcessorState) MarkUpdated(distinctId string, person *model.Person) {
+	// Only mark as updated if this person wasn't created in this run.
+	if _, isNew := s.newPersons[distinctId]; !isNew {
+		s.updatedPersons[distinctId] = person
+	}
+}
+
+// Process runs the pipeline stages in order. If any stage fails, it returns an error.
+func (e *EventProcessor) Process() error {
+	// Initialize state and minimal output.
+	e.state = newEventProcessorState()
 	e.Output = EventProcessorOutput{
-		NewPersons:     make(map[string]*model.Person),
-		UpdatedPersons: make(map[string]*model.Person),
-		NewEvents:      make([]*model.Event, 0),
+		NewEvents: make([]*model.Event, 0),
 	}
 
-	// Define pipeline stages
+	// Define the pipeline stages.
 	stages := []func() error{
 		e.sortEventsByTimeAsc,
 		e.loadExistingPeople,
@@ -53,16 +89,21 @@ func (e *EventProcessor) Process() error {
 		e.verifyResults,
 	}
 
-	// Run each stage sequentially
+	// Run each stage sequentially.
 	for _, stage := range stages {
 		if err := stage(); err != nil {
 			return err
 		}
 	}
+
+	// Populate final output from state.
+	e.Output.NewPersons = e.state.newPersons
+	e.Output.UpdatedPersons = e.state.updatedPersons
+
 	return nil
 }
 
-// sort events so they are processed in the right order.
+// sortEventsByTimeAsc sorts the input events by timestamp in ascending order.
 func (e *EventProcessor) sortEventsByTimeAsc() error {
 	slices.SortFunc(e.Input.Events, func(i, j *model.EventInput) int {
 		if i.Timestamp.Equal(j.Timestamp) {
@@ -76,19 +117,15 @@ func (e *EventProcessor) sortEventsByTimeAsc() error {
 	return nil
 }
 
-// loadExistingPeople retrieves existing persons and loads them into state.
+// loadExistingPeople retrieves existing persons from the inputs and loads them into the state.
 func (e *EventProcessor) loadExistingPeople() error {
-	existingPersons, err := getExistingPersons(e.Input.P, e.Input.Events)
-	if err != nil {
-		return err
-	}
-	for k, v := range existingPersons {
-		e.state.knownPersons[k] = v
+	for k, v := range e.Input.ExistingPersons {
+		e.state.persons[k] = v
 	}
 	return nil
 }
 
-// dropInvalidEvents filters out events with an empty DistinctId.
+// dropInvalidEvents filters out events that lack a valid DistinctId.
 func (e *EventProcessor) dropInvalidEvents() error {
 	validEvents := make([]*model.EventInput, 0, len(e.Input.Events))
 	for _, event := range e.Input.Events {
@@ -101,7 +138,7 @@ func (e *EventProcessor) dropInvalidEvents() error {
 	return nil
 }
 
-// populateResultArray creates new event objects from the filtered events.
+// populateResultArray creates event objects from the filtered event inputs.
 func (e *EventProcessor) populateResultArray() error {
 	e.Output.NewEvents = make([]*model.Event, 0, len(e.Input.Events))
 	for _, event := range e.Input.Events {
@@ -116,56 +153,21 @@ func (e *EventProcessor) populateResultArray() error {
 	return nil
 }
 
-// determinePerson checks for an existing person by distinctId.
-func (e *EventProcessor) determinePerson(distinctId string) (*model.Person, bool) {
-	if person, ok := e.state.knownPersons[distinctId]; ok {
-		return person, true
-	}
-	if person, ok := e.Output.NewPersons[distinctId]; ok {
-		return person, true
-	}
-	return nil, false
-}
-
-// createNewPersonForEventAndAssignPersonId creates a new person and assigns its id to the event.
-func (e *EventProcessor) createNewPersonForEventAndAssignPersonId(event *model.Event) {
-	person := &model.Person{
-		Id:         uuid.New(),
-		FirstSeen:  event.Timestamp,
-		Properties: make(model.PersonProperties),
-	}
-	e.Output.NewPersons[event.DistinctId] = person
-	event.PersonId = person.Id
-}
-
-// assignPeopleIdsToEvents assigns a person ID to each event by either using an existing person
-// or creating a new one.
+// assignPeopleIdsToEvents assigns a person ID to each event using the unified state cache.
 func (e *EventProcessor) assignPeopleIdsToEvents() error {
 	for _, event := range e.Output.NewEvents {
-		if person, exists := e.determinePerson(event.DistinctId); exists {
-			event.PersonId = person.Id
-		} else {
-			e.createNewPersonForEventAndAssignPersonId(event)
-		}
+		person := e.state.GetOrCreatePerson(event.DistinctId, event.Timestamp)
+		event.PersonId = person.Id
 	}
 	return nil
 }
 
-// processPeopleProperties applies property changes to persons based on event properties.
+// processPeopleProperties applies property updates from events to their associated persons.
+// If any properties are updated, the person is marked as updated in the state.
 func (e *EventProcessor) processPeopleProperties() error {
 	for _, event := range e.Output.NewEvents {
-		var person *model.Person
-		// Check if the person was updated already
-		person, personExists := e.Output.UpdatedPersons[event.DistinctId]
-		// Otherwise, look in the known persons list
-		if !personExists {
-			person, personExists = e.state.knownPersons[event.DistinctId]
-		}
-		// Otherwise, use the new persons created
-		if !personExists {
-			person = e.Output.NewPersons[event.DistinctId]
-		}
-		if person == nil {
+		person, exists := e.state.persons[event.DistinctId]
+		if !exists || person == nil {
 			log.Error("Error processing people properties: person is nil")
 			continue
 		}
@@ -180,14 +182,14 @@ func (e *EventProcessor) processPeopleProperties() error {
 			updated = true
 		}
 
-		if personExists && updated {
-			e.Output.UpdatedPersons[event.DistinctId] = person
+		if updated {
+			e.state.MarkUpdated(event.DistinctId, person)
 		}
 	}
 	return nil
 }
 
-// verifyResults ensures that all new events have a valid person ID.
+// verifyResults ensures that every processed event has been assigned a valid person ID.
 func (e *EventProcessor) verifyResults() error {
 	for _, event := range e.Output.NewEvents {
 		if event.EventId.PersonId == uuid.Nil {
