@@ -1,8 +1,9 @@
 package eventprocessor
 
-import "analytics/model"
+import (
+	"analytics/model"
+)
 
-// PipelineContext holds only the events.
 type PipelineContext struct {
 	InputEvents  []*model.EventInput
 	OutputEvents []*model.Event

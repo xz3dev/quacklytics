@@ -4,6 +4,7 @@ import (
 	"analytics/events"
 	"analytics/internal/testsetup"
 	"analytics/model"
+	"analytics/schema"
 	"github.com/google/uuid"
 	"github.com/zeebo/assert"
 	"testing"
@@ -36,6 +37,7 @@ func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 	e := NewEventProcessor(&Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
+		EventSchema:     make(map[string]*schema.EventSchema),
 	})
 	results, err := e.Process()
 	assert.NoError(t, err)
@@ -85,6 +87,7 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 	e := NewEventProcessor(&Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
+		EventSchema:     make(map[string]*schema.EventSchema),
 	})
 
 	results, err := e.Process()
@@ -157,6 +160,7 @@ func TestAllEventsHavePersonId(t *testing.T) {
 	e := NewEventProcessor(&Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
+		EventSchema:     make(map[string]*schema.EventSchema),
 	})
 	results, err := e.Process()
 	assert.NoError(t, err)

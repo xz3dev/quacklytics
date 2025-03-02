@@ -1,29 +1,31 @@
 package eventprocessor
 
-import "analytics/model"
+import (
+	"analytics/model"
+	"analytics/schema"
+)
 
-// EventProcessorInput holds the input events and any preexisting persons.
 type Input struct {
 	Events          []*model.EventInput
 	ExistingPersons map[string]*model.Person
+	EventSchema     map[string]*schema.EventSchema
 }
 
-// EventProcessorOutput holds the final results from processing.
 type Output struct {
 	NewPersons     map[string]*model.Person
 	UpdatedPersons map[string]*model.Person
+	Schema         map[string]*schema.EventSchema
 	NewEvents      []*model.Event
 }
 
-// EventProcessor wraps the pipeline and exposes a simple interface.
 type EventProcessor struct {
 	Pipeline      *Pipeline
 	PersonCreator *PersonCreator
 	PersonUpdater *PersonUpdater
+	SchemaDiff    *SchemaDiff
 	Input         *Input
 }
 
-// NewEventProcessor instantiates the processor with the necessary stateful steps.
 func NewEventProcessor(input *Input) *EventProcessor {
 	personCreator := &PersonCreator{}
 	personUpdater := &PersonUpdater{
@@ -39,12 +41,16 @@ func NewEventProcessor(input *Input) *EventProcessor {
 			return allPersons
 		},
 	}
+	schemaDiff := &SchemaDiff{
+		EventSchema: input.EventSchema,
+	}
 
 	// Build the pipeline with steps.
 	pipeline := &Pipeline{
 		Steps: []PipelineStep{
 			&EventSorter{},
 			&EventValidator{},
+			schemaDiff,
 			&PersonPopulator{
 				existingPersons: input.ExistingPersons,
 			},
@@ -58,6 +64,7 @@ func NewEventProcessor(input *Input) *EventProcessor {
 		Pipeline:      pipeline,
 		PersonCreator: personCreator,
 		PersonUpdater: personUpdater,
+		SchemaDiff:    schemaDiff,
 		Input:         input,
 	}
 }
@@ -73,6 +80,7 @@ func (e *EventProcessor) Process() (*Output, error) {
 		NewEvents:      ctx.OutputEvents,
 		NewPersons:     e.PersonCreator.CreatedPersons,
 		UpdatedPersons: e.PersonUpdater.PersonUpdates,
+		Schema:         e.SchemaDiff.EventSchema,
 	}
 	return output, nil
 }

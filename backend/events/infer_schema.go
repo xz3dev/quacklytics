@@ -15,12 +15,12 @@ import (
 
 func ApplySchemaChanges(events []*model.EventInput, db *gorm.DB) {
 	uniqueEventTypes := extractUniqueEventTypes(events)
-	schemas := fetchExistingSchemas(uniqueEventTypes, db)
+	schemas := FetchExistingSchemas(uniqueEventTypes, db)
 	if schemas == nil {
 		return
 	}
 
-	schemasByType := makeSchemaMap(schemas)
+	schemasByType := MakeSchemaMap(schemas)
 	updateSchemasFromEvents(events, schemasByType)
 	persistAllSchemas(schemasByType, db)
 }
@@ -54,7 +54,7 @@ func persistAllSchemas(schemasByType map[string]*schema.EventSchema, db *gorm.DB
 	}
 }
 
-func fetchExistingSchemas(eventTypes []string, db *gorm.DB) []schema.EventSchema {
+func FetchExistingSchemas(eventTypes []string, db *gorm.DB) []schema.EventSchema {
 	var schemas []schema.EventSchema
 	if err := db.Where("event_type in ?", eventTypes).Find(&schemas).Error; err != nil {
 		log.Error("Error fetching event schemas:", err)
@@ -76,7 +76,7 @@ func extractUniqueEventTypes(events []*model.EventInput) []string {
 	return uniqueEventTypes
 }
 
-func makeSchemaMap(schemas []schema.EventSchema) map[string]*schema.EventSchema {
+func MakeSchemaMap(schemas []schema.EventSchema) map[string]*schema.EventSchema {
 	schemaMap := make(map[string]*schema.EventSchema, len(schemas))
 	for _, schema := range schemas {
 		schemaMap[schema.EventType] = &schema
@@ -196,22 +196,6 @@ func convertMapToSlice(propMap map[string]*schema.EventSchemaProperty) []schema.
 		props = append(props, *prop)
 	}
 	return props
-}
-
-func persistSchemaChanges(s *schema.EventSchema, db *gorm.DB) {
-	err := db.Transaction(func(tx *gorm.DB) error {
-		// First persist the properties and get their IDs
-		if err := persistPropertiesAndUpdateIDs(s, db); err != nil {
-			log.Error("Error persisting properties:", err)
-		}
-
-		// Now persist values with the correct property IDs
-		persistPropertyValues(s.Properties, db)
-		return nil
-	})
-	if err != nil {
-		log.Error("Error persisting schema:", err)
-	}
 }
 
 func persistPropertiesAndUpdateIDs(s *schema.EventSchema, db *gorm.DB) error {
