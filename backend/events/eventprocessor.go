@@ -5,6 +5,7 @@ import (
 	"analytics/model"
 	"fmt"
 	"github.com/google/uuid"
+	"slices"
 )
 
 type EventProcessor struct {
@@ -43,6 +44,7 @@ func (e *EventProcessor) Process() error {
 
 	// Define pipeline stages
 	stages := []func() error{
+		e.sortEventsByTimeAsc,
 		e.loadExistingPeople,
 		e.dropInvalidEvents,
 		e.populateResultArray,
@@ -57,6 +59,20 @@ func (e *EventProcessor) Process() error {
 			return err
 		}
 	}
+	return nil
+}
+
+// sort events so they are processed in the right order.
+func (e *EventProcessor) sortEventsByTimeAsc() error {
+	slices.SortFunc(e.Input.Events, func(i, j *model.EventInput) int {
+		if i.Timestamp.Equal(j.Timestamp) {
+			return 0
+		}
+		if i.Timestamp.Before(j.Timestamp) {
+			return -1
+		}
+		return 1
+	})
 	return nil
 }
 
