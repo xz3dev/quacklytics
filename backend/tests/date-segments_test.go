@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Test(t *testing.T) {
+func TestDateSegments(t *testing.T) {
 	testTime := time.Date(2024, 2, 5, 5, 1, 2, 0, time.UTC)
 	cutoff := testTime.AddDate(-2, 0, 0)
 	segments := filecatalog.GenerateTimeFragments(testTime, cutoff)

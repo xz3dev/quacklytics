@@ -1,7 +1,6 @@
 package eventprocessor
 
 import (
-	"analytics/internal/testsetup"
 	"analytics/model"
 	"analytics/schema"
 	"github.com/zeebo/assert"
@@ -10,9 +9,6 @@ import (
 )
 
 func TestSchemaDiff(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
-
 	t1 := time.Now()
 	t2 := t1.Add(1 * time.Minute)
 

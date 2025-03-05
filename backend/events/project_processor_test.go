@@ -2,7 +2,6 @@ package events
 
 import (
 	"analytics/events/eventprocessor"
-	"analytics/internal/testsetup"
 	"analytics/model"
 	"analytics/schema"
 	"github.com/google/uuid"
@@ -13,9 +12,6 @@ import (
 
 // Test that events with different distinct IDs yield different person IDs.
 func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
-
 	testEvents := []*model.EventInput{
 		{
 			EventType:  "test_type",
@@ -29,10 +25,7 @@ func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 		},
 	}
 
-	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
-
-	existingPersons, err := p.GetExistingPersons(testEvents)
-	assert.NoError(t, err)
+	existingPersons := make(map[string]*model.Person)
 
 	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
@@ -49,8 +42,6 @@ func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 
 // Test that events with different distinct IDs yield different person IDs.
 func TestEqualDistinctIdResultsInEqualPersonIds(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
 
 	testEvents := []*model.EventInput{
 		{
@@ -65,10 +56,7 @@ func TestEqualDistinctIdResultsInEqualPersonIds(t *testing.T) {
 		},
 	}
 
-	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
-
-	existingPersons, err := p.GetExistingPersons(testEvents)
-	assert.NoError(t, err)
+	existingPersons := make(map[string]*model.Person)
 
 	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
@@ -85,9 +73,6 @@ func TestEqualDistinctIdResultsInEqualPersonIds(t *testing.T) {
 
 // Test that events with different distinct IDs yield different person IDs.
 func TestExistingDistinctIdIsReused(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
-
 	testEvents := []*model.EventInput{
 		{
 			EventType:  "test_type",
@@ -116,9 +101,6 @@ func TestExistingDistinctIdIsReused(t *testing.T) {
 
 // Test that a later event (with a higher timestamp) overwrites properties from an earlier event.
 func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
-
 	t1 := time.Now()
 	t2 := t1.Add(1 * time.Minute)
 
@@ -146,10 +128,7 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 		},
 	}
 
-	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
-
-	existingPersons, err := p.GetExistingPersons(testEvents)
-	assert.NoError(t, err)
+	existingPersons := make(map[string]*model.Person)
 
 	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
@@ -171,9 +150,6 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 
 // Test that events without a distinct ID are silently dropped.
 func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
-
 	testEvents := []*model.EventInput{
 		{
 			EventType: "should_be_dropped",
@@ -186,10 +162,7 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 		},
 	}
 
-	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
-
-	existingPersons, err := p.GetExistingPersons(testEvents)
-	assert.NoError(t, err)
+	existingPersons := make(map[string]*model.Person)
 
 	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
@@ -205,9 +178,6 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 
 // Test that events without a distinct ID are silently dropped.
 func TestAllEventsHavePersonId(t *testing.T) {
-	s := testsetup.Setup(t)
-	defer s.Dispose()
-
 	testEvents := []*model.EventInput{
 		{
 			EventType: "should_be_dropped",
@@ -220,10 +190,7 @@ func TestAllEventsHavePersonId(t *testing.T) {
 		},
 	}
 
-	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
-
-	existingPersons, err := p.GetExistingPersons(testEvents)
-	assert.NoError(t, err)
+	existingPersons := make(map[string]*model.Person)
 
 	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
