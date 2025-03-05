@@ -1,9 +1,9 @@
 package events
 
 import (
+	"analytics/events/eventprocessor"
 	"analytics/log"
 	"analytics/model"
-	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
 	"slices"
@@ -71,37 +71,43 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 		return 1
 	})
 
-	// Pass project-specific DB to schema inference
-	ApplySchemaChanges(events, p.db)
-
-	p.ProcessPeopleDataBatch(events)
-
-	appender := p.dbd.Appender("events")
-	defer appender.Close()
-
-	for _, event := range events {
-		propertiesJson, err := json.Marshal(event.Properties)
-		if err != nil {
-			log.Error("Project %s: Error marshaling properties: %v", p.projectID, err)
-			continue
-		}
-
-		err = appender.AppendRow(
-			mapUuid(uuid.New()),
-			event.Timestamp,
-			event.EventType,
-			event.DistinctId,
-			mapUuid(uuid.New()), // todo
-			propertiesJson,
-		)
-		if err != nil {
-			log.Error("Project %s: Error appending row: %v", p.projectID, err)
-			continue
-		}
+	e, err := p.newEventProcessor(events)
+	if err != nil {
+		log.Error("Error creating event processor: %v", err)
+		return
 	}
+	result, err := e.Process()
+	if err != nil {
+		log.Error("Error processing events: %v", err)
+		return
+	}
+
+	p.persistResult(result)
 
 	duration := time.Since(startTime)
 	log.Info("Project %s: Processed batch of %d events in %v", p.projectID, len(events), duration)
+}
+
+func (p *ProjectProcessor) persistResult(result *eventprocessor.Output) {
+	p.createPersons(result.NewPersons)
+	p.updatePersons(result.UpdatedPersons)
+	p.persistAllSchemas(result.Schema)
+	p.persistEvents(result.NewEvents)
+}
+
+func (p *ProjectProcessor) newEventProcessor(events []*model.EventInput) (*eventprocessor.EventProcessor, error) {
+	existingPersons, err := p.GetExistingPersons(events)
+	if err != nil {
+		return nil, err
+	}
+	uniqueEventTypes := extractUniqueEventTypes(events)
+	schemas := FetchExistingSchemas(uniqueEventTypes, p.db)
+	schemasByType := MakeSchemaMap(schemas)
+	return eventprocessor.NewEventProcessor(&eventprocessor.Input{
+		Events:          events,
+		ExistingPersons: existingPersons,
+		EventSchema:     schemasByType,
+	}), nil
 }
 
 func mapUuid(id uuid.UUID) duckdb.UUID {

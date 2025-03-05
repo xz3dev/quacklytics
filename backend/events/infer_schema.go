@@ -198,45 +198,6 @@ func convertMapToSlice(propMap map[string]*schema.EventSchemaProperty) []schema.
 	return props
 }
 
-func persistPropertiesAndUpdateIDs(s *schema.EventSchema, db *gorm.DB) error {
-	if len(s.Properties) == 0 {
-		return nil
-	}
-	for i := range s.Properties {
-		prop := &s.Properties[i]
-		result := db.Where(schema.EventSchemaProperty{
-			EventSchemaID: s.ID,
-			Key:           prop.Key,
-		}).Attrs(schema.EventSchemaProperty{
-			Type: prop.Type,
-		}).FirstOrCreate(prop)
-
-		if result.Error != nil {
-			return result.Error
-		}
-	}
-	return nil
-}
-
-func persistPropertyValues(properties []schema.EventSchemaProperty, db *gorm.DB) error {
-	var allValues []schema.EventSchemaPropertyValue
-
-	// Collect all values from all properties
-	for _, prop := range properties {
-		values := prepareValuesForPersistence(prop)
-		allValues = append(allValues, values...)
-	}
-
-	// Only persist if we have values
-	if len(allValues) > 0 {
-		if err := persistValues(allValues, db); err != nil {
-			log.Error("Error persisting property values:", err)
-			return err
-		}
-	}
-	return nil
-}
-
 func prepareValuesForPersistence(prop schema.EventSchemaProperty) []schema.EventSchemaPropertyValue {
 	values := make([]schema.EventSchemaPropertyValue, 0, len(prop.Values))
 	for _, val := range prop.Values {

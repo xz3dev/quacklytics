@@ -27,7 +27,9 @@ type EventProcessor struct {
 }
 
 func NewEventProcessor(input *Input) *EventProcessor {
-	personCreator := &PersonCreator{}
+	personCreator := &PersonCreator{
+		existingPersons: input.ExistingPersons,
+	}
 	personUpdater := &PersonUpdater{
 		existingPersonsFn: func() map[string]*model.Person {
 			allPersons := make(map[string]*model.Person)
@@ -51,9 +53,9 @@ func NewEventProcessor(input *Input) *EventProcessor {
 			&EventSorter{},
 			&EventValidator{},
 			schemaDiff,
-			&PersonPopulator{
-				existingPersons: input.ExistingPersons,
-			},
+			//&PersonPopulator{
+			//	existingPersons: input.ExistingPersons,
+			//},
 			personCreator,
 			personUpdater,
 			&EventVerifier{},

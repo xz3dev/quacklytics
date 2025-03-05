@@ -6,6 +6,7 @@ import (
 	"analytics/log"
 	"analytics/model"
 	"analytics/util"
+	"errors"
 	"fmt"
 	"gorm.io/gorm"
 	"path"
@@ -13,7 +14,11 @@ import (
 )
 
 func ExportEventsToParquet(projectId string, db *gorm.DB, segment model.DataSegment) error {
-	tx, err := analyticsdb.Tx(projectId)
+	dbd, exists := analyticsdb.LookupTable[projectId]
+	if !exists {
+		return errors.New("project not found")
+	}
+	tx, err := dbd.Tx()
 	if err != nil {
 		return err
 	}

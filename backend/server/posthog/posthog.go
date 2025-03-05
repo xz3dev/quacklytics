@@ -103,7 +103,6 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		events2.ProcessEvents(projectId, eventsByToken)
-
 	}
 
 	w.WriteHeader(http.StatusOK)

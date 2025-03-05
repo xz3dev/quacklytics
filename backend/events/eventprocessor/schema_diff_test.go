@@ -1,7 +1,6 @@
 package eventprocessor
 
 import (
-	"analytics/events"
 	"analytics/internal/testsetup"
 	"analytics/model"
 	"analytics/schema"
@@ -37,14 +36,9 @@ func TestSchemaDiff(t *testing.T) {
 		},
 	}
 
-	p := events.NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
-
-	existingPersons, err := p.GetExistingPersons(testEvents)
-	assert.NoError(t, err)
-
 	e := NewEventProcessor(&Input{
 		Events:          testEvents,
-		ExistingPersons: existingPersons,
+		ExistingPersons: make(map[string]*model.Person),
 		EventSchema: map[string]*schema.EventSchema{
 			"test_type": {
 				ID:        0,

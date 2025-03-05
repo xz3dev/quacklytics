@@ -1,7 +1,7 @@
-package eventprocessor
+package events
 
 import (
-	"analytics/events"
+	"analytics/events/eventprocessor"
 	"analytics/internal/testsetup"
 	"analytics/model"
 	"analytics/schema"
@@ -29,12 +29,12 @@ func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 		},
 	}
 
-	p := events.NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
+	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
 
 	existingPersons, err := p.GetExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := NewEventProcessor(&Input{
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
 		EventSchema:     make(map[string]*schema.EventSchema),
@@ -45,6 +45,73 @@ func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 		t.Helper()
 		t.Fail()
 	}
+}
+
+// Test that events with different distinct IDs yield different person IDs.
+func TestEqualDistinctIdResultsInEqualPersonIds(t *testing.T) {
+	s := testsetup.Setup(t)
+	defer s.Dispose()
+
+	testEvents := []*model.EventInput{
+		{
+			EventType:  "test_type",
+			DistinctId: "id_1",
+			Timestamp:  time.Time{},
+		},
+		{
+			EventType:  "test_type",
+			DistinctId: "id_1",
+			Timestamp:  time.Time{},
+		},
+	}
+
+	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
+
+	existingPersons, err := p.GetExistingPersons(testEvents)
+	assert.NoError(t, err)
+
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
+		Events:          testEvents,
+		ExistingPersons: existingPersons,
+		EventSchema:     make(map[string]*schema.EventSchema),
+	})
+	results, err := e.Process()
+	assert.NoError(t, err)
+	if results.NewEvents[0].PersonId != results.NewEvents[1].PersonId {
+		t.Helper()
+		t.Fail()
+	}
+}
+
+// Test that events with different distinct IDs yield different person IDs.
+func TestExistingDistinctIdIsReused(t *testing.T) {
+	s := testsetup.Setup(t)
+	defer s.Dispose()
+
+	testEvents := []*model.EventInput{
+		{
+			EventType:  "test_type",
+			DistinctId: "id_1",
+			Timestamp:  time.Time{},
+		},
+	}
+
+	testUuid := uuid.MustParse("9ad9d3b9-25a3-44bf-82c1-e61c3c7ee19c")
+
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
+		Events: testEvents,
+		ExistingPersons: map[string]*model.Person{
+			"id_1": {
+				Id:         testUuid,
+				FirstSeen:  time.Time{},
+				Properties: nil,
+			},
+		},
+		EventSchema: make(map[string]*schema.EventSchema),
+	})
+	results, err := e.Process()
+	assert.NoError(t, err)
+	assert.Equal(t, results.NewEvents[0].PersonId, testUuid)
 }
 
 // Test that a later event (with a higher timestamp) overwrites properties from an earlier event.
@@ -79,12 +146,12 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 		},
 	}
 
-	p := events.NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
+	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
 
 	existingPersons, err := p.GetExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := NewEventProcessor(&Input{
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
 		EventSchema:     make(map[string]*schema.EventSchema),
@@ -119,14 +186,15 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 		},
 	}
 
-	p := events.NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
+	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
 
 	existingPersons, err := p.GetExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := NewEventProcessor(&Input{
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
+		EventSchema:     make(map[string]*schema.EventSchema),
 	})
 	results, err := e.Process()
 	assert.NoError(t, err)
@@ -152,12 +220,12 @@ func TestAllEventsHavePersonId(t *testing.T) {
 		},
 	}
 
-	p := events.NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
+	p := NewProjectProcessor("test-runner", s.ProjectDB, &s.DuckDB)
 
 	existingPersons, err := p.GetExistingPersons(testEvents)
 	assert.NoError(t, err)
 
-	e := NewEventProcessor(&Input{
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
 		ExistingPersons: existingPersons,
 		EventSchema:     make(map[string]*schema.EventSchema),

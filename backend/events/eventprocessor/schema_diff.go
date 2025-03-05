@@ -15,21 +15,12 @@ type SchemaDiff struct {
 	EventSchema map[string]*schema.EventSchema
 }
 
-// Process applies the schema diff. (Stub implementation.)
 func (sd *SchemaDiff) Process(ctx *PipelineContext) error {
-	mergeEventsIntoSchemas(ctx.InputEvents, sd.EventSchema)
-	return nil
-}
-
-// MergeEventsIntoSchemas iterates over event inputs and merges their properties into the corresponding event schemas.
-func mergeEventsIntoSchemas(
-	events []*model.EventInput,
-	schemasByType map[string]*schema.EventSchema,
-) {
-	for _, event := range events {
-		schema := GetOrCreateSchema(event.EventType, schemasByType)
+	for _, event := range ctx.InputEvents {
+		schema := GetOrCreateSchema(event.EventType, sd.EventSchema)
 		MergeEventPropertiesIntoSchema(event, schema)
 	}
+	return nil
 }
 
 // GetOrCreateSchema retrieves an existing schema for the given event type or creates a new one if it doesn't exist.
