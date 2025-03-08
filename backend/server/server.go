@@ -100,6 +100,8 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
 	mux.Get("/auth/me", routes.CurrentUser)
 
+	mux.Get("/setup", routes.SetupStatus)
+
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
 		setupProjectRoutes(mux)
