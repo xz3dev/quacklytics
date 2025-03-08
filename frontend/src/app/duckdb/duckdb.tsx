@@ -2,7 +2,7 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
 import {FILE_KEY, FileCatalogApi, FileMetadata, useFileCatalog} from "@/services/file-catalog.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
-import {useQueries, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useQueries, useQueryClient} from "@tanstack/react-query";
 import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
 import {useEvents} from "@/services/events.ts";
 import {UTCDate} from "@date-fns/utc";
@@ -61,7 +61,8 @@ export function DuckDB(props: { children: React.ReactNode }) {
         console.error(fileQueries)
     }
 
-    const latestEvents = useEvents(projectId, maxDate ? new UTCDate(maxDate) : undefined)
+    // auto loads the latest missing events
+    useEvents(projectId, maxDate ? new UTCDate(maxDate) : undefined)
     
     const importedChecksums = useRef<Set<string>>(new Set([]))
     useEffect(() => {
