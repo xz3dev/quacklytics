@@ -208,5 +208,5 @@ func TestIdentify(t *testing.T) {
 	results, err := e.Process()
 	assert.NoError(t, err)
 	assert.Equal(t, len(results.MappedPersons), 1)
-	assert.Equal(t, results.MappedPersons["id_2"].Id, testPersonId)
+	assert.Equal(t, results.MappedPersons["id_1"].Id, testPersonId)
 }
