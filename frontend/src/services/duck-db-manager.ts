@@ -92,7 +92,7 @@ export class DuckDbManager {
             await this.importEventsRaw(batch, conn)
         })
 
-        console.debug(`Imported ${events.length} events`)
+        console.debug(`Imported ${events.length} events raw`)
 
         await this.updateEffectiveDateRange(conn)
     }

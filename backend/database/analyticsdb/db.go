@@ -32,15 +32,15 @@ func (c *DuckDBConnection) Tx() (*sql.Tx, error) {
 	return c.Db.BeginTx(context.Background(), nil)
 }
 
-func InitProjectDB(projectId string, analyticsDbFilePath string) error {
+func InitProjectDB(projectId string, analyticsDbFilePath string) {
 	connector, err := duckdb.NewConnector(analyticsDbFilePath+"?"+"access_mode=READ_WRITE", nil)
 	if err != nil {
-		return err
+		log.Fatal("Error while creating duckdb connector: ", err)
 	}
 
 	con, err := connector.Connect(context.Background())
 	if err != nil {
-		return err
+		log.Fatal("Error while connecting to duckdb: ", err)
 	}
 
 	projectDB := sql.OpenDB(connector)
@@ -51,12 +51,10 @@ func InitProjectDB(projectId string, analyticsDbFilePath string) error {
 	}
 
 	if err := testProjectDB(projectDB); err != nil {
-		return err
+		log.Fatal("Error while testing duckdb connection: ", err)
 	}
 
 	analyticsmigrations.MigrateDBIfNeeded(projectId, projectDB)
-
-	return nil
 }
 
 func testProjectDB(db *sql.DB) error {

@@ -7,16 +7,11 @@ import (
 	"analytics/queries"
 	"database/sql"
 	"encoding/json"
-	"errors"
 )
 
-func QueryEvents(projectId string, params *queries.QueryParams) (*[]model.Event, error) {
+func QueryEvents(dbd *analyticsdb.DuckDBConnection, params *queries.QueryParams) (*[]model.Event, error) {
 	if params == nil {
 		params = &queries.EmptyQueryParams
-	}
-	dbd, exists := analyticsdb.LookupTable[projectId]
-	if !exists {
-		return nil, errors.New("project not found")
 	}
 	tx, err := dbd.Tx()
 	if err != nil {

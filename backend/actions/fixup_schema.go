@@ -19,10 +19,10 @@ func FixupSchema(project string, db *gorm.DB) error {
 	analyticsDb := analyticsdb.LookupTable[project]
 	if analyticsDb == nil {
 		return &FixupError{
-			Message: "test",
+			Message: "db not found",
 		}
 	}
-	e, err := QueryEvents(project, nil)
+	e, err := QueryEvents(analyticsDb, nil)
 	if err != nil {
 		return err
 	}

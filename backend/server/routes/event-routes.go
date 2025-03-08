@@ -2,6 +2,7 @@ package routes
 
 import (
 	"analytics/actions"
+	"analytics/database/analyticsdb"
 	"analytics/events"
 	"analytics/log"
 	"analytics/model"
@@ -45,7 +46,13 @@ func QueryEvents(w http.ResponseWriter, r *http.Request) {
 
 	projectId := sv_mw.GetProjectID(r)
 
-	events, err := actions.QueryEvents(projectId, queryParams)
+	analyticsDb := analyticsdb.LookupTable[projectId]
+	if analyticsDb == nil {
+		http.Error(w, "Project not found", http.StatusNotFound)
+		return
+	}
+
+	events, err := actions.QueryEvents(analyticsDb, queryParams)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Error("Error while querying events: %v", err)
