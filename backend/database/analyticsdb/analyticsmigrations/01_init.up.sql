@@ -4,6 +4,5 @@ create table events
     timestamp   timestamp not null,
     event_type  text      not null,
     distinct_id text      not null,
-    person_id   uuid,
     properties  json
 );

@@ -14,8 +14,7 @@ type EventInput struct {
 }
 
 type EventId struct {
-	Id       uuid.UUID `json:"id"`
-	PersonId uuid.UUID `json:"userId"`
+	Id uuid.UUID `json:"id"`
 }
 
 type Event struct {

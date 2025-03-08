@@ -104,9 +104,6 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 func RegenerateFiles(w http.ResponseWriter, r *http.Request) {
 	db := svmw.GetProjectDB(r, w)
 	projectId := svmw.GetProjectID(r)
-	err := actions.GenerateParquetFiles(projectId, db)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	actions.GenerateParquetFiles(projectId, db)
 	w.WriteHeader(http.StatusOK)
 }

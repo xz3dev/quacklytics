@@ -9,11 +9,11 @@ type PersonPopulator struct {
 }
 
 func (p *PersonPopulator) Process(ctx *PipelineContext) error {
-	for _, event := range ctx.OutputEvents {
-		person, exists := p.existingPersons[event.DistinctId]
-		if exists {
-			event.EventId.PersonId = person.Id
-		}
-	}
+	//for _, event := range ctx.OutputEvents {
+	//	person, exists := p.existingPersons[event.DistinctId]
+	//	if exists {
+	//		event.EventId.PersonId = person.Id
+	//	}
+	//}
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func GenerateParquetFiles(projectId string, db *gorm.DB) error {
+func GenerateParquetFiles(projectId string, db *gorm.DB) {
 	now := time.Now()
 	cutoff := now.AddDate(-2, 0, 0)
 	segments := filecatalog.GenerateTimeFragments(now, cutoff)
@@ -23,7 +23,7 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) error {
 
 	existing, err := filecatalog.ListAll(db)
 	if err != nil {
-		return err
+		log.Error("FileGen %s: Could not list existing files: %s", projectId, err)
 	}
 
 	existingFilenames := make(map[string]bool, len(existing))
@@ -54,8 +54,9 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) error {
 	log.Info("FileGen %s: Found %d missing files", projectId, len(missingSegments))
 
 	for _, segment := range missingSegments {
-		ExportEventsToParquet(projectId, db, segment)
+		err := ExportEventsToParquet(projectId, db, segment)
+		if err != nil {
+			log.Error("FileGen %s: Could not export segment %s: %s", projectId, segment.Filename, err)
+		}
 	}
-
-	return nil
 }

@@ -56,19 +56,17 @@ func TestEqualDistinctIdResultsInEqualPersonIds(t *testing.T) {
 		},
 	}
 
-	existingPersons := make(map[string]*model.Person)
-
 	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
 		Events:          testEvents,
-		ExistingPersons: existingPersons,
+		ExistingPersons: make(map[string]*model.Person),
 		EventSchema:     make(map[string]*schema.EventSchema),
 	})
 	results, err := e.Process()
 	assert.NoError(t, err)
-	if results.NewEvents[0].PersonId != results.NewEvents[1].PersonId {
-		t.Helper()
-		t.Fail()
-	}
+
+	id1 := results.NewPersons[results.NewEvents[0].DistinctId].Id
+	id2 := results.NewPersons[results.NewEvents[1].DistinctId].Id
+	assert.Equal(t, id1, id2)
 }
 
 // Test that events with different distinct IDs yield different person IDs.
@@ -96,7 +94,10 @@ func TestExistingDistinctIdIsReused(t *testing.T) {
 	})
 	results, err := e.Process()
 	assert.NoError(t, err)
-	assert.Equal(t, results.NewEvents[0].PersonId, testUuid)
+
+	// no person should have been created nor updated as the id exists and no Properties is nil
+	assert.Equal(t, len(results.UpdatedPersons), 0)
+	assert.Equal(t, len(results.NewPersons), 0)
 }
 
 // Test that a later event (with a higher timestamp) overwrites properties from an earlier event.
@@ -174,35 +175,4 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 	//// Verify that only the event with a distinct ID is processed
 	assert.Equal(t, len(results.NewEvents), 1)
 	assert.Equal(t, results.NewEvents[0].DistinctId, "id_1")
-}
-
-// Test that events without a distinct ID are silently dropped.
-func TestAllEventsHavePersonId(t *testing.T) {
-	testEvents := []*model.EventInput{
-		{
-			EventType: "should_be_dropped",
-			Timestamp: time.Now(),
-		},
-		{
-			EventType:  "test_type",
-			DistinctId: "id_1",
-			Timestamp:  time.Now(),
-		},
-	}
-
-	existingPersons := make(map[string]*model.Person)
-
-	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
-		Events:          testEvents,
-		ExistingPersons: existingPersons,
-		EventSchema:     make(map[string]*schema.EventSchema),
-	})
-	results, err := e.Process()
-	assert.NoError(t, err)
-
-	for _, event := range results.NewEvents {
-		if event.PersonId == uuid.Nil {
-			t.Error("Event misses personId after processing")
-		}
-	}
 }

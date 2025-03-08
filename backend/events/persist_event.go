@@ -23,7 +23,6 @@ func (p *ProjectProcessor) persistEvents(events []*model.Event) {
 			event.Timestamp,
 			event.EventType,
 			event.DistinctId,
-			mapUuid(event.PersonId),
 			propertiesJson,
 		)
 		if err != nil {

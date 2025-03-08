@@ -55,7 +55,6 @@ func parseEvents(rows *sql.Rows) (*[]model.Event, error) {
 			&event.Timestamp,
 			&event.EventType,
 			&event.DistinctId,
-			&event.PersonId,
 			&propertiesJson,
 		); err != nil {
 			log.Error(err.Error(), err)

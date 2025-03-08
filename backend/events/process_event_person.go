@@ -136,8 +136,7 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([
 			eventsWithPerson[index] = &model.Event{
 				EventInput: *event,
 				EventId: model.EventId{
-					Id:       uuid.New(),
-					PersonId: uuid.Nil,
+					Id: uuid.New(),
 				},
 			}
 			if !personExists {
@@ -148,13 +147,12 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(events []*model.EventInput) ([
 					Properties: props,
 				}
 				existingPersons[event.DistinctId] = newPersons[id]
-				eventsWithPerson[index].EventId.PersonId = id
 			} else {
 				if updated {
 					updatedPersons[existing.Id] = existing
 					updatedPersons[existing.Id].Properties = props
 				}
-				eventsWithPerson[index].EventId.PersonId = existing.Id
+				// todo: fix?
 			}
 		}
 	}

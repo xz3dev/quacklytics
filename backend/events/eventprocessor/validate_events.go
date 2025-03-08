@@ -14,8 +14,7 @@ func (v *EventValidator) Process(ctx *PipelineContext) error {
 			valid = append(valid, &model.Event{
 				EventInput: *event,
 				EventId: model.EventId{
-					Id:       uuid.New(),
-					PersonId: uuid.Nil,
+					Id: uuid.New(),
 				},
 			})
 		}
