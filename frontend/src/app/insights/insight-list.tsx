@@ -24,9 +24,10 @@ interface Props {
     filter?: (i: Insight) => boolean
     sort?: (i1: Insight, i2: Insight) => number
     title?: string
+    showCreate?: boolean
 }
 
-export function InsightsList({filter, sort, title}: Props) {
+export function InsightsList({filter, sort, title, showCreate}: Props) {
     const projectId = useProjectId()
     const {data: allInsights = [], isLoading, error} = useInsights(projectId)
     const createInsightMutation = useCreateInsight(projectId)
@@ -86,7 +87,7 @@ export function InsightsList({filter, sort, title}: Props) {
         <div>
             <div className="mb-4 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">{title ?? "Insights"}</h2>
-                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                {showCreate && <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="h-4 w-4"/>
@@ -132,7 +133,7 @@ export function InsightsList({filter, sort, title}: Props) {
                             <Button onClick={handleCreate}>Create</Button>
                         </div>
                     </DialogContent>
-                </Dialog>
+                </Dialog>}
             </div>
 
             <Table>
