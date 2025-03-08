@@ -15,7 +15,7 @@ export function Home() {
             <InsightsList
                 title={"Favorite Insights"}
                 filter={(i) => i.favorite}
-                showCreate={false}
+                createAsFavorite={true}
             />
             {home && <DashboardView dashboardId={home} readOnly={true}/>}
         </div>
