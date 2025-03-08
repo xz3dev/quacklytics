@@ -89,7 +89,7 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 }
 
 func (p *ProjectProcessor) persistResult(result *eventprocessor.Output) {
-	p.createPersons(result.NewPersons)
+	p.createPersons(result.NewPersons, result.MappedPersons)
 	p.updatePersons(result.UpdatedPersons)
 	p.persistAllSchemas(result.Schema)
 	p.persistEvents(result.NewEvents)

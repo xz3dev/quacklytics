@@ -14,34 +14,41 @@ type Input struct {
 type Output struct {
 	NewPersons     map[string]*model.Person
 	UpdatedPersons map[string]*model.Person
+	MappedPersons  map[string]*model.Person
 	Schema         map[string]*schema.EventSchema
 	NewEvents      []*model.Event
 }
 
 type EventProcessor struct {
-	Pipeline      *Pipeline
-	PersonCreator *PersonCreator
-	PersonUpdater *PersonUpdater
-	SchemaDiff    *SchemaDiff
-	Input         *Input
+	Pipeline         *Pipeline
+	PersonIdentifier *PersonIdentifier
+	PersonCreator    *PersonCreator
+	PersonUpdater    *PersonUpdater
+	SchemaDiff       *SchemaDiff
+	Input            *Input
 }
 
 func NewEventProcessor(input *Input) *EventProcessor {
+	personIdentifier := &PersonIdentifier{
+		existingPersons: input.ExistingPersons,
+	}
 	personCreator := &PersonCreator{
 		existingPersons: input.ExistingPersons,
 	}
+	existingPersonsFn := func() map[string]*model.Person {
+		allPersons := make(map[string]*model.Person)
+		created := personCreator.CreatedPersons
+		for k, v := range created {
+			allPersons[k] = v
+		}
+		for k, v := range input.ExistingPersons {
+			allPersons[k] = v
+		}
+		return allPersons
+
+	}
 	personUpdater := &PersonUpdater{
-		existingPersonsFn: func() map[string]*model.Person {
-			allPersons := make(map[string]*model.Person)
-			created := personCreator.CreatedPersons
-			for k, v := range created {
-				allPersons[k] = v
-			}
-			for k, v := range input.ExistingPersons {
-				allPersons[k] = v
-			}
-			return allPersons
-		},
+		existingPersonsFn: existingPersonsFn,
 	}
 	schemaDiff := &SchemaDiff{
 		EventSchema: input.EventSchema,
@@ -53,17 +60,19 @@ func NewEventProcessor(input *Input) *EventProcessor {
 			&EventSorter{},
 			&EventValidator{},
 			schemaDiff,
+			personIdentifier,
 			personCreator,
 			personUpdater,
 		},
 	}
 
 	return &EventProcessor{
-		Pipeline:      pipeline,
-		PersonCreator: personCreator,
-		PersonUpdater: personUpdater,
-		SchemaDiff:    schemaDiff,
-		Input:         input,
+		Pipeline:         pipeline,
+		PersonIdentifier: personIdentifier,
+		PersonCreator:    personCreator,
+		PersonUpdater:    personUpdater,
+		SchemaDiff:       schemaDiff,
+		Input:            input,
 	}
 }
 
@@ -77,6 +86,7 @@ func (e *EventProcessor) Process() (*Output, error) {
 	output := &Output{
 		NewEvents:      ctx.OutputEvents,
 		NewPersons:     e.PersonCreator.CreatedPersons,
+		MappedPersons:  e.PersonIdentifier.MappedPersons,
 		UpdatedPersons: e.PersonUpdater.PersonUpdates,
 		Schema:         e.SchemaDiff.EventSchema,
 	}

@@ -176,3 +176,37 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 	assert.Equal(t, len(results.NewEvents), 1)
 	assert.Equal(t, results.NewEvents[0].DistinctId, "id_1")
 }
+
+func TestIdentify(t *testing.T) {
+	testEvents := []*model.EventInput{
+		{
+			EventType:  "$identify",
+			DistinctId: "id_2",
+			Timestamp:  time.Time{},
+			Properties: map[string]any{
+				"$anon_distinct_id": "id_1",
+			},
+		},
+	}
+
+	testPersonId := uuid.MustParse("9ad9d3b9-25a3-44bf-82c1-e61c3c7ee19c")
+
+	existingPersons := map[string]*model.Person{
+		"id_1": {
+			Id:         testPersonId,
+			FirstSeen:  time.Time{},
+			Properties: nil,
+		},
+	}
+
+	e := eventprocessor.NewEventProcessor(&eventprocessor.Input{
+		Events:          testEvents,
+		ExistingPersons: existingPersons,
+		EventSchema:     make(map[string]*schema.EventSchema),
+	})
+
+	results, err := e.Process()
+	assert.NoError(t, err)
+	assert.Equal(t, len(results.MappedPersons), 1)
+	assert.Equal(t, results.MappedPersons["id_2"].Id, testPersonId)
+}

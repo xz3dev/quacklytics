@@ -10,11 +10,11 @@ import (
 	"strings"
 )
 
-func (p *ProjectProcessor) createPersons(newPersons map[string]*model.Person) {
+func (p *ProjectProcessor) createPersons(newPersons map[string]*model.Person, mappedPersons map[string]*model.Person) {
 	tx, err := p.dbd.Tx()
 	personsAppender := p.dbd.Appender("persons")
 
-	var uniquePersons map[uuid.UUID]*model.Person
+	uniquePersons := make(map[uuid.UUID]*model.Person)
 	for _, person := range newPersons {
 		uniquePersons[person.Id] = person
 	}
@@ -32,6 +32,7 @@ func (p *ProjectProcessor) createPersons(newPersons map[string]*model.Person) {
 		}
 	}
 	personsAppender.Flush()
+	p.createPersonMappings(tx, mappedPersons)
 	p.createPersonMappings(tx, newPersons)
 
 	err = tx.Commit()
@@ -41,11 +42,14 @@ func (p *ProjectProcessor) createPersons(newPersons map[string]*model.Person) {
 	personsAppender.Close()
 }
 
-func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, newPersons map[string]*model.Person) error {
+func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, mappings map[string]*model.Person) error {
+	if len(mappings) == 0 {
+		return nil
+	}
 	var values strings.Builder
 	params := make([]interface{}, 0)
 	i := 1
-	for distinctId, person := range newPersons {
+	for distinctId, person := range mappings {
 		if i > 1 {
 			values.WriteString(", ")
 		}

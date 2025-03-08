@@ -21,10 +21,16 @@ func (p *ProjectProcessor) GetExistingPersons(events []*model.EventInput) (map[s
 		return nil, err
 	}
 
-	var distinctIds db_ext.StringList
+	var allRelevantDistinctIds db_ext.StringList
 	for _, event := range events {
 		if event.DistinctId != "" {
-			distinctIds = append(distinctIds, event.DistinctId)
+			allRelevantDistinctIds = append(allRelevantDistinctIds, event.DistinctId)
+		}
+		if event.EventType == "$identify" {
+			prevDistinctId, ok := event.Properties["$anon_distinct_id"].(string)
+			if ok {
+				allRelevantDistinctIds = append(allRelevantDistinctIds, prevDistinctId)
+			}
 		}
 	}
 
@@ -32,7 +38,7 @@ func (p *ProjectProcessor) GetExistingPersons(events []*model.EventInput) (map[s
 		SELECT person_id, distinct_id
 		FROM person_distinct_ids
 		WHERE list_contains($1::TEXT[], distinct_id)
-	`, distinctIds)
+	`, allRelevantDistinctIds)
 	if err != nil {
 		return make(map[string]*model.Person), err
 	}
