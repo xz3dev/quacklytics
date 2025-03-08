@@ -143,7 +143,7 @@ export function DataManager() {
             </Popover>
         </div>
     )
-};
+}
 
 
 const bytesToMegabytesBinary = (bytes: number, decimals: number = 2): number => {

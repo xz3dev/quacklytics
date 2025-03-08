@@ -53,12 +53,8 @@ func NewEventProcessor(input *Input) *EventProcessor {
 			&EventSorter{},
 			&EventValidator{},
 			schemaDiff,
-			//&PersonPopulator{
-			//	existingPersons: input.ExistingPersons,
-			//},
 			personCreator,
 			personUpdater,
-			&EventVerifier{},
 		},
 	}
 
