@@ -1,0 +1,18 @@
+### Variables
+@baseUrl = http://{{host}}/{{project}}
+
+###
+
+//creates a new apikey
+POST {{baseUrl}}/apikeys
+
+###
+// returns all apikeys but the key is blanked out
+GET {{baseUrl}}/apikeys
+Accept: application/json
+
+###
+// return a single apikey includign the actual key
+GET {{baseUrl}}/apikeys/2
+Accept: application/json
+

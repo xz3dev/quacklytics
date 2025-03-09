@@ -9,6 +9,7 @@ import (
 	"analytics/queries"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
@@ -20,17 +21,34 @@ func SetupPrivateEventRoutes(mux chi.Router) {
 
 func AppendEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	apikey := r.Header.Get("X-API-KEY")
+	if apikey == "" {
+		http.Error(w, "X-API-KEY header not found", http.StatusUnauthorized)
+		return
+	}
+	appdb := sv_mw.GetAppDB(r)
+	projectId, err := actions.ValidateAPIKey(appdb, apikey)
+	if err != nil {
+		http.Error(w, "Invalid ApiKey", http.StatusUnauthorized)
+		return
+	}
 
-	var event model.EventInput
-	err := json.NewDecoder(r.Body).Decode(&event)
+	var event []model.EventInput
+	err = json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Fatal(err.Error(), err)
 		return
 	}
 
-	projectId := sv_mw.GetProjectID(r)
-	events.ProcessEvent(projectId, &event)
+	projectIdFromUrl := sv_mw.GetProjectID(r)
+
+	if projectId != projectIdFromUrl {
+		http.Error(w, fmt.Sprintf("wrong api key for project: %s", projectIdFromUrl), http.StatusBadRequest)
+	}
+	for _, e := range event {
+		events.ProcessEvent(projectId, &e)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
