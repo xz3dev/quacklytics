@@ -7,6 +7,7 @@ import {ReactQueryDevtools} from "@tanstack/react-query-devtools";
 import {ThemeProvider} from "@/components/theme/theme-provider.tsx";
 import {createIDBPersister} from "@lib/indexed-db-persister.ts";
 import {persistQueryClient} from "@tanstack/react-query-persist-client";
+import {Toaster} from "@/components/ui/sonner.tsx";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -39,6 +40,7 @@ createRoot(document.getElementById('root')!).render(
                     <AppRouter/>
                 </BrowserRouter>
                 <ReactQueryDevtools initialIsOpen={false} />
+                <Toaster />
             </QueryClientProvider>
         </ThemeProvider>
     </StrictMode>,

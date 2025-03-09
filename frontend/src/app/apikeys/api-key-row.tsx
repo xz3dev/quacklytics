@@ -3,7 +3,8 @@ import React from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button.tsx";
 import { Eye, EyeOff, Copy } from "lucide-react";
-import {cn} from "@lib/utils/tailwind.ts";
+import { cn } from "@lib/utils/tailwind.ts";
+import { toast } from "sonner";
 
 interface ApiKeyRowProps {
     projectId: string;
@@ -32,8 +33,10 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
         if (data?.key && !isLoading) {
             try {
                 await navigator.clipboard.writeText(data.key);
+                toast.success("API key copied to clipboard!");
             } catch (error) {
                 console.error("Failed to copy API key:", error);
+                toast.error("Failed to copy API key");
             }
         }
     };
@@ -64,9 +67,9 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
             </div>
             <div className="flex items-center space-x-2">
                 <div className="flex items-center bg-muted font-mono text-xs px-4 rounded">
-                    <span
-                        className={cn(isKeyVisible ? "" : "text-muted-foreground", "mr-2")}
-                    >{displayValue}</span>
+                    <span className={cn(isKeyVisible ? "" : "text-muted-foreground", "mr-2")}>
+                        {displayValue}
+                    </span>
                     {isKeyVisible && !isLoading && data?.key && (
                         <>
                             <Button variant="ghost" onClick={handleCopy} className="ml-2 p-1 w-6">
@@ -77,7 +80,6 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
                             </Button>
                         </>
                     )}
-                    {/* If key is hidden, only show the toggle button */}
                     {!isKeyVisible && (
                         <Button variant="ghost" onClick={handleToggleKey} className="ml-2 p-1 w-6">
                             <Eye size={16} />
