@@ -56,7 +56,7 @@ export class DuckDbManager {
                 // Import data from the Parquet file into the events table
                 const query = conn.query(`
                     insert or ignore into events
-                    select *
+                    select distinct on (id) id, timestamp, event_type, distinct_id, person_id, properties
                     from parquet_scan('${file.name}')
                 `)
                     .catch((e) => {
@@ -101,6 +101,8 @@ export class DuckDbManager {
         events: AnalyticsEvent[],
         conn: AsyncDuckDBConnection,
     ): Promise<void> {
+        events = Array.from(new Map(events.map(event => [event.id, event])).values());
+        
         const batchInsertQuery = `
             insert or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
             values
