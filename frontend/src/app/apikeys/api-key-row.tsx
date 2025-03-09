@@ -2,6 +2,8 @@ import { ApiKey, useApiKey, useDeleteApiKey } from "@/services/apikeys.ts";
 import React from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button.tsx";
+import { Eye, EyeOff, Copy } from "lucide-react";
+import {cn} from "@lib/utils/tailwind.ts";
 
 interface ApiKeyRowProps {
     projectId: string;
@@ -9,7 +11,7 @@ interface ApiKeyRowProps {
 }
 
 export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
-    // Disable automatic fetching of the full key until the user clicks the button.
+    // Disable automatic fetching until the API key is requested.
     const { data, refetch, isLoading } = useApiKey(projectId, apiKey.id, {
         enabled: false,
     });
@@ -19,12 +21,20 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
 
     const handleToggleKey = async () => {
         if (isKeyVisible) {
-            // Hide the key
             setIsKeyVisible(false);
         } else {
-            // Fetch and show the key
             void refetch();
             setIsKeyVisible(true);
+        }
+    };
+
+    const handleCopy = async () => {
+        if (data?.key && !isLoading) {
+            try {
+                await navigator.clipboard.writeText(data.key);
+            } catch (error) {
+                console.error("Failed to copy API key:", error);
+            }
         }
     };
 
@@ -38,26 +48,42 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
         }
     };
 
+    // Determine what to display.
+    const displayValue = isKeyVisible
+        ? isLoading
+            ? "Loading..."
+            : data?.key || ""
+        : "********************";
+
     return (
         <div className="flex items-center justify-between border p-4 rounded-md space-x-4">
             <div className="flex-1">
                 <div className="text-sm text-gray-500">
-                    Created at: {format(new Date(apiKey.createdAt), 'PPPpp')}
+                    Created at: {format(new Date(apiKey.createdAt), "PPPpp")}
                 </div>
             </div>
             <div className="flex items-center space-x-2">
-                {isKeyVisible ? (
-                    isLoading ? (
-                        <span>Loading...</span>
-                    ) : (
-                        <span className="font-mono bg-muted text-xs p-2 rounded">
-              {data?.key}
-            </span>
-                    )
-                ) : null}
-                <Button variant="outline" onClick={handleToggleKey}>
-                    {isKeyVisible ? "Hide Key" : "Show Key"}
-                </Button>
+                <div className="flex items-center bg-muted font-mono text-xs px-4 rounded">
+                    <span
+                        className={cn(isKeyVisible ? "" : "text-muted-foreground", "mr-2")}
+                    >{displayValue}</span>
+                    {isKeyVisible && !isLoading && data?.key && (
+                        <>
+                            <Button variant="ghost" onClick={handleCopy} className="ml-2 p-1 w-6">
+                                <Copy size={16} />
+                            </Button>
+                            <Button variant="ghost" onClick={handleToggleKey} className="ml-2 p-1 w-6">
+                                <EyeOff size={16} />
+                            </Button>
+                        </>
+                    )}
+                    {/* If key is hidden, only show the toggle button */}
+                    {!isKeyVisible && (
+                        <Button variant="ghost" onClick={handleToggleKey} className="ml-2 p-1 w-6">
+                            <Eye size={16} />
+                        </Button>
+                    )}
+                </div>
                 <Button variant="destructive" onClick={handleDelete}>
                     Delete
                 </Button>
