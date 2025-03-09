@@ -29,8 +29,8 @@ const apiKeysApi = {
         return http.get<ApiKey>(`${params.projectId}/apikeys/${params.id}`)
     },
 
-    createApiKey: async (projectId: string): Promise<ApiKey> => {
-        return http.post<ApiKey>(`${projectId}/apikeys`)
+    createApiKey: async (projectId: string): Promise<ApiKey[]> => {
+        return http.post<ApiKey[]>(`${projectId}/apikeys`)
     },
 
     // Delete endpoint using the same URL as getApiKey
@@ -80,16 +80,11 @@ export function useCreateApiKey(projectId: string) {
 
     return useMutation({
         mutationFn: () => apiKeysApi.createApiKey(projectId),
-        onSuccess: (newApiKey) => {
+        onSuccess: (keys) => {
             // Update the list
             queryClient.setQueryData<ApiKey[]>(
                 API_KEYS_KEY(projectId),
-                (old = []) => [...old, newApiKey]
-            )
-            // Set an individual cache entry
-            queryClient.setQueryData<ApiKey>(
-                API_KEY_KEY(projectId, newApiKey.id),
-                () => newApiKey
+                () => keys
             )
         },
     })

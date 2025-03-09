@@ -38,7 +38,7 @@ const request = async <T>(
     }
 
     if(response.status === 204) {
-        return
+        return {} as T
     }
 
     try {
