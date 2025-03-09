@@ -6,6 +6,7 @@ import {Button} from "@/components/ui/button"
 import {Textarea} from "@/components/ui/textarea"
 import {formatDistance} from "date-fns"
 import {db} from "@app/duckdb/duckdb.tsx";
+import {JsonViewerThemed} from "@/components/json-viewer-themed.tsx";
 
 const DEFAULT_QUERY = 'SELECT * FROM events order by timestamp desc LIMIT 100 '
 
@@ -94,8 +95,9 @@ export function EventsList() {
                                         <code className="text-xs">{event.personId}</code>
                                     </TableCell>
                                     <TableCell>
-                                        <pre className="text-xs whitespace-pre-wrap max-w-md">
-                                            {JSON.stringify(event.properties, null, 2)}
+                                        <pre className="max-w-md text-xs min-w-[300px]">
+                                            {/*{JSON.stringify(event.properties, null, 2)}*/}
+                                            <JsonViewerThemed json={event.properties} rootName="props"/>
                                         </pre>
                                     </TableCell>
                                 </TableRow>
