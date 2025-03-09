@@ -4,6 +4,7 @@ import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useProjects, useUpdateProjectName} from "@/services/projects.ts";
 import {Spinner} from "@/components/spinner";
 import {ApikeyManagement} from "@app/apikeys/apikey-management.tsx";
+import {toast} from "sonner";
 
 export default function Settings() {
     const projectId = useProjectId()
@@ -26,8 +27,9 @@ export default function Settings() {
 
 
 
-    const handleProjectNameChange = () => {
-        updater.mutate({projectId, value: (document.getElementById("project-name") as HTMLInputElement).value})
+    const handleProjectNameChange = async () => {
+        await updater.mutateAsync({projectId, value: (document.getElementById("project-name") as HTMLInputElement).value})
+        toast.success("Project name updated!")
     };
 
     return (
