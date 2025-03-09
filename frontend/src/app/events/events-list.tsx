@@ -92,10 +92,10 @@ export function EventsList() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <code className="text-xs">{event.personId}</code>
+                                        <code className="text-xs text-muted-foreground">{event.personId}</code>
                                     </TableCell>
                                     <TableCell>
-                                        <pre className="max-w-md text-xs min-w-[300px]">
+                                        <pre className="max-w-md text-xs min-w-[200px]">
                                             {/*{JSON.stringify(event.properties, null, 2)}*/}
                                             <JsonViewerThemed json={event.properties} rootName="props"/>
                                         </pre>
