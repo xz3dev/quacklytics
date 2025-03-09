@@ -45,14 +45,12 @@ export class DuckDbManager {
 
         const queries: Promise<any>[] = []
 
+        console.log(`Importing ${files.length} files...`)
         for (const file of files) {
             console.info(`Importing ${file.name}`)
             const arrayBuffer = await file.blob.arrayBuffer()
-            console.log(`File buffer created for ${file.name}`)
             try {
                 await db.registerFileBuffer(file.name, new Uint8Array(arrayBuffer))
-
-                console.log(`File buffer registered for ${file.name}`)
                 // Import data from the Parquet file into the events table
                 const query = conn.query(`
                     insert or ignore into events
@@ -62,14 +60,12 @@ export class DuckDbManager {
                     .catch((e) => {
                         console.error(`Failed to import ${file.name}: ${e.message}`)
                     })
-                console.log(`Query prepared for ${file.name}`)
 
                 queries.push(query)
             } catch (e) {
                 console.error(e)
             }
         }
-        console.log(`Importing ${files.length} files...`)
         await Promise.all(queries)
         console.log(`DONE: Importing ${files.length} files...`)
 
