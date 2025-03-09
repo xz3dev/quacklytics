@@ -7,6 +7,7 @@ import {Textarea} from "@/components/ui/textarea"
 import {formatDistance} from "date-fns"
 import {db} from "@app/duckdb/duckdb.tsx";
 import {JsonViewerThemed} from "@/components/json-viewer-themed.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const DEFAULT_QUERY = 'SELECT * FROM events order by timestamp desc LIMIT 100 '
 
@@ -84,12 +85,16 @@ export function EventsList() {
                                         {event.eventType}
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex flex-col">
-                                            <span>{event.timestamp.toLocaleString()}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {formatDistance(event.timestamp, new Date(), { addSuffix: true })}
-                                            </span>
-                                        </div>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                              <span className="text-xs text-muted-foreground">
+                                                {formatDistance(event.timestamp, new Date(), {addSuffix: true})}
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <span>{event.timestamp.toLocaleString()}</span>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell>
                                         <code className="text-xs text-muted-foreground">{event.personId}</code>
