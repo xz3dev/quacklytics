@@ -37,6 +37,10 @@ const request = async <T>(
         throw new Error(`HTTP error! status: ${response.status} : ${response.statusText}`)
     }
 
+    if(response.status === 204) {
+        return
+    }
+
     try {
         const result = (await response.json()) as T
         return result

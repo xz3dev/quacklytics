@@ -16,6 +16,26 @@ func SetupAPIKeysRoutes(mux chi.Router) {
 	mux.Post("/apikeys", createKey)
 	mux.Get("/apikeys", getKeys)
 	mux.Get("/apikeys/{keyid}", getKey)
+	mux.Delete("/apikeys/{keyid}", deleteKey)
+}
+
+func deleteKey(w http.ResponseWriter, r *http.Request) {
+
+	keyId, err := strconv.Atoi(chi.URLParam(r, "keyid"))
+	if err != nil {
+		http.Error(w, "Invalid key id", http.StatusBadRequest)
+		return
+	}
+	appdb := svmw.GetAppDB(r)
+	projectId := svmw.GetProjectID(r)
+
+	err = deleteKeyFromDb(appdb, keyId, projectId)
+	if err != nil {
+		http.Error(w, "Failed to delete key", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func getKeys(w http.ResponseWriter, r *http.Request) {
@@ -82,4 +102,8 @@ func queryKeys(db *gorm.DB, projectId string) []model.ApiKey {
 	}
 
 	return keys
+}
+
+func deleteKeyFromDb(db *gorm.DB, keyId int, projectId string) error {
+	return db.Delete(&model.ApiKey{}, "id = ? and project = ?", keyId, projectId).Error
 }

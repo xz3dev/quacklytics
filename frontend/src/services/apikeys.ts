@@ -15,8 +15,8 @@ export interface ApiKey {
 
 // Query keys
 export const API_KEYS_KEY = (projectId: string) => ['apiKeys', projectId] as const
-export const API_KEY_KEY = (projectId: string, id: number) =>
-    [...API_KEYS_KEY(projectId), id] as const
+export const API_KEY_KEY = (projectId: string, id: number): string[] =>
+    [...API_KEYS_KEY(projectId), id.toString()] as const
 
 // API key API functions
 const apiKeysApi = {
@@ -31,6 +31,11 @@ const apiKeysApi = {
 
     createApiKey: async (projectId: string): Promise<ApiKey> => {
         return http.post<ApiKey>(`${projectId}/apikeys`)
+    },
+
+    // Delete endpoint using the same URL as getApiKey
+    deleteApiKey: async (params: { projectId: string; id: number }): Promise<void> => {
+        await http.del(`${params.projectId}/apikeys/${params.id}`)
     },
 }
 
@@ -86,6 +91,26 @@ export function useCreateApiKey(projectId: string) {
                 API_KEY_KEY(projectId, newApiKey.id),
                 () => newApiKey
             )
+        },
+    })
+}
+
+// Mutation hook for deleting an API key
+export function useDeleteApiKey(projectId: string) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (id: number) => apiKeysApi.deleteApiKey({ projectId, id }),
+        onSuccess: (_, id) => {
+            // Remove the key from the list
+            queryClient.setQueryData<ApiKey[]>(
+                API_KEYS_KEY(projectId),
+                (old = []) => old.filter((apiKey) => apiKey.id !== id)
+            )
+            // Remove the individual query cache
+            queryClient.removeQueries({
+                queryKey: API_KEY_KEY(projectId, id),
+            })
         },
     })
 }
