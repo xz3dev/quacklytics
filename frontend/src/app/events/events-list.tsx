@@ -9,7 +9,7 @@ import {db} from "@app/duckdb/duckdb.tsx";
 
 const DEFAULT_QUERY = 'SELECT * FROM events order by timestamp desc LIMIT 100 '
 
-export function EventsViewer() {
+export function EventsList() {
     const [events, setEvents] = useState<AnalyticsEvent[]>([])
     const [query, setQuery] = useState(DEFAULT_QUERY)
     const [isLoading, setIsLoading] = useState(false)

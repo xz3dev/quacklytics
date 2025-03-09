@@ -4,7 +4,6 @@ import {AppFrame} from "@app/appframe.tsx";
 import LoginPage from "@app/login/page.tsx";
 import {InsightsList} from "@app/insights/insight-list.tsx";
 import {InsightView} from "@app/insights/insight-view.tsx";
-import {EventsViewer} from "@app/events/events-viewer.tsx";
 import {Home} from "@/app/home/home";
 import {DashboardList} from "@app/dashboards/dashboard-list.tsx";
 import {DashboardView} from "@app/dashboards/dashboard-view.tsx";
@@ -15,6 +14,7 @@ import {ProjectsList} from "@app/projects/projects-list.tsx";
 import RegisterPage from "@app/register/page.tsx";
 import {ErrorBoundary} from "@/errors/global-error-handler.tsx";
 import Settings from "@/settings/settings.tsx";
+import {EventsList} from "@app/events/events-list.tsx";
 
 
 export function AppRouter() {
@@ -35,7 +35,7 @@ export function AppRouter() {
                     <Route path="dashboards/:dashboardid" element={<DashboardRoute></DashboardRoute>}></Route>
                     <Route path="insights" element={<InsightsList></InsightsList>}></Route>
                     <Route path="insights/:insightid" element={<InsightRoute></InsightRoute>}></Route>
-                    <Route path="events" element={<EventsViewer></EventsViewer>}></Route>
+                    <Route path="events" element={<EventsList></EventsList>}></Route>
                     <Route path="data" element={<SchemaView></SchemaView>}></Route>
                     {/*<Route path="data/realtime" element={<RealtimeEventsList></RealtimeEventsList>}></Route>*/}
                     {/*<Route path="data/schema" element={<SchemaView></SchemaView>}></Route>*/}
