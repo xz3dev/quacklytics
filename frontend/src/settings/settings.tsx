@@ -3,6 +3,7 @@ import {Input} from "@/components/ui/input.tsx";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useProjects, useUpdateProjectName} from "@/services/projects.ts";
 import {Spinner} from "@/components/spinner";
+import {ApikeyManagement} from "@app/apikeys/apikey-management.tsx";
 
 export default function Settings() {
     const projectId = useProjectId()
@@ -41,6 +42,7 @@ export default function Settings() {
             <Button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleProjectNameChange}>
                 Save
             </Button>
+            <ApikeyManagement/>
         </div>
     );
 }
