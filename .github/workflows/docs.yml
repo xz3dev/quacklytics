@@ -27,16 +27,16 @@ jobs:
       # Step 3: Install dependencies
       - name: Install dependencies
         run: npm install
-        working-directory: /home
+        working-directory: ./home
 
       # Step 4: Build the project
       - name: Build the project
         run: npm run build
-        working-directory: /home
+        working-directory: ./home
 
       # Step 5: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /home/dist # Path to the output folder where Astro builds static files
+          publish_dir: ./home/dist # Path to the output folder where Astro builds static files
