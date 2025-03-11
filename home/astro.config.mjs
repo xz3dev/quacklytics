@@ -1,12 +1,19 @@
 // @ts-check
 import {defineConfig} from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightImageZoom from 'starlight-image-zoom';
 
 // https://astro.build/config
 export default defineConfig({
     integrations: [
         starlight({
-            title: 'Quacklytics Docs',
+            title: 'Quacklytics',
+            customCss: [
+                './src/styles/main.css',
+            ],
+            plugins: [
+                starlightImageZoom(),
+            ],
             social: {
                 github: 'https://github.com/xz3dev/quacklytics/',
             },

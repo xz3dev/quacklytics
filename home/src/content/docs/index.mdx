@@ -1,9 +1,9 @@
 ---
-title: Quacklytics
+title: Simple, self-hostable analytics
 description: Your minimal analytics stack is waiting or you
 template: splash
 hero:
-  tagline: Your no-database, hassle-free analytics stack is waiting or you
+  tagline: Leveraging your computers resources instead of paying for cloud VMs.
   image:
     file: ../../assets/birb.svg
   actions:
@@ -17,19 +17,29 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## How It Works
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+Quacklytics is designed to run analytical queries using the power of **DuckDB** and **SQLite** by pulling data straight from simple files on your system. This means no complicated backend infrastructure, making analytics not only efficient but also budget-friendly.
+
+<CardGrid>
+    <Card title="Browser-Powered Analytics" icon="laptop">
+        Run high-performance queries directly in your browser.
+    </Card>
+    <Card title="Effortless Deployment" icon="rocket">
+        One image, one binary – deploy with ease using Docker.
+    </Card>
+    <Card title="Open Source Freedom" icon="open-book">
+        Customize and extend Quacklytics to fit your needs.
+    </Card>
+    <Card title="Cost-Efficient" icon="approve-check">
+        Save on computing costs by leveraging your system's resources.
+    </Card>
 </CardGrid>
+
+## Getting Started
+
+Follow our [Docker deployment guide](/start-here/docker) to bring your analytics service online rapidly.
+
+Learn more about contributing, customizing the configuration, and seamlessly integrating Quacklytics into your workflow in our [documentation](/start-here/introduction).
+
+Happy Quacking!
