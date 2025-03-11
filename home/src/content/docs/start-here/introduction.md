@@ -27,3 +27,9 @@ computations to the client side, instead of running everything on the server sid
 Cloud resources _can be expensive_. But that heavily depends on the provider you choose, and the type of resources 
 your projects require. Quacklytics aims to be cost-efficient for self-hosting.
 Storage itself is cheap and a structure of directories and files is very easy to maintain, scale, migrate and back-up. 
+
+## Screenshots
+
+![Dashboard](../../../assets/dashboard.png)
+![Insight](../../../assets/insight.png)
+

@@ -1,0 +1,54 @@
+---
+title: Sending Data
+---
+
+import {Aside} from "@astrojs/starlight/components";
+
+<Aside type="tip">
+You can use Posthog Client SDKs to send data to Quacklytics. Supported features include:
+- Sending Events
+- Identifying persons
+</Aside>
+
+## Sending events via HTTPs
+
+The **AppendEvent** endpoint allows you to send an event to the server for processing. The endpoint is defined as a **POST** request and expects a JSON payload that follows the `EventInput` structure. Additionally, the URL includes a project identifier as a parameter.
+
+### Endpoint URL
+
+Replace `{projectid}` with your projects ID.
+
+```
+POST /api/{projectid}/event
+```
+
+### Request Format
+
+**Request Headers**
+
+- **Content-Type:** `application/json`
+- **X-API-KEY:** `your-api-key` - Create a new api-key via the project settings.
+
+**Request Body**
+
+The endpoint accepts an array of events as payload. The payload should include the following fields:
+
+- **eventType**: The type of event (e.g., `"user_signup"`).
+- **distinctId**: A distinct identifier for the session. This can be connected to a person profile using an $identify event.
+- **timestamp**: The time when the event occurred. Expects to be in ISO 8601 format.
+- **properties**: A map of additional properties. This is stored as JSON and can be queried.
+
+### Example
+
+```json
+{
+  "eventType": "user_signup",
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "distinctId": "unique_user_123",
+  "timestamp": "2025-02-23T10:00:00Z",
+  "properties": {
+    "plan": "premium",
+    "referrer": "google"
+  }
+}
+```
