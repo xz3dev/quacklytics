@@ -7,8 +7,6 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: [ self-hosted, linux, ARM64 ]
-
     steps:
       - name: list
         run: ls -la
