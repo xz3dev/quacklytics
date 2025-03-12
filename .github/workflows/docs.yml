@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+
 
 jobs:
   build-and-deploy:
@@ -11,32 +13,27 @@ jobs:
     steps:
       - name: list
         run: ls -la
-      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18 # Use the Node.js version required by your project
+          node-version: 18
           cache: 'npm'
           cache-dependency-path: ./home/package-lock.json
 
 
-      # Step 3: Install dependencies
       - name: Install dependencies
         run: npm install
         working-directory: ./home
 
-      # Step 4: Build the project
       - name: Build the project
         run: npm run build
         working-directory: ./home
 
-      # Step 5: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./home/dist # Path to the output folder where Astro builds static files
+          publish_dir: ./home/dist
