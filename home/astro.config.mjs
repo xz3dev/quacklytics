@@ -5,6 +5,7 @@ import starlightImageZoom from 'starlight-image-zoom';
 
 // https://astro.build/config
 export default defineConfig({
+    base: '/',
     integrations: [
         starlight({
             title: 'Quacklytics',
