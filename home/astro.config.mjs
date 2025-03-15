@@ -25,6 +25,7 @@ export default defineConfig({
                     items: [
                         {slug: 'start-here/introduction'},
                         {slug: 'start-here/docker'},
+                        {slug: 'start-here/roadmap'},
                     ],
                 },
                 {
