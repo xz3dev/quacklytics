@@ -3,9 +3,6 @@ title: Importing Data
 description: Learn to import your existing data into Quacklytics.
 ---
 
-Guides lead a user through a specific task they want to accomplish, often with a sequence of steps.
-Writing a good guide requires thinking about what your users are trying to do.
+Simply send all the data to the events endpoint via https for now. There is little magic to it. 
 
-## Further reading
-
-- Read [about how-to guides](https://diataxis.fr/how-to-guides/) in the Diátaxis framework
+If you need more information, create an issue on [Github](https://github.com/xz3dev/quacklytics/issues).
