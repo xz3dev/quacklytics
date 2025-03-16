@@ -2,14 +2,19 @@
 title: Sending Data
 ---
 
+
 import {Aside} from "@astrojs/starlight/components";
 
 <Aside type="tip">
-You can use Posthog Client SDKs to send data to Quacklytics. Supported features include:
-- Sending Events
-- Identifying persons
+    <div>
+        You can use Posthog Client SDKs to send data to Quacklytics. Supported features include:
+        <ul class="!mt-2 !ml-4 list-disc list-outside !mb-4">
+            <li>Sending Events</li>
+            <li>Identifying persons</li>
+        </ul>
+    </div>
 
-Quacklytics is not affiliated with Posthog in any way.
+    <p class="text-xs opacity-60 !my-0">Quacklytics is not affiliated with Posthog in any way.</p>
 </Aside>
 
 ## Sending events via HTTPs
