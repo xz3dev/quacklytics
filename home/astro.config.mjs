@@ -2,11 +2,17 @@
 import {defineConfig} from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightImageZoom from 'starlight-image-zoom';
+import tailwindcss from "@tailwindcss/vite";
 
 // https://astro.build/config
 export default defineConfig({
     site: 'https://quacklytics.com',
     base: '/',
+    vite: {
+        plugins: [
+            tailwindcss()
+        ],
+    },
     integrations: [
         starlight({
             title: 'Quacklytics',
@@ -40,6 +46,9 @@ export default defineConfig({
                     autogenerate: {directory: 'reference'},
                 },
             ],
+            components: {
+                Footer: './src/components/Footer.astro',
+            },
         }),
     ],
 });
