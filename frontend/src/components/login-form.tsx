@@ -6,7 +6,7 @@ import {Label} from "@/components/ui/label"
 import birb from "@assets/birb.svg"
 import {useAuthStore} from "@/services/auth.ts";
 import {FormEvent, useState} from "react";
-import {Link, useNavigate} from "react-router";
+import {useNavigate} from "react-router";
 
 export function LoginForm({
                               className,

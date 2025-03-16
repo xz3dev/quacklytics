@@ -7,11 +7,18 @@ import (
 	"analytics/database/appdb"
 	"analytics/model"
 	"analytics/projects"
+	"errors"
 	"gorm.io/gorm"
 	"path/filepath"
+	"regexp"
 )
 
-func CreateProject(projectName string) model.ProjectFiles {
+var pattern = regexp.MustCompile("^[a-zA-Z0-9_-]+$")
+
+func CreateProject(projectName string) (model.ProjectFiles, error) {
+	if !pattern.MatchString(projectName) {
+		return model.ProjectFiles{}, errors.New("project name must only contain letters, numbers, underscores and dashes")
+	}
 	project := model.ProjectFiles{
 		ID:              projectName,
 		DbFile:          filepath.Join(config.Config.Paths.Database, config.Config.Database.ProjectPrefix+projectName+".db"),
@@ -25,7 +32,7 @@ func CreateProject(projectName string) model.ProjectFiles {
 		GenerateParquetFiles(projectId, db)
 	})
 
-	return project
+	return project, nil
 }
 
 func CreateDefaultProject() {

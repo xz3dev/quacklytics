@@ -1,6 +1,6 @@
 import * as React from "react"
 import {ChevronsUpDown, Plus} from "lucide-react"
-import {Dialog, DialogContent, DialogHeader, DialogTitle,} from "@/components/ui/dialog"
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,9 +13,9 @@ import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/co
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import {useCreateProject, useProjects} from "@/services/projects"
-import {useProjectSwitch} from "@/hooks/use-project-switch.tsx";
-import {Project} from "@/model/project.ts";
-import {useProjectId} from "@/hooks/use-project-id.tsx";
+import {useProjectSwitch} from "@/hooks/use-project-switch.tsx"
+import {Project} from "@/model/project.ts"
+import {useProjectId} from "@/hooks/use-project-id.tsx"
 
 export function ProjectSwitcher() {
     const {isMobile} = useSidebar()
@@ -28,17 +28,35 @@ export function ProjectSwitcher() {
     const activeProject = projects.find((project) => project.id === activeProjectId)
     const [isCreateOpen, setIsCreateOpen] = React.useState(false)
     const [newProjectName, setNewProjectName] = React.useState("")
+    const [errorMessage, setErrorMessage] = React.useState("")
 
     const handleCreateProject = async () => {
-        if (newProjectName.trim()) {
-            try {
-                await createProject.mutateAsync(newProjectName)
-                setNewProjectName("")
-                setIsCreateOpen(false)
-                projectSwitch(newProjectName)
-            } catch (error) {
-                console.error("Failed to create project:", error)
-            }
+        const trimmedName = newProjectName.trim()
+        const namePattern = /^[a-zA-Z0-9](?:[a-zA-Z0-9_-]*[a-zA-Z0-9])?$/
+
+        // Clear any previous error message
+        setErrorMessage("")
+
+        if (!trimmedName) {
+            setErrorMessage("Project name cannot be empty.")
+            return
+        }
+
+        if (!namePattern.test(trimmedName)) {
+            setErrorMessage(
+                "Invalid project name. Only letters, numbers, underscores, and hyphens are allowed. Hyphens and underscores cannot be at the start or end of the name."
+            )
+            return
+        }
+
+        try {
+            await createProject.mutateAsync(trimmedName)
+            setNewProjectName("")
+            setIsCreateOpen(false)
+            projectSwitch(trimmedName)
+        } catch (error: any) {
+            console.error("Failed to create project:", error)
+            setErrorMessage("Failed to create project. Please try again later.")
         }
     }
 
@@ -58,13 +76,12 @@ export function ProjectSwitcher() {
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         >
                             <div
-                                className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
+                            >
                                 {activeProject.name?.[0]?.toUpperCase()}
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold">
-                                  {activeProject.name}
-                                </span>
+                                <span className="truncate font-semibold">{activeProject.name}</span>
                             </div>
                             <ChevronsUpDown className="ml-auto"/>
                         </SidebarMenuButton>
@@ -75,9 +92,7 @@ export function ProjectSwitcher() {
                         side={isMobile ? "bottom" : "right"}
                         sideOffset={4}
                     >
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">
-                            Projects
-                        </DropdownMenuLabel>
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">Projects</DropdownMenuLabel>
                         {projects.map((project) => (
                             <DropdownMenuItem
                                 key={project.id}
@@ -91,44 +106,45 @@ export function ProjectSwitcher() {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator/>
-                        <DropdownMenuItem
-                            className="gap-2 p-2"
-                            onClick={() => setIsCreateOpen(true)}
-                        >
-                            <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-                                <Plus className="size-4"/>
-                            </div>
-                            <div className="font-medium text-muted-foreground">Add project</div>
+                        <DropdownMenuItem className="flex items-center gap-2 p-2" onClick={() => setIsCreateOpen(true)}>
+                            <Plus size={16}/>
+                            Create new project
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>
 
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create New Project</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <Input
-                            placeholder="Project name"
-                            value={newProjectName}
-                            onChange={(e) => setNewProjectName(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    void handleCreateProject()
-                                }
-                            }}
-                        />
-                        <Button
-                            onClick={handleCreateProject}
-                            disabled={createProject.isPending}
-                        >
-                            {createProject.isPending ? "Creating..." : "Create Project"}
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Project creation dialog */}
+            {isCreateOpen && (
+                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Create New Project</DialogTitle>
+                        </DialogHeader>
+                        {errorMessage && (
+                            <div className="mb-2 rounded bg-red-100 p-2 text-red-800" role="alert">
+                                {errorMessage}
+                            </div>
+                        )}
+                        <div className="mt-4">
+                            <Input
+                                placeholder="Enter project name"
+                                value={newProjectName}
+                                onChange={(e) => {
+                                    setNewProjectName(e.target.value)
+                                    setErrorMessage("") // clear error on change
+                                }}
+                            />
+                        </div>
+                        <div className="mt-4 flex justify-end gap-2">
+                            <Button variant="secondary" onClick={() => setIsCreateOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleCreateProject}>Create</Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </SidebarMenu>
     )
 }

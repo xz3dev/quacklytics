@@ -73,9 +73,31 @@ func CreateProject(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	project := actions.CreateProject(input.Name)
+	project, err := actions.CreateProject(input.Name)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
+	}
 
-	json.NewEncoder(writer).Encode(project)
+	projDb, exists := appdb.ProjectDBs[project.ID]
+	if !exists {
+		http.Error(writer, fmt.Sprintf("Project DB not found: %s", project.ID), http.StatusInternalServerError)
+		return
+	}
+
+	settings, err := projects.QuerySettings(project.ID, projDb)
+	autoload, err := strconv.Atoi(settings[projects.AutoLoadRange])
+	if err != nil {
+		log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects.AutoLoadRange])
+	}
+	projectData := projectData{
+		Id:        project.ID,
+		Name:      project.ID,
+		Partition: settings[projects.Partition],
+		AutoLoad:  autoload,
+		Files:     model.ProjectFiles{},
+	}
+
+	json.NewEncoder(writer).Encode(projectData)
 }
 
 func SetupProjectSpecificRoutes(mux chi.Router) {

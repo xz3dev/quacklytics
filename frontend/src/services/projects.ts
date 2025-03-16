@@ -39,6 +39,7 @@ export function useCreateProject() {
             queryClient.setQueryData<Project[]>(
                 [PROJECTS_KEY],
                 (old = []) => {
+                    console.log(newProject, old)
                     return [...old, newProject];
                 }
             )
