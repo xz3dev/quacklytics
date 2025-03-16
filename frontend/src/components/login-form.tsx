@@ -3,7 +3,7 @@ import {Button} from "@/components/ui/button"
 import {Card, CardContent} from "@/components/ui/card"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
-import reactImage from "@assets/react.svg"
+import birb from "@assets/birb.svg"
 import {useAuthStore} from "@/services/auth.ts";
 import {FormEvent, useState} from "react";
 import {Link, useNavigate} from "react-router";
@@ -38,7 +38,7 @@ export function LoginForm({
                             <div className="flex flex-col items-center text-center">
                                 <h1 className="text-2xl font-bold">Welcome back</h1>
                                 <p className="text-balance text-muted-foreground">
-                                    Login to your Acme Inc account
+                                    Login to your Quacklytics account
                                 </p>
                             </div>
                             {error && (
@@ -76,19 +76,19 @@ export function LoginForm({
                             <Button type="submit" className="w-full">
                                 Login
                             </Button>
-                            <div className="text-center text-sm">
-                                Don&apos;t have an account?{" "}
-                                <Link
-                                    className="underline underline-offset-4"
-                                    to="/register">
-                                    Sign up
-                                </Link>
-                            </div>
+                            {/*<div className="text-center text-sm">*/}
+                            {/*    Don&apos;t have an account?{" "}*/}
+                            {/*    <Link*/}
+                            {/*        className="underline underline-offset-4"*/}
+                            {/*        to="/register">*/}
+                            {/*        Sign up*/}
+                            {/*    </Link>*/}
+                            {/*</div>*/}
                         </div>
                     </form>
-                    <div className="relative hidden bg-muted md:block">
+                    <div className="relative hidden md:block">
                         <img
-                            src={reactImage}
+                            src={birb}
                             alt="Image"
                             className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
                         />
