@@ -121,8 +121,8 @@ Quacklytics is licensed under the MIT License. See the [LICENSE](LICENSE) file f
 
 ## Screenshots
 
-![Screenshot](docs/screenshots/insight.png)
-![Screenshot](docs/screenshots/dashboard.png)
+![Screenshot](util/screenshots/insight.png)
+![Screenshot](util/screenshots/dashboard.png)
 
 ---
 ```
