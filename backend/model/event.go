@@ -22,6 +22,12 @@ type Event struct {
 	EventInput
 }
 
+type EventWithPersonId struct {
+	EventId
+	EventInput
+	PersonId uuid.UUID `json:"personId"`
+}
+
 func (e Event) MarshalJSON() ([]byte, error) {
 	type Alias Event
 	return json.Marshal(&struct {

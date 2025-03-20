@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 )
 
-func QueryEvents(dbd *analyticsdb.DuckDBConnection, params *queries.QueryParams) (*[]model.Event, error) {
+func QueryEvents(dbd *analyticsdb.DuckDBConnection, params *queries.QueryParams) (*[]model.EventWithPersonId, error) {
 	if params == nil {
 		params = &queries.EmptyQueryParams
 	}
@@ -40,16 +40,17 @@ func QueryEvents(dbd *analyticsdb.DuckDBConnection, params *queries.QueryParams)
 	return events, nil
 }
 
-func parseEvents(rows *sql.Rows) (*[]model.Event, error) {
-	var events []model.Event
+func parseEvents(rows *sql.Rows) (*[]model.EventWithPersonId, error) {
+	var events []model.EventWithPersonId
 	for rows.Next() {
-		var event model.Event
+		var event model.EventWithPersonId
 		var propertiesJson []byte
 		if err := rows.Scan(
 			&event.Id,
 			&event.Timestamp,
 			&event.EventType,
 			&event.DistinctId,
+			&event.PersonId,
 			&propertiesJson,
 		); err != nil {
 			log.Error(err.Error(), err)

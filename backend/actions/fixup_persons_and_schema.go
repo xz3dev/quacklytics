@@ -21,7 +21,7 @@ func FixupPersonsAndSchema(project string) error {
 
 	p := events.GetOrCreateProcessor(project)
 
-	slices.SortFunc(*e, func(i, j model.Event) int {
+	slices.SortFunc(*e, func(i, j model.EventWithPersonId) int {
 		if i.Timestamp.Equal(j.Timestamp) {
 			return 0
 		}
@@ -32,7 +32,7 @@ func FixupPersonsAndSchema(project string) error {
 		return 1
 	})
 	var outerErr error
-	util.ProcessBatched(e, 10000, func(batch []model.Event) {
+	util.ProcessBatched(e, 10000, func(batch []model.EventWithPersonId) {
 		inputEvents := make([]*model.EventInput, len(batch))
 		for i, event := range batch {
 			inputEvents[i] = &model.EventInput{

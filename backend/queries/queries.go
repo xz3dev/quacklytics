@@ -78,7 +78,11 @@ func createCondition(field string, operation OperationType, value string) (Query
 	}, nil
 }
 func BuildSQL(params *QueryParams) (string, []interface{}) {
-	query := "select * from events where 1=1"
+	query := `
+select events.id, events.timestamp, events.event_type, events.distinct_id, p.person_id, events.properties from events events
+JOIN person_distinct_ids p ON p.distinct_id = events.distinct_id 
+where 1=1
+`
 	var args []interface{}
 	argCount := 0
 
