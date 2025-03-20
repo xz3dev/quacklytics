@@ -36,6 +36,8 @@ WHERE e.timestamp >= '%s' AND e.timestamp <= '%s'
 
 	dir := path.Join(config.Config.Paths.Parquet, projectId)
 
+	log.Debug(selectStmt)
+
 	if err := util.EnsureDirectory(dir); err != nil {
 		return err
 	}
@@ -65,7 +67,7 @@ WHERE e.timestamp >= '%s' AND e.timestamp <= '%s'
 	)
 
 	if rows == 0 {
-		println("No events to export")
+		log.Info("No events to export")
 	} else {
 		log.Info("Exported events to parquet: %d", rows)
 	}

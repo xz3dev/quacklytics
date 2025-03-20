@@ -15,6 +15,10 @@ type SchemaDiff struct {
 	EventSchema map[string]*schema.EventSchema
 }
 
+func (s *SchemaDiff) Name() string {
+	return "SchemaDiff"
+}
+
 func (sd *SchemaDiff) Process(ctx *PipelineContext) error {
 	for _, event := range ctx.InputEvents {
 		schema := GetOrCreateSchema(event.EventType, sd.EventSchema)

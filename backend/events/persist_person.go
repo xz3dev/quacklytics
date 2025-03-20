@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"strings"
+	"time"
 )
 
-func (p *ProjectProcessor) createPersons(newPersons map[string]*model.Person, mappedPersons map[string]*model.Person) {
+func (p *ProjectProcessor) CreatePersons(newPersons map[string]*model.Person, mappedPersons map[string]*model.Person) {
+	start := time.Now()
 	tx, err := p.dbd.Tx()
 	personsAppender := p.dbd.Appender("persons")
 
@@ -40,9 +42,12 @@ func (p *ProjectProcessor) createPersons(newPersons map[string]*model.Person, ma
 		log.Error("Error inserting events: ", err.Error())
 	}
 	personsAppender.Close()
+	elapsed := time.Since(start)
+	log.Debug("Persisted %d persons in %v", len(newPersons), elapsed)
 }
 
 func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, mappings map[string]*model.Person) error {
+	start := time.Now()
 	if len(mappings) == 0 {
 		return nil
 	}
@@ -63,10 +68,13 @@ func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, mappings map[string]
 		log.Info("Error inserting person distinct IDs: %v", err)
 		return err
 	}
+	elapsed := time.Since(start)
+	log.Debug("Persisted %d person mappings in %v", len(mappings), elapsed)
 	return nil
 }
 
-func (p *ProjectProcessor) updatePersons(updatedPersons map[string]*model.Person) error {
+func (p *ProjectProcessor) UpdatePersons(updatedPersons map[string]*model.Person) error {
+	start := time.Now()
 	tx, err := p.dbd.Tx()
 	if err != nil {
 		log.Error("Error while creating transaction: ", err)
@@ -80,5 +88,7 @@ func (p *ProjectProcessor) updatePersons(updatedPersons map[string]*model.Person
 			continue
 		}
 	}
+	elapsed := time.Since(start)
+	log.Debug("Updated %d persons in %v", len(updatedPersons), elapsed)
 	return tx.Commit()
 }

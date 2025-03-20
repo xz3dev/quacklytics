@@ -4,9 +4,11 @@ import (
 	"analytics/log"
 	"analytics/schema"
 	"gorm.io/gorm"
+	"time"
 )
 
-func (p *ProjectProcessor) persistAllSchemas(schemasByType map[string]*schema.EventSchema) {
+func (p *ProjectProcessor) PersistAllSchemas(schemasByType map[string]*schema.EventSchema) {
+	start := time.Now()
 	err := p.db.Transaction(func(tx *gorm.DB) error {
 		// Persist each schema and its properties
 		for _, s := range schemasByType {
@@ -29,7 +31,8 @@ func (p *ProjectProcessor) persistAllSchemas(schemasByType map[string]*schema.Ev
 		}
 		return nil
 	})
-
+	elapsed := time.Since(start)
+	log.Debug("Persisted %d schemas in %v", len(schemasByType), elapsed)
 	if err != nil {
 		log.Error("Error persisting schemas:", err)
 	}

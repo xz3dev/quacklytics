@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (p *ProjectProcessor) persistEvents(events []*model.Event) {
+func (p *ProjectProcessor) PersistEvents(events []*model.Event) {
 	appender := p.dbd.Appender("events")
 	defer appender.Close()
 

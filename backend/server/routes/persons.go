@@ -7,13 +7,13 @@ import (
 	"net/http"
 )
 
-func SetupPersonsRoutes(mux chi.Router) {
-	mux.Patch("/persons", fixupPersons)
+func SetupFixupRoute(mux chi.Router) {
+	mux.Patch("/", fixupPeronsAndSchema)
 }
 
-func fixupPersons(w http.ResponseWriter, r *http.Request) {
+func fixupPeronsAndSchema(w http.ResponseWriter, r *http.Request) {
 	projectId := sv_mw.GetProjectID(r)
-	if err := actions.FixupPersons(projectId); err != nil {
+	if err := actions.FixupPersonsAndSchema(projectId); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -1,4 +1,0 @@
-PATCH http://{{host}}/{{project}}/persons
-Accept: application/json
-
-###

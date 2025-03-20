@@ -26,3 +26,7 @@ func (p *PersonIdentifier) Process(ctx *PipelineContext) error {
 	}
 	return nil
 }
+
+func (s *PersonIdentifier) Name() string {
+	return "PersonIdentifier"
+}

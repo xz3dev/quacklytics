@@ -27,3 +27,7 @@ func (p *PersonCreator) Process(ctx *PipelineContext) error {
 	}
 	return nil
 }
+
+func (s *PersonCreator) Name() string {
+	return "PersonCreator"
+}

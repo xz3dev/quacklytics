@@ -30,5 +30,5 @@ QUERY2="
     copy events from 'events.csv.gz';
 "
 
-duckdb ../../backend/_data/analytics_test.db "$QUERY2"
+duckdb ../../backend/_data/analytics_default.db "$QUERY2"
 

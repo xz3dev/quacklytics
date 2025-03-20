@@ -22,3 +22,7 @@ func (v *EventValidator) Process(ctx *PipelineContext) error {
 	ctx.OutputEvents = valid
 	return nil
 }
+
+func (s *EventValidator) Name() string {
+	return "EventValidator"
+}

@@ -41,3 +41,7 @@ func (p *PersonUpdater) Process(ctx *PipelineContext) error {
 	}
 	return nil
 }
+
+func (s *PersonUpdater) Name() string {
+	return "PersonUpdater"
+}

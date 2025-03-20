@@ -71,7 +71,7 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 		return 1
 	})
 
-	e, err := p.newEventProcessor(events)
+	e, err := p.NewEventProcessor(events)
 	if err != nil {
 		log.Error("Error creating event processor: %v", err)
 		return
@@ -82,20 +82,20 @@ func (p *ProjectProcessor) processBatch(input []*model.EventInput) {
 		return
 	}
 
-	p.persistResult(result)
+	p.persistPersons(result)
+	p.PersistAllSchemas(result.Schema)
+	p.PersistEvents(result.NewEvents)
 
 	duration := time.Since(startTime)
 	log.Info("Project %s: Processed batch of %d events in %v", p.projectID, len(events), duration)
 }
 
-func (p *ProjectProcessor) persistResult(result *eventprocessor.Output) {
-	p.createPersons(result.NewPersons, result.MappedPersons)
-	p.updatePersons(result.UpdatedPersons)
-	p.persistAllSchemas(result.Schema)
-	p.persistEvents(result.NewEvents)
+func (p *ProjectProcessor) persistPersons(result *eventprocessor.Output) {
+	p.CreatePersons(result.NewPersons, result.MappedPersons)
+	p.UpdatePersons(result.UpdatedPersons)
 }
 
-func (p *ProjectProcessor) newEventProcessor(events []*model.EventInput) (*eventprocessor.EventProcessor, error) {
+func (p *ProjectProcessor) NewEventProcessor(events []*model.EventInput) (*eventprocessor.EventProcessor, error) {
 	existingPersons, err := p.GetExistingPersons(events)
 	if err != nil {
 		return nil, err

@@ -19,3 +19,7 @@ func (s *EventSorter) Process(ctx *PipelineContext) error {
 	})
 	return nil
 }
+
+func (s *EventSorter) Name() string {
+	return "EventSorter"
+}

@@ -119,7 +119,7 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 			routes.SetupSchemaRoutes(mux)
 			routes.SetupInsightRoutes(mux)
 			routes.SetupDashoardRoutes(mux)
-			routes.SetupPersonsRoutes(mux)
+			routes.SetupFixupRoute(mux)
 			routes.SetupProjectSpecificRoutes(mux)
 			routes.SetupAPIKeysRoutes(mux)
 		})
