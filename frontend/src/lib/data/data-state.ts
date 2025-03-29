@@ -13,7 +13,7 @@ interface DateRangeStore {
     isLoaded: (file: FileMetadata) => boolean
 }
 
-export const useDataRangeStore = create<DateRangeStore>((set, get,) => ({
+export const useDataRangeStore = () => create<DateRangeStore>((set, get,) => ({
     minDate: null,
     maxDate: null,
 

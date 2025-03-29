@@ -1,7 +1,7 @@
 import {useQueries, useQuery, type UseQueryOptions} from "@tanstack/react-query";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
 import {Query, QueryResult} from "@lib/queries.ts";
-import {db} from "@app/duckdb/duckdb.tsx";
+import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 
 export const DUCKDB_INSIGHT_QUERY_KEY = (project: string, uniqId: string) => ['duckdb', project, uniqId] as const
 
@@ -19,6 +19,7 @@ export function useDuckDBQuery<T extends Query>(
     query: T,
     options?: Partial<UseQueryOptions<QueryResult<T>, Error>>,
 ) {
+    const db = useDuckDb()
     return useQuery<QueryResult<T>, Error>({
         queryKey: DUCKDB_INSIGHT_QUERY_KEY(project, uniqId),
         queryFn: () => duckdbApi.query(db, query),
@@ -37,6 +38,7 @@ export function useDuckDBQueries<T extends Query>(
         options?: Partial<UseQueryOptions<QueryResult<T>, Error>>
     }>
 ) {
+    const db = useDuckDb()
     return useQueries({
         queries: queries.map(({
                                   uniqId,

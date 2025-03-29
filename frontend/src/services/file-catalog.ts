@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
-import {db} from "@app/duckdb/duckdb.tsx";
+import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 
 export interface FileMetadata {
     name: string
@@ -42,6 +42,7 @@ export function useFileCatalog(projectId: string) {
 
 export function useDownloadFile() {
     const queryClient = useQueryClient()
+    const db = useDuckDb()
     return useMutation({
         gcTime: 1000 * 60 * 60 * 24 * 14,
         mutationFn: async ({projectId, file}: { projectId: string; file: FileMetadata }): Promise<FileDownload | null> => {

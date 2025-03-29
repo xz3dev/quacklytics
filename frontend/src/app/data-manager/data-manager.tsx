@@ -6,10 +6,10 @@ import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-s
 import {Card} from "@/components/ui/card.tsx";
 import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
-import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {format} from "date-fns";
 import {Spinner} from "@/components/spinner.tsx";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
+import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 
 export function DataManager() {
     const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +19,8 @@ export function DataManager() {
 
     const availableFiles = useFileCatalog(projectId)
     const fileDownloader = useDownloadFile()
-    const dataRanges = useDataRangeStore()
+    const db = useDuckDb()
+    const dataRanges = db.dataRanges()
 
     const statusIcon = {
         success: <HardDrive className="h-4 w-4"/>,

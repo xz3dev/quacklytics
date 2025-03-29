@@ -1,18 +1,18 @@
 import {useEffect, useMemo, useRef, useState} from "react";
-import {DuckDbManager} from "@/services/duck-db-manager.ts";
 import {FILE_KEY, FileCatalogApi, FileMetadata, useFileCatalog} from "@/services/file-catalog.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useQueries, useQueryClient} from "@tanstack/react-query";
 import {DuckDBLoadingIndicator} from "@app/duckdb/duckdb-loading-indicator.tsx";
 import {useEvents} from "@/services/events.ts";
 import {UTCDate} from "@date-fns/utc";
-
-export const db = new DuckDbManager()
+import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 
 export function DuckDB(props: { children: React.ReactNode }) {
     const projectId = useProjectId()
     const availableFiles = useFileCatalog(projectId)
     const queryClient = useQueryClient()
+
+    const db = useDuckDb()
 
     const dates = availableFiles.data?.map(it => it.end)
     const maxDate = dates ? Math.max(...dates.map(date => new UTCDate(date).getTime())) : undefined;

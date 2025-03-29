@@ -18,6 +18,8 @@ export class DuckDbManager {
         return con
     })
 
+    dataRanges = useDataRangeStore()
+
     async setupTable(conn: AsyncDuckDBConnection) {
         console.log(`Creating events table...`)
         await conn.query(`
@@ -69,7 +71,7 @@ export class DuckDbManager {
         await Promise.all(queries)
         console.log(`DONE: Importing ${files.length} files...`)
 
-        useDataRangeStore.getState().updateDateRange(files)
+        this.dataRanges.getState().updateDateRange(files)
         console.log(`Updated date range`)
 
         await this.updateEffectiveDateRange(conn)
@@ -97,6 +99,10 @@ export class DuckDbManager {
         events: AnalyticsEvent[],
         conn: AsyncDuckDBConnection,
     ): Promise<void> {
+        if(events.length === 0) {
+            console.log(`No events to import.`)
+            return
+        }
         events = Array.from(new Map(events.map(event => [event.id, event])).values());
         
         const batchInsertQuery = `
@@ -138,7 +144,7 @@ export class DuckDbManager {
         const minDate = new Date(data.min_date)
         const maxDate = new Date(data.max_date)
 
-        const store = useDataRangeStore.getState()
+        const store = this.dataRanges.getState()
         store.updateEffectiveDateRange(minDate, maxDate)
         store.updateMaxDate(maxDate)
     }

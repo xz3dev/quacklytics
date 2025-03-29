@@ -5,9 +5,9 @@ import {Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {Textarea} from "@/components/ui/textarea"
 import {formatDistance} from "date-fns"
-import {db} from "@app/duckdb/duckdb.tsx";
 import {JsonViewerThemed} from "@/components/json-viewer-themed.tsx";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip"
+import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 
 const DEFAULT_QUERY = 'SELECT * FROM events order by timestamp desc LIMIT 100 '
 
@@ -16,6 +16,8 @@ export function EventsList() {
     const [query, setQuery] = useState(DEFAULT_QUERY)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    const db = useDuckDb()
 
     const runQuery = async () => {
         setIsLoading(true)

@@ -17,6 +17,7 @@ import {useSidebarData} from "@/hooks/use-sidebar-data.tsx";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useProjects} from "@/services/projects.ts";
 import {DataManager} from "@app/data-manager/data-manager.tsx";
+import {DuckDbProvider} from "@app/duckdb/duckdb-provider.tsx";
 
 export function AppFrame() {
     const {user} = useAuthStore()
@@ -32,56 +33,58 @@ export function AppFrame() {
 
     return (
         <RequireAuth>
-            <DuckDB>
-                <SidebarProvider>
-                    <AppSidebar
-                        user={{
-                            name: user?.email ?? "",
-                            email: "",
-                            avatar: ""
-                        }}
-                        navMain={[...sidebarData.navMain]}
-                    />
-                    <SidebarInset>
-                        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                            <SidebarTrigger className="-ml-1"/>
-                            <Separator orientation="vertical" className="mr-2 h-4"/>
-                            <Breadcrumb>
-                                <BreadcrumbList>
-                                    {sidebarData.breadcrumbs.map((item, index) => (
-                                        <div
-                                            key={item.url}
-                                            className="flex items-center gap-2"
-                                        >
-                                            <BreadcrumbItem className="hidden md:block">
-                                                {index === sidebarData.breadcrumbs.length - 1 ? (
-                                                    <BreadcrumbPage>{item.title}</BreadcrumbPage>
-                                                ) : (
-                                                    <BreadcrumbLink
-                                                        asChild={true}
-                                                    >
-                                                        <Link to={item.url}>
-                                                            {item.title}
-                                                        </Link>
-                                                    </BreadcrumbLink>
+            <DuckDbProvider>
+                <DuckDB>
+                    <SidebarProvider>
+                        <AppSidebar
+                            user={{
+                                name: user?.email ?? "",
+                                email: "",
+                                avatar: ""
+                            }}
+                            navMain={[...sidebarData.navMain]}
+                        />
+                        <SidebarInset>
+                            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                                <SidebarTrigger className="-ml-1"/>
+                                <Separator orientation="vertical" className="mr-2 h-4"/>
+                                <Breadcrumb>
+                                    <BreadcrumbList>
+                                        {sidebarData.breadcrumbs.map((item, index) => (
+                                            <div
+                                                key={item.url}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <BreadcrumbItem className="hidden md:block">
+                                                    {index === sidebarData.breadcrumbs.length - 1 ? (
+                                                        <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                                    ) : (
+                                                        <BreadcrumbLink
+                                                            asChild={true}
+                                                        >
+                                                            <Link to={item.url}>
+                                                                {item.title}
+                                                            </Link>
+                                                        </BreadcrumbLink>
+                                                    )}
+                                                </BreadcrumbItem>
+                                                {index < sidebarData.breadcrumbs.length - 1 && (
+                                                    <BreadcrumbSeparator/>
                                                 )}
-                                            </BreadcrumbItem>
-                                            {index < sidebarData.breadcrumbs.length - 1 && (
-                                                <BreadcrumbSeparator/>
-                                            )}
-                                        </div>
-                                    ))}
-                                </BreadcrumbList>
-                            </Breadcrumb>
-                            <div className="flex-1"></div>
-                            <DataManager></DataManager>
-                        </header>
-                        <div className="flex flex-1 flex-col gap-4 p-4">
-                            <Outlet/>
-                        </div>
-                    </SidebarInset>
-                </SidebarProvider>
-            </DuckDB>
+                                            </div>
+                                        ))}
+                                    </BreadcrumbList>
+                                </Breadcrumb>
+                                <div className="flex-1"></div>
+                                <DataManager></DataManager>
+                            </header>
+                            <div className="flex flex-1 flex-col gap-4 p-4">
+                                <Outlet/>
+                            </div>
+                        </SidebarInset>
+                    </SidebarProvider>
+                </DuckDB>
+            </DuckDbProvider>
         </RequireAuth>
     )
 }
