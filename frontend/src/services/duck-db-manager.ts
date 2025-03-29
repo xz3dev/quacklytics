@@ -8,6 +8,7 @@ import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {processInBatches} from "@lib/utils/batches.ts";
 
 export class DuckDbManager {
+    isLoading = true
     private db = createDb()
     private conn = this.db.then(async (db) => {
         if (!db) throw Error(
@@ -72,10 +73,8 @@ export class DuckDbManager {
         console.log(`DONE: Importing ${files.length} files...`)
 
         this.dataRanges.getState().updateDateRange(files)
-        console.log(`Updated date range`)
 
         await this.updateEffectiveDateRange(conn)
-        console.log(`updated effective date range`)
     }
 
     async importEvents(events: AnalyticsEvent[]) {

@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useMemo, useRef} from "react";
 import {FILE_KEY, FileCatalogApi, FileMetadata, useFileCatalog} from "@/services/file-catalog.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useQueries, useQueryClient} from "@tanstack/react-query";
@@ -18,8 +18,6 @@ export function DuckDB(props: { children: React.ReactNode }) {
     const maxDate = dates ? Math.max(...dates.map(date => new UTCDate(date).getTime())) : undefined;
     useEvents(projectId, maxDate ? new UTCDate(maxDate) : undefined)
 
-    const [isImportingData, setIsImportingData] = useState(true)
-
     const shouldLoadFile = (f: FileMetadata) => {
         if(f.autoload) return true
         const cache = queryClient.getQueryData<FileMetadata>(FILE_KEY(projectId, f))
@@ -35,8 +33,8 @@ export function DuckDB(props: { children: React.ReactNode }) {
             ?? []
     }, [availableFiles])
 
-    if(availableFiles.data !== undefined && autoloadFiles.length === 0 && isImportingData) {
-        setIsImportingData(false)
+    if(availableFiles.data !== undefined && autoloadFiles.length === 0 && db.isLoading) {
+        db.isLoading = false
     }
 
     const fileQueries = useQueries({
@@ -71,14 +69,14 @@ export function DuckDB(props: { children: React.ReactNode }) {
             const newSet = new Set(fileQueries.map(f => f.checksum))
             if(!eqSet(newSet, importedSet)) {
                 importedChecksums.current = newSet
-                db.importParquet(fileQueries).then(() => setIsImportingData(false))
+                db.importParquet(fileQueries).then(() => db.isLoading = false)
             }
         }
     }, [fileQueries]);
 
     return (
         <>
-            <DuckDBLoadingIndicator isLoading={isImportingData}>
+            <DuckDBLoadingIndicator isLoading={db.isLoading}>
                 {props.children}
             </DuckDBLoadingIndicator>
         </>
