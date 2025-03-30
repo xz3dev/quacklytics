@@ -123,6 +123,7 @@ export function TrendInsightChart({insight}: Props) {
                     }
                     return (
                         q.visualisation === 'line' && <Line
+                            dot={false}
                             key={`series-${index}`}
                             dataKey={`values.${index}`}
                             name={seriesQueries[index].name}
