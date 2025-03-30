@@ -1,4 +1,4 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
+import {QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
 import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
@@ -27,9 +27,14 @@ export const FileCatalogApi = {
         db.downloadState.getState().finishTask('Metadata', 'load')
         return catalog
     },
-    downloadFile: async (projectId: string, file: FileMetadata, db: DuckDbManager): Promise<FileDownload> => {
+    downloadFile: async (qc: QueryClient, projectId: string, file: FileMetadata, db: DuckDbManager): Promise<FileDownload> => {
         db.downloadState.getState().addTask(file.name, 'load')
         db.downloadState.getState().addTask(file.name, 'import')
+        const cache = qc.getQueryData<FileDownload>(FILE_KEY(projectId, file))
+        if(cache && cache.checksum === file.checksum) {
+            db.downloadState.getState().finishTask(file.name, 'load')
+            return cache
+        }
         const blob = await http.getBlob(`${projectId}/events/download?file=${file.name}&checksum=${file.checksum}`)
         db.downloadState.getState().finishTask(file.name, 'load')
         return {
@@ -59,7 +64,7 @@ export function useDownloadFile() {
                 return cache
             }
             console.log(`downloading ${file.name}`)
-            return await FileCatalogApi.downloadFile(projectId, file, db)
+            return await FileCatalogApi.downloadFile(queryClient, projectId, file, db)
         },
         onSuccess: async (file: FileDownload | null, {projectId}) => {
             console.log(`Downloaded ${file} from ${projectId}`, file)

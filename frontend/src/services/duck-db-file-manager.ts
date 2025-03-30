@@ -44,7 +44,7 @@ export const createDuckDbFileManager = (
         downloadFiles: async () => {
             const files = get().filesToLoad;
             const downloads = await Promise.all(
-                files.map(async (f) => FileCatalogApi.downloadFile(projectId, f, dbManager)),
+                files.map(async (f) => FileCatalogApi.downloadFile(queryClient, projectId, f, dbManager)),
             );
             for (const download of downloads) {
                 queryClient.setQueryData(FILE_KEY(projectId, download), download)
