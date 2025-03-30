@@ -5,9 +5,14 @@ export interface DownloadTask {
     finished: boolean;
 }
 
+export interface DownloadTaskProgress {
+    progress?: number
+}
+
 export interface DuckDbDownloadState {
     tasks: Tasks
     addTask: (id: string, type: TopLevelTaskType) => void;
+    updateTaskProgress: (id: string, type: TopLevelTaskType, progress: number) => void;
     finishTask: (id: string, type: TopLevelTaskType) => void;
     isLoading: () => boolean;
     finishInit: () => void;
@@ -19,7 +24,7 @@ interface Tasks {
     init: {
         finished: boolean;
     }
-    load: DownloadTask[]
+    load: (DownloadTask & DownloadTaskProgress)[]
     import: DownloadTask[]
 }
 
@@ -52,6 +57,22 @@ export const useDuckDbDownloadStore = () => create<DuckDbDownloadState>((set, ge
                 }
             })
         }),
+
+    updateTaskProgress(id: string, type: TopLevelTaskType, progress: number) {
+        set((state) => ({
+            tasks: {
+                ...state.tasks,
+                load: state.tasks.load.map((task) => type === 'load' && task.id === id ? {
+                    ...task,
+                    progress,
+                } : task),
+                import: state.tasks.import.map((task) => type === 'import' && task.id === id ? {
+                    ...task,
+                    progress,
+                } : task),
+            }
+        }))
+    },
 
     finishTask: (id: string, type: TopLevelTaskType) =>
         set((state) => ({

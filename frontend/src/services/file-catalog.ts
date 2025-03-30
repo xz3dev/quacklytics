@@ -2,6 +2,7 @@ import {QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/reac
 import {http} from '@/lib/fetch'
 import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
 import {DuckDbManager} from "@/services/duck-db-manager.ts";
+import {AxiosRequestConfig} from "axios";
 
 export interface FileMetadata {
     name: string
@@ -35,7 +36,16 @@ export const FileCatalogApi = {
             db.downloadState.getState().finishTask(file.name, 'load')
             return cache
         }
-        const blob = await http.getBlob(`${projectId}/events/download?file=${file.name}&checksum=${file.checksum}`)
+        const blob = await http.getBlob(
+            `${projectId}/events/download?file=${file.name}&checksum=${file.checksum}`,
+            {
+                onDownloadProgress: (p) => {
+                    console.log(p)
+                    const percentCompleted = Math.round(p.loaded * 100 / p.bytes);
+                    db.downloadState.getState().updateTaskProgress(file.name, 'load', percentCompleted)
+                }
+            } satisfies AxiosRequestConfig
+        )
         db.downloadState.getState().finishTask(file.name, 'load')
         return {
             ...file,

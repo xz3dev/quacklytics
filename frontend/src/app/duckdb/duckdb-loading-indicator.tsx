@@ -14,13 +14,13 @@ export function DuckDBLoadingIndicator(props: { children: React.ReactNode }) {
     const tasks = state.tasks;
 
     // Build a list of pending tasks
-    let allTasks: { id: string; finished: boolean, type: TaskType }[] = [
+    let allTasks: { id: string; finished: boolean, type: TaskType, progress?: number }[] = [
         {id: "init", finished: tasks.init.finished, type: 'init'},
         ...tasks.load.map((t) => ({...t, type: 'load' as const})),
         ...tasks.import.map((t) => ({...t, type: 'import' as const})),
     ];
 
-    const renderTask = (task: { id: string; finished: boolean, type: TaskType }) => {
+    const renderTask = (task: { id: string; finished: boolean, type: TaskType, progress?: number }) => {
         return (
             <div
                 key={task.id + '-' + task.type}
@@ -30,6 +30,8 @@ export function DuckDBLoadingIndicator(props: { children: React.ReactNode }) {
                     {task.type === "init" && "Initializing "}
                     {task.type === "load" && `Downloading ${task.id}`}
                     {task.type === "import" && `Importing ${task.id}`}
+
+                    {task.progress !== undefined && ` (${task.progress}%)`}
                 </span>
                 {!task.finished && <Spinner/>}
                 {task.finished && <Check />}

@@ -1,68 +1,38 @@
-import {baseUrl} from "@app/conf.ts";
+import axios, { AxiosRequestConfig } from 'axios';
+import { baseUrl } from "@app/conf.ts";
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
+const axiosInstance = axios.create({
+    baseURL: baseUrl,
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-const get = async <T>(url: string) => request<T>('GET', url, {})
-const del = async <T>(url: string) => request<T>('DELETE', url, {})
+const get = async <T>(url: string) => {
+    const { data } = await axiosInstance.get<T>(url);
+    return data;
+};
 
-const post = async <T>(url: string, body?: unknown) =>
-    request<T>('POST', url, {
-        body: body ? JSON.stringify(body) : null,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
+const del = async <T>(url: string) => {
+    const { data } = await axiosInstance.delete<T>(url);
+    return data;
+};
 
-const put = async <T>(url: string, body?: unknown) =>
-    request<T>('PUT', url, {
-        body: body ? JSON.stringify(body) : null,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
+const post = async <T>(url: string, body?: unknown) => {
+    const { data } = await axiosInstance.post<T>(url, body);
+    return data;
+};
 
-const request = async <T>(
-    method: HttpMethod,
-    url: string,
-    init: RequestInit,
-) => {
-    const fullUrl = baseUrl + (url.startsWith('/') ? `${url}` : `/${url}`)
-    const response = await fetch(fullUrl, {
-        ...init,
-        credentials: 'include',
-        method,
-    })
+const put = async <T>(url: string, body?: unknown) => {
+    const { data } = await axiosInstance.put<T>(url, body);
+    return data;
+};
 
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status} : ${response.statusText}`)
-    }
-
-    if(response.status === 204) {
-        return {} as T
-    }
-
-    try {
-        const result = (await response.json()) as T
-        return result
-    } catch (e) {
-        throw new Error(`Cannot unmarshal response: ${e}`)
-    }
-}
-
-const getBlob = async (url: string, init?: RequestInit) => {
-    const fullUrl = baseUrl + (url.startsWith('/') ? `${url}` : `/${url}`)
-    const response = await fetch(fullUrl, {
-        ...init,
-        credentials: 'include',
-        method: 'GET',
-    })
-
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status} : ${response.statusText}`)
-    }
-
-    return response.blob()
-}
+const getBlob = async (url: string, config?: AxiosRequestConfig) => {
+    const { data } = await axiosInstance.get(url, { ...config, responseType: 'blob' });
+    return data;
+};
 
 export const http = {
     get,
@@ -70,4 +40,4 @@ export const http = {
     put,
     del,
     getBlob,
-}
+};
