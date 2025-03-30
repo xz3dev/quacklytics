@@ -14,4 +14,7 @@ GET http://{{host}}/{{project}}/events/parquet/months/checksums
 
 ###
 
-GET http://{{host}}/{{project}}/events?timestamp__gt=2025-02-03T21%3A14%3A28.974Z
+GET http://{{host}}/{{project}}/events?timestamp__gt=2025-06-03T21%3A14%3A28.974Z
+
+###
+

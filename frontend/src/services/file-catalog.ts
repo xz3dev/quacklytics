@@ -1,6 +1,7 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
 import {useDuckDb} from "@app/duckdb/duckdb-provider.tsx";
+import {DuckDbManager} from "@/services/duck-db-manager.ts";
 
 export interface FileMetadata {
     name: string
@@ -21,11 +22,16 @@ export type FileDownload = FileMetadata & {
 }
 // API functions
 export const FileCatalogApi = {
-    getFileChecksums: async (projectId: string): Promise<FileMetadata[]> => {
-        return http.get<any>(`${projectId}/events/catalog`)
+    getFileChecksums: async (projectId: string, db: DuckDbManager): Promise<FileMetadata[]> => {
+        const catalog = await http.get<any>(`${projectId}/events/catalog`)
+        db.downloadState.getState().finishTask('Metadata', 'load')
+        return catalog
     },
-    downloadFile: async (projectId: string, file: FileMetadata): Promise<FileDownload> => {
+    downloadFile: async (projectId: string, file: FileMetadata, db: DuckDbManager): Promise<FileDownload> => {
+        db.downloadState.getState().addTask(file.name, 'load')
+        db.downloadState.getState().addTask(file.name, 'import')
         const blob = await http.getBlob(`${projectId}/events/download?file=${file.name}&checksum=${file.checksum}`)
+        db.downloadState.getState().finishTask(file.name, 'load')
         return {
             ...file,
             blob,
@@ -34,9 +40,10 @@ export const FileCatalogApi = {
 }
 
 export function useFileCatalog(projectId: string) {
+    const db = useDuckDb()
     return useQuery({
         queryKey: FILE_CATALOG_KEY(projectId),
-        queryFn: () => FileCatalogApi.getFileChecksums(projectId),
+        queryFn: () => FileCatalogApi.getFileChecksums(projectId, db),
     })
 }
 
@@ -52,7 +59,7 @@ export function useDownloadFile() {
                 return cache
             }
             console.log(`downloading ${file.name}`)
-            return await FileCatalogApi.downloadFile(projectId, file)
+            return await FileCatalogApi.downloadFile(projectId, file, db)
         },
         onSuccess: async (file: FileDownload | null, {projectId}) => {
             console.log(`Downloaded ${file} from ${projectId}`, file)

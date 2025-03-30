@@ -4,11 +4,13 @@ import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
 import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
-import {useDataRangeStore} from "@lib/data/data-state.ts";
 import {processInBatches} from "@lib/utils/batches.ts";
+import {useDuckDbDownloadStore} from "@/services/duck-db-download-state.ts";
+import {useDuckDbDataRangeStore} from "@/services/duck-db-data-range.ts";
+import {createDuckDbFileManager} from "@/services/duck-db-file-manager.ts";
+import {QueryClient} from "@tanstack/react-query";
 
 export class DuckDbManager {
-    isLoading = true
     private db = createDb()
     private conn = this.db.then(async (db) => {
         if (!db) throw Error(
@@ -19,19 +21,39 @@ export class DuckDbManager {
         return con
     })
 
-    dataRanges = useDataRangeStore()
+    dataRanges = useDuckDbDataRangeStore()
+    downloadState = useDuckDbDownloadStore()
+    fileManager = createDuckDbFileManager(this.projectId, this, this.queryClient)
+
+    constructor(
+        private projectId: string,
+        private queryClient: QueryClient,
+    ) {
+        void this.fileManager.getState().loadData()
+        this.db.then(() => {
+            this.downloadState.getState().finishInit()
+        })
+    }
 
     async setupTable(conn: AsyncDuckDBConnection) {
         console.log(`Creating events table...`)
         await conn.query(`
             create table if not exists events
             (
-                id          UUID primary key,
-                timestamp   timestamp,
-                event_type  text,
-                distinct_id text,
-                person_id   UUID,
-                properties  json
+                id
+                UUID
+                primary
+                key,
+                timestamp
+                timestamp,
+                event_type
+                text,
+                distinct_id
+                text,
+                person_id
+                UUID,
+                properties
+                json
             );
         `)
     }
@@ -56,13 +78,17 @@ export class DuckDbManager {
                 await db.registerFileBuffer(file.name, new Uint8Array(arrayBuffer))
                 // Import data from the Parquet file into the events table
                 const query = conn.query(`
-                    insert or ignore into events
-                    select distinct on (id) id, timestamp, event_type, distinct_id, person_id, properties
+                    insert
+                    or ignore into events
+                    select distinct
+                    on (id) id, timestamp, event_type, distinct_id, person_id, properties
                     from parquet_scan('${file.name}')
                 `)
+                    .then(() => this.downloadState.getState().finishTask(file.name, 'import'))
                     .catch((e) => {
                         console.error(`Failed to import ${file.name}: ${e.message}`)
                     })
+
 
                 queries.push(query)
             } catch (e) {
@@ -75,6 +101,7 @@ export class DuckDbManager {
         this.dataRanges.getState().updateDateRange(files)
 
         await this.updateEffectiveDateRange(conn)
+
     }
 
     async importEvents(events: AnalyticsEvent[]) {
@@ -98,14 +125,15 @@ export class DuckDbManager {
         events: AnalyticsEvent[],
         conn: AsyncDuckDBConnection,
     ): Promise<void> {
-        if(events.length === 0) {
+        if (events.length === 0) {
             console.log(`No events to import.`)
             return
         }
         events = Array.from(new Map(events.map(event => [event.id, event])).values());
-        
+
         const batchInsertQuery = `
-            insert or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
+            insert
+            or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
             values
             ${events.map(() => `(?, epoch_ms(?::BIGINT), ?, ?, ?, ?)`).join(", ")}
         `;

@@ -67,9 +67,9 @@ WHERE e.timestamp >= '%s' AND e.timestamp <= '%s'
 	)
 
 	if rows == 0 {
-		log.Info("No events to export")
+		log.Info("%v - %v: No events to export", segment.StartDate, segment.EndDate)
 	} else {
-		log.Info("Exported events to parquet: %d", rows)
+		log.Info("%v - %v: Exported events to parquet: %d", segment.StartDate, segment.EndDate, rows)
 	}
 
 	return nil

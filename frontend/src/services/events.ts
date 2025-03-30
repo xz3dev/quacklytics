@@ -11,7 +11,9 @@ export const EventsApi = {
     fetchEvents: async (projectId: string, since: UTCDate, db: DuckDbManager): Promise<AnalyticsEvent[]> => {
         const url = `${projectId}/events?timestamp__gt=${encodeURIComponent(since.toISOString())}`;
         const events = await http.get<AnalyticsEvent[]>(url);
-        await db.importEvents(events)
+        if (events && events.length > 0) {
+            await db.importEvents(events)
+        }
         return events
     }
 }
