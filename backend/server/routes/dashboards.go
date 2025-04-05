@@ -1,9 +1,9 @@
 package routes
 
 import (
+	"analytics/domain/dashboards"
 	"analytics/domain/insights"
 	"analytics/internal/log"
-	"analytics/model"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
@@ -31,8 +31,8 @@ func parseDashboardId(id string) (int, error) {
 	return intId, nil
 }
 
-func loadDashboard(db *gorm.DB, id string) (*model.Dashboard, error) {
-	var dashboard model.Dashboard
+func loadDashboard(db *gorm.DB, id string) (*dashboards.Dashboard, error) {
+	var dashboard dashboards.Dashboard
 	dashboardId, err := parseDashboardId(id)
 	if err != nil {
 		return nil, err
@@ -56,8 +56,8 @@ func loadDashboard(db *gorm.DB, id string) (*model.Dashboard, error) {
 	return &dashboard, err
 }
 
-func loadDashboards(db *gorm.DB) ([]model.Dashboard, error) {
-	var dashboards []model.Dashboard
+func loadDashboards(db *gorm.DB) ([]dashboards.Dashboard, error) {
+	var dashboards []dashboards.Dashboard
 
 	// First get all dashboards
 	if err := db.Find(&dashboards).Error; err != nil {
@@ -99,13 +99,13 @@ func listDashboards(w http.ResponseWriter, r *http.Request) {
 }
 
 func createDashboard(w http.ResponseWriter, r *http.Request) {
-	var input model.DashboardInput
+	var input dashboards.DashboardInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	dashboard := model.Dashboard{}
+	dashboard := dashboards.Dashboard{}
 	dashboard.ApplyInput(input)
 
 	db := sv_mw.GetProjectDB(r, w)
@@ -147,7 +147,7 @@ func getDashboard(w http.ResponseWriter, r *http.Request) {
 
 func updateDashboard(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	var input model.DashboardInput
+	var input dashboards.DashboardInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -180,7 +180,7 @@ func deleteDashboard(w http.ResponseWriter, r *http.Request) {
 
 	db := sv_mw.GetProjectDB(r, w)
 
-	if result := db.Delete(&model.Dashboard{}, id); result.Error != nil {
+	if result := db.Delete(&dashboards.Dashboard{}, id); result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -202,7 +202,7 @@ func setDashboardInsights(w http.ResponseWriter, r *http.Request) {
 
 	db := sv_mw.GetProjectDB(r, w)
 
-	var dashboard model.Dashboard
+	var dashboard dashboards.Dashboard
 	if result := db.First(&dashboard, id); result.Error != nil {
 		http.Error(w, "Dashboard not found", http.StatusNotFound)
 		return
@@ -253,7 +253,7 @@ func setHomeDashboard(w http.ResponseWriter, r *http.Request) {
 	db := sv_mw.GetProjectDB(r, w)
 
 	// First, set home=false for all dashboards
-	if result := db.Model(&model.Dashboard{}).
+	if result := db.Model(&dashboards.Dashboard{}).
 		Where("home = true").
 		Update("home", false); result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
@@ -261,7 +261,7 @@ func setHomeDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Then set home=true for the specified dashboard
-	var dashboard model.Dashboard
+	var dashboard dashboards.Dashboard
 	if result := db.First(&dashboard, id); result.Error != nil {
 		http.Error(w, "Dashboard not found", http.StatusNotFound)
 		return

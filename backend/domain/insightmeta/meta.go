@@ -1,4 +1,4 @@
-package model
+package insightmeta
 
 type InsightMeta struct {
 	ID         uint   `gorm:"primarykey" json:"id"`

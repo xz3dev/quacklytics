@@ -1,13 +1,12 @@
 package filecatalog
 
 import (
-	"analytics/model"
 	"gorm.io/gorm"
 	"time"
 )
 
-func ListAll(db *gorm.DB) ([]model.FileCatalogEntry, error) {
-	var entries []model.FileCatalogEntry
+func ListAll(db *gorm.DB) ([]FileCatalogEntry, error) {
+	var entries []FileCatalogEntry
 
 	now := time.Now()
 

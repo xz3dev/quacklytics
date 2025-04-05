@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"analytics/actions"
+	"analytics/domain/schemafixer"
 	sv_mw "analytics/server/middlewares"
 	"github.com/go-chi/chi/v5"
 	"net/http"
@@ -13,7 +13,7 @@ func SetupFixupRoute(mux chi.Router) {
 
 func fixupPeronsAndSchema(w http.ResponseWriter, r *http.Request) {
 	projectId := sv_mw.GetProjectID(r)
-	if err := actions.FixupPersonsAndSchema(projectId); err != nil {
+	if err := schemafixer.FixupPersonsAndSchema(projectId); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

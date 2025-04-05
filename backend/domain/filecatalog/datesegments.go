@@ -1,7 +1,6 @@
 package filecatalog
 
 import (
-	"analytics/model"
 	"analytics/util"
 	"fmt"
 	"time"
@@ -10,8 +9,8 @@ import (
 // GenerateTimeFragments returns a list of DataSegments
 //   - Older data (fully past quarters) is grouped into quarterly segments.
 //   - The current quarter is split into monthly segments.
-func GenerateTimeFragments(now time.Time, cutoff time.Time) []model.DataSegment {
-	var segments []model.DataSegment
+func GenerateTimeFragments(now time.Time, cutoff time.Time) []DataSegment {
+	var segments []DataSegment
 
 	// 1) Collect quarterly segments from 'cutoff' up to (but not including) the current quarter start.
 	// 2) Collect monthly segments for the current quarter.
@@ -43,7 +42,7 @@ func GenerateTimeFragments(now time.Time, cutoff time.Time) []model.DataSegment 
 		}
 
 		// Build the quarterly segment
-		segments = append(segments, model.DataSegment{
+		segments = append(segments, DataSegment{
 			StartDate:  segStart,
 			EndDate:    segEnd,
 			ValidUntil: nil,
@@ -67,7 +66,7 @@ func GenerateTimeFragments(now time.Time, cutoff time.Time) []model.DataSegment 
 			validUntil = util.EndOfDay(now)
 		}
 
-		segments = append(segments, model.DataSegment{
+		segments = append(segments, DataSegment{
 			StartDate:  m,
 			EndDate:    monthEnd,
 			Filename:   makeMonthFilename(m),

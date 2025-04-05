@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"analytics/actions"
 	"analytics/database/analyticsdb"
+	"analytics/domain/apikeys"
 	"analytics/domain/events"
 	"analytics/domain/events/processor"
 	"analytics/domain/queries"
@@ -27,7 +27,7 @@ func AppendEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	appdb := sv_mw.GetAppDB(r)
-	projectId, err := actions.ValidateAPIKey(appdb, apikey)
+	projectId, err := apikeys.ValidateAPIKey(appdb, apikey)
 	if err != nil {
 		http.Error(w, "Invalid ApiKey", http.StatusUnauthorized)
 		return
@@ -87,7 +87,7 @@ func GenerateDummyEvents(w http.ResponseWriter, r *http.Request) {
 
 	projectId := sv_mw.GetProjectID(r)
 
-	actions.GenerateRandomEvents(projectId, 100, "test_type")
+	processor.GenerateRandomEvents(projectId, 100, "test_type")
 	//actions.GenerateRandomEvents(100, "test_type2")
 	//actions.GenerateRandomEvents(100, "test_type3")
 	//actions.GenerateRandomEvents(100, "test_type4")

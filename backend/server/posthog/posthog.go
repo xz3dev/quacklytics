@@ -1,7 +1,7 @@
 package posthog
 
 import (
-	"analytics/actions"
+	"analytics/domain/apikeys"
 	"analytics/domain/events"
 	"analytics/domain/events/processor"
 	"analytics/internal/log"
@@ -97,7 +97,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 	appdb := svmw.GetAppDB(r)
 
 	for token, eventsByToken := range eventInputsByToken {
-		projectId, err := actions.ValidateAPIKey(appdb, token)
+		projectId, err := apikeys.ValidateAPIKey(appdb, token)
 		if err != nil {
 			log.Error("Error while validating API key: %v. Skipping %d events.", err, len(eventsByToken))
 			continue

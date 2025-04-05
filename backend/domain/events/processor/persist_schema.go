@@ -1,8 +1,8 @@
 package processor
 
 import (
+	"analytics/domain/schema"
 	"analytics/internal/log"
-	"analytics/schema"
 	"gorm.io/gorm"
 	"time"
 )
@@ -63,13 +63,13 @@ func persistPropertyValues(properties []schema.EventSchemaProperty, db *gorm.DB)
 
 	// Collect all values from all properties
 	for _, prop := range properties {
-		values := prepareValuesForPersistence(prop)
+		values := schema.PrepareValuesForPersistence(prop)
 		allValues = append(allValues, values...)
 	}
 
 	// Only persist if we have values
 	if len(allValues) > 0 {
-		if err := persistValues(allValues, db); err != nil {
+		if err := schema.PersistValues(allValues, db); err != nil {
 			log.Error("Error persisting property values:", err)
 			return err
 		}

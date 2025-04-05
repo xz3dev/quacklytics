@@ -1,4 +1,4 @@
-package model
+package filecatalog
 
 import (
 	"gorm.io/gorm"

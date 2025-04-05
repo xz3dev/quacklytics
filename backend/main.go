@@ -1,16 +1,19 @@
 package main
 
 import (
-	"analytics/actions"
 	"analytics/auth"
 	"analytics/config"
 	"analytics/cron"
 	"analytics/database/appdb"
+	"analytics/domain/apikeys"
+	"analytics/domain/dashboards"
+	"analytics/domain/events/parquet"
+	"analytics/domain/filecatalog"
+	"analytics/domain/insightmeta"
 	"analytics/domain/insights"
 	"analytics/domain/projects"
+	"analytics/domain/schema"
 	"analytics/internal/log"
-	"analytics/model"
-	"analytics/schema"
 	"analytics/server"
 	_ "github.com/marcboeker/go-duckdb"
 	"gorm.io/gorm"
@@ -35,23 +38,23 @@ func initCronJobs(
 ) {
 	for projectId, db := range *projectDbs {
 		cron.InitProjectCron(projectId, db, func(projectId string, db *gorm.DB) {
-			actions.GenerateParquetFiles(projectId, db)
+			parquet.GenerateParquetFiles(projectId, db)
 		})
 	}
 }
 
 func registerTables() {
 	var projectTablesRegistry = []interface{}{
-		&model.Dashboard{},
-		&model.DashboardInsight{},
+		&dashboards.Dashboard{},
+		&dashboards.DashboardInsight{},
 		&insights.Insight{},
 		&insights.Series{},
 		&schema.EventSchema{},
 		&schema.EventSchemaProperty{},
 		&schema.EventSchemaPropertyValue{},
-		&model.InsightMeta{},
-		&model.ProjectSetting{},
-		&model.FileCatalogEntry{},
+		&insightmeta.InsightMeta{},
+		&projects.ProjectSetting{},
+		&filecatalog.FileCatalogEntry{},
 	}
 
 	var appTablesRegistry = []interface{}{
@@ -59,7 +62,7 @@ func registerTables() {
 		&auth.RememberToken{},
 		&auth.RecoveryToken{},
 		&auth.RealtimeToken{},
-		&model.ApiKey{},
+		&apikeys.ApiKey{},
 	}
 	appdb.RegisterTables(projectTablesRegistry, appTablesRegistry)
 }

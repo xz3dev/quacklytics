@@ -1,8 +1,8 @@
 package processor
 
 import (
+	"analytics/domain/person"
 	"analytics/internal/log"
-	"analytics/model"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-func (p *ProjectProcessor) CreatePersons(newPersons map[string]*model.Person, mappedPersons map[string]*model.Person) {
+func (p *ProjectProcessor) CreatePersons(newPersons map[string]*person.Person, mappedPersons map[string]*person.Person) {
 	start := time.Now()
 	tx, err := p.dbd.Tx()
 	personsAppender := p.dbd.Appender("persons")
 
-	uniquePersons := make(map[uuid.UUID]*model.Person)
+	uniquePersons := make(map[uuid.UUID]*person.Person)
 	for _, person := range newPersons {
 		uniquePersons[person.Id] = person
 	}
@@ -46,7 +46,7 @@ func (p *ProjectProcessor) CreatePersons(newPersons map[string]*model.Person, ma
 	log.Debug("Persisted %d persons in %v", len(newPersons), elapsed)
 }
 
-func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, mappings map[string]*model.Person) error {
+func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, mappings map[string]*person.Person) error {
 	start := time.Now()
 	if len(mappings) == 0 {
 		return nil
@@ -73,7 +73,7 @@ func (p *ProjectProcessor) createPersonMappings(tx *sql.Tx, mappings map[string]
 	return nil
 }
 
-func (p *ProjectProcessor) UpdatePersons(updatedPersons map[string]*model.Person) error {
+func (p *ProjectProcessor) UpdatePersons(updatedPersons map[string]*person.Person) error {
 	start := time.Now()
 	tx, err := p.dbd.Tx()
 	if err != nil {

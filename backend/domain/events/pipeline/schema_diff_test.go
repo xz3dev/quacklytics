@@ -2,8 +2,8 @@ package pipeline
 
 import (
 	"analytics/domain/events"
-	"analytics/model"
-	"analytics/schema"
+	"analytics/domain/person"
+	"analytics/domain/schema"
 	"github.com/zeebo/assert"
 	"testing"
 	"time"
@@ -35,7 +35,7 @@ func TestSchemaDiff(t *testing.T) {
 
 	e := New(&Input{
 		Events:          testEvents,
-		ExistingPersons: make(map[string]*model.Person),
+		ExistingPersons: make(map[string]*person.Person),
 		EventSchema: map[string]*schema.EventSchema{
 			"test_type": {
 				ID:        0,

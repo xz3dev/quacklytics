@@ -4,7 +4,6 @@ import (
 	"analytics/database/appdb"
 	projects2 "analytics/domain/projects"
 	"analytics/internal/log"
-	"analytics/model"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
@@ -14,11 +13,11 @@ import (
 )
 
 type projectData struct {
-	Id        string             `json:"id"`
-	Name      string             `json:"name"`
-	Partition string             `json:"partition"`
-	AutoLoad  int                `json:"autoload"`
-	Files     model.ProjectFiles `json:"files"`
+	Id        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Partition string                 `json:"partition"`
+	AutoLoad  int                    `json:"autoload"`
+	Files     projects2.ProjectFiles `json:"files"`
 }
 
 func ListProjects(writer http.ResponseWriter, request *http.Request) {
@@ -93,7 +92,7 @@ func CreateProject(writer http.ResponseWriter, request *http.Request) {
 		Name:      project.ID,
 		Partition: settings[projects2.Partition],
 		AutoLoad:  autoload,
-		Files:     model.ProjectFiles{},
+		Files:     projects2.ProjectFiles{},
 	}
 
 	json.NewEncoder(writer).Encode(projectData)
@@ -117,6 +116,6 @@ func UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 type ProjectSettingsUpdate struct {
-	Key   model.ProjectSettingKey `json:"key"`
-	Value string                  `json:"value"`
+	Key   projects2.ProjectSettingKey `json:"key"`
+	Value string                      `json:"value"`
 }

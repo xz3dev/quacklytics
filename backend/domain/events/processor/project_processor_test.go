@@ -3,8 +3,8 @@ package processor
 import (
 	"analytics/domain/events"
 	"analytics/domain/events/pipeline"
-	"analytics/model"
-	"analytics/schema"
+	"analytics/domain/person"
+	"analytics/domain/schema"
 	"github.com/google/uuid"
 	"github.com/zeebo/assert"
 	"testing"
@@ -26,7 +26,7 @@ func TestDifferentDistinctIdResultsInDifferentPersonIds(t *testing.T) {
 		},
 	}
 
-	existingPersons := make(map[string]*model.Person)
+	existingPersons := make(map[string]*person.Person)
 
 	e := pipeline.New(&pipeline.Input{
 		Events:          testEvents,
@@ -59,7 +59,7 @@ func TestEqualDistinctIdResultsInEqualPersonIds(t *testing.T) {
 
 	e := pipeline.New(&pipeline.Input{
 		Events:          testEvents,
-		ExistingPersons: make(map[string]*model.Person),
+		ExistingPersons: make(map[string]*person.Person),
 		EventSchema:     make(map[string]*schema.EventSchema),
 	})
 	results, err := e.Process()
@@ -84,7 +84,7 @@ func TestExistingDistinctIdIsReused(t *testing.T) {
 
 	e := pipeline.New(&pipeline.Input{
 		Events: testEvents,
-		ExistingPersons: map[string]*model.Person{
+		ExistingPersons: map[string]*person.Person{
 			"id_1": {
 				Id:         testUuid,
 				FirstSeen:  time.Time{},
@@ -130,7 +130,7 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 		},
 	}
 
-	existingPersons := make(map[string]*model.Person)
+	existingPersons := make(map[string]*person.Person)
 
 	e := pipeline.New(&pipeline.Input{
 		Events:          testEvents,
@@ -141,7 +141,7 @@ func TestOverwritingPropertiesBasedOnTimestamp(t *testing.T) {
 	results, err := e.Process()
 	assert.NoError(t, err)
 
-	expectedProperties := model.PersonProperties{
+	expectedProperties := person.PersonProperties{
 		"prop_a": "second",
 	}
 
@@ -164,7 +164,7 @@ func TestEventWithoutDistinctIdIsDropped(t *testing.T) {
 		},
 	}
 
-	existingPersons := make(map[string]*model.Person)
+	existingPersons := make(map[string]*person.Person)
 
 	e := pipeline.New(&pipeline.Input{
 		Events:          testEvents,
@@ -192,7 +192,7 @@ func TestIdentify(t *testing.T) {
 
 	testPersonId := uuid.MustParse("9ad9d3b9-25a3-44bf-82c1-e61c3c7ee19c")
 
-	existingPersons := map[string]*model.Person{
+	existingPersons := map[string]*person.Person{
 		"id_1": {
 			Id:         testPersonId,
 			FirstSeen:  time.Time{},

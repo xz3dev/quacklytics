@@ -3,8 +3,8 @@ package processor
 import (
 	"analytics/database/types"
 	"analytics/domain/events"
+	"analytics/domain/person"
 	"analytics/internal/log"
-	"analytics/model"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func (p *ProjectProcessor) GetExistingPersons(events []*events.EventInput) (map[string]*model.Person, error) {
+func (p *ProjectProcessor) GetExistingPersons(events []*events.EventInput) (map[string]*person.Person, error) {
 	tx, err := p.dbd.Tx()
 	defer tx.Commit()
 
@@ -41,7 +41,7 @@ func (p *ProjectProcessor) GetExistingPersons(events []*events.EventInput) (map[
 		WHERE list_contains($1::TEXT[], distinct_id)
 	`, allRelevantDistinctIds)
 	if err != nil {
-		return make(map[string]*model.Person), err
+		return make(map[string]*person.Person), err
 	}
 	defer idMappingRows.Close()
 	distinctIdMappings := make(map[string]uuid.UUID)
@@ -63,7 +63,7 @@ func (p *ProjectProcessor) GetExistingPersons(events []*events.EventInput) (map[
 		i++
 	}
 
-	persons := make(map[uuid.UUID]*model.Person)
+	persons := make(map[uuid.UUID]*person.Person)
 
 	rows, err := tx.Query(`
         SELECT id, first_seen, properties
@@ -77,7 +77,7 @@ func (p *ProjectProcessor) GetExistingPersons(events []*events.EventInput) (map[
 	}
 
 	for rows.Next() {
-		var person model.Person
+		var person person.Person
 
 		if err := rows.Scan(&person.Id, &person.FirstSeen, &person.Properties); err != nil {
 			return nil, err
@@ -86,7 +86,7 @@ func (p *ProjectProcessor) GetExistingPersons(events []*events.EventInput) (map[
 		persons[person.Id] = &person
 	}
 
-	personsByDistinctId := make(map[string]*model.Person)
+	personsByDistinctId := make(map[string]*person.Person)
 	for k, v := range distinctIdMappings {
 		personsByDistinctId[k] = persons[v]
 	}
@@ -99,8 +99,8 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(input []*events.EventInput) ([
 
 	eventsWithPerson := make([]*events.Event, len(input))
 
-	newPersons := make(map[uuid.UUID]*model.Person)
-	updatedPersons := make(map[uuid.UUID]*model.Person)
+	newPersons := make(map[uuid.UUID]*person.Person)
+	updatedPersons := make(map[uuid.UUID]*person.Person)
 	distinctIdMappings := make(map[string]uuid.UUID)
 
 	existingPersons, err := p.GetExistingPersons(input)
@@ -120,7 +120,7 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(input []*events.EventInput) ([
 		if event.DistinctId != "" {
 			existing, personExists := existingPersons[event.DistinctId]
 
-			props := make(model.PersonProperties)
+			props := make(person.PersonProperties)
 			if personExists {
 				props = existing.Properties
 			}
@@ -148,7 +148,7 @@ func (p *ProjectProcessor) ProcessPeopleDataBatch(input []*events.EventInput) ([
 			}
 			if !personExists {
 				id := uuid.New()
-				newPersons[id] = &model.Person{
+				newPersons[id] = &person.Person{
 					Id:         id,
 					FirstSeen:  event.Timestamp,
 					Properties: props,

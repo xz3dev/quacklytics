@@ -1,16 +1,16 @@
 package pipeline
 
 import (
-	"analytics/model"
+	"analytics/domain/person"
 )
 
 type personIdentifier struct {
-	existingPersons map[string]*model.Person
-	MappedPersons   map[string]*model.Person
+	existingPersons map[string]*person.Person
+	MappedPersons   map[string]*person.Person
 }
 
 func (p *personIdentifier) Process(ctx *PipelineContext) error {
-	p.MappedPersons = make(map[string]*model.Person)
+	p.MappedPersons = make(map[string]*person.Person)
 	for _, event := range ctx.InputEvents {
 		if event.EventType == "$identify" {
 			oldDistinctId, ok := event.Properties["$anon_distinct_id"].(string)

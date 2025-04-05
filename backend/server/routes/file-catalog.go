@@ -1,12 +1,11 @@
 package routes
 
 import (
-	"analytics/actions"
 	"analytics/config"
+	"analytics/domain/events/parquet"
 	"analytics/domain/filecatalog"
 	"analytics/domain/projects"
 	"analytics/internal/log"
-	"analytics/model"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
@@ -26,7 +25,7 @@ func SetupFileCatalogRoutes(mux chi.Router) {
 }
 
 type FileCatalogEntryResponse struct {
-	model.FileCatalogEntry
+	filecatalog.FileCatalogEntry
 	AutoLoad bool  `json:"autoload"`
 	FileSize int64 `json:"filesize"`
 }
@@ -77,7 +76,7 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 	db := svmw.GetProjectDB(r, w)
 	filename := r.URL.Query().Get("file")
 
-	var fileEntry model.FileCatalogEntry
+	var fileEntry filecatalog.FileCatalogEntry
 	err := db.Find(&fileEntry, "name = ?", filename).Error
 	if err != nil {
 		log.Error("Error while querying file %s: %v", filename, err)
@@ -104,6 +103,6 @@ func FileDownload(w http.ResponseWriter, r *http.Request) {
 func RegenerateFiles(w http.ResponseWriter, r *http.Request) {
 	db := svmw.GetProjectDB(r, w)
 	projectId := svmw.GetProjectID(r)
-	actions.GenerateParquetFiles(projectId, db)
+	parquet.GenerateParquetFiles(projectId, db)
 	w.WriteHeader(http.StatusOK)
 }

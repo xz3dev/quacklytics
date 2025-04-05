@@ -1,17 +1,17 @@
 package pipeline
 
 import (
+	"analytics/domain/person"
 	"analytics/internal/log"
-	"analytics/model"
 )
 
 type personUpdater struct {
-	existingPersonsFn func() map[string]*model.Person
-	PersonUpdates     map[string]*model.Person
+	existingPersonsFn func() map[string]*person.Person
+	PersonUpdates     map[string]*person.Person
 }
 
 func (p *personUpdater) Process(ctx *PipelineContext) error {
-	p.PersonUpdates = make(map[string]*model.Person)
+	p.PersonUpdates = make(map[string]*person.Person)
 
 	existingPersons := p.existingPersonsFn()
 

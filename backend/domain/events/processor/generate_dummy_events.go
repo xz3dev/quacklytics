@@ -1,8 +1,7 @@
-package actions
+package processor
 
 import (
 	"analytics/domain/events"
-	"analytics/domain/events/processor"
 	"analytics/internal/log"
 	"fmt"
 	"github.com/google/uuid"
@@ -45,6 +44,6 @@ func GenerateRandomEvents(projectId string, numEvents int, eventType string) {
 			Properties: randomProperties,
 		}
 
-		processor.ProcessEvent(projectId, eventInput)
+		ProcessEvent(projectId, eventInput)
 	}
 }

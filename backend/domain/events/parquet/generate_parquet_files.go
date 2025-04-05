@@ -1,10 +1,9 @@
-package actions
+package parquet
 
 import (
 	"analytics/config"
 	filecatalog2 "analytics/domain/filecatalog"
 	"analytics/internal/log"
-	"analytics/model"
 	"gorm.io/gorm"
 	"os"
 	"path"
@@ -44,7 +43,7 @@ func GenerateParquetFiles(projectId string, db *gorm.DB) {
 
 	log.Info("FileGen %s: Found %d existing files", projectId, len(existingFilenames))
 
-	var missingSegments []model.DataSegment
+	var missingSegments []filecatalog2.DataSegment
 	for _, segment := range segments {
 		if !existingFilenames[segment.Filename] {
 			missingSegments = append(missingSegments, segment)

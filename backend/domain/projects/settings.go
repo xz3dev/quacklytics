@@ -1,29 +1,28 @@
 package projects
 
 import (
-	"analytics/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 const (
-	Name          model.ProjectSettingKey = "name"
-	Partition     model.ProjectSettingKey = "partition"
-	AutoLoadRange model.ProjectSettingKey = "autoload"
+	Name          ProjectSettingKey = "name"
+	Partition     ProjectSettingKey = "partition"
+	AutoLoadRange ProjectSettingKey = "autoload"
 )
 
-func QuerySettings(projectId string, db *gorm.DB) (map[model.ProjectSettingKey]string, error) {
-	var settings []model.ProjectSetting
+func QuerySettings(projectId string, db *gorm.DB) (map[ProjectSettingKey]string, error) {
+	var settings []ProjectSetting
 	err := db.Find(&settings).Error
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[model.ProjectSettingKey]string, len(settings))
+	result := make(map[ProjectSettingKey]string, len(settings))
 	for _, setting := range settings {
 		result[setting.Key] = setting.Value
 	}
 
-	defaults := map[model.ProjectSettingKey]string{
+	defaults := map[ProjectSettingKey]string{
 		Name:          projectId,
 		Partition:     "",
 		AutoLoadRange: "6",
@@ -37,8 +36,8 @@ func QuerySettings(projectId string, db *gorm.DB) (map[model.ProjectSettingKey]s
 	return result, nil
 }
 
-func UpdateSetting(db *gorm.DB, key model.ProjectSettingKey, value string) error {
-	setting := model.ProjectSetting{
+func UpdateSetting(db *gorm.DB, key ProjectSettingKey, value string) error {
+	setting := ProjectSetting{
 		Key:   key,
 		Value: value,
 	}

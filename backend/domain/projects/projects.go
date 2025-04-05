@@ -5,7 +5,6 @@ import (
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
 	"analytics/internal/log"
-	"analytics/model"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,20 +22,20 @@ func CreateDirectories() {
 	}
 }
 
-func ListProjects() []model.ProjectFiles {
+func ListProjects() []ProjectFiles {
 	files, err := os.ReadDir(config.Config.Paths.Database)
 	if err != nil {
 		log.Fatal("Error reading directory: ", err)
 	}
 
-	projects := make([]model.ProjectFiles, 0)
+	projects := make([]ProjectFiles, 0)
 	for _, file := range files {
 		if !file.IsDir() && strings.HasPrefix(file.Name(), config.Config.Database.ProjectPrefix) {
 			var projectName = strings.TrimSuffix(
 				strings.TrimPrefix(file.Name(), config.Config.Database.ProjectPrefix),
 				".db",
 			)
-			projects = append(projects, model.ProjectFiles{
+			projects = append(projects, ProjectFiles{
 				ID:              projectName,
 				DbFile:          filepath.Join(config.Config.Paths.Database, file.Name()),
 				AnalyticsDbFile: filepath.Join(config.Config.Paths.Database, config.Config.Database.AnalyticsPrefix+projectName+".db"),

@@ -1,4 +1,4 @@
-package model
+package apikeys
 
 import "analytics/database/types"
 

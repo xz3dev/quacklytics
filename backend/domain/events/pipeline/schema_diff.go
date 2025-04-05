@@ -2,7 +2,7 @@ package pipeline
 
 import (
 	"analytics/domain/events"
-	"analytics/schema"
+	"analytics/domain/schema"
 	"fmt"
 	"reflect"
 	"regexp"

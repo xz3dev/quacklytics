@@ -1,4 +1,4 @@
-package actions
+package schemafixer
 
 import (
 	"analytics/database/analyticsdb"

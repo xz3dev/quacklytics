@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"analytics/model"
+	"analytics/domain/apikeys"
 	svmw "analytics/server/middlewares"
 	"analytics/util"
 	"encoding/json"
@@ -53,7 +53,7 @@ func createKey(w http.ResponseWriter, r *http.Request) {
 	projectId := svmw.GetProjectID(r)
 	appdb := svmw.GetAppDB(r)
 
-	appdb.Create(&model.ApiKey{
+	appdb.Create(&apikeys.ApiKey{
 		Key:     fmt.Sprintf("ds_%s_%s", projectId, util.RandSeq(20)),
 		Project: projectId,
 	})
@@ -84,8 +84,8 @@ func getKey(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(key)
 }
 
-func queryKey(db *gorm.DB, id int, projectId string) (*model.ApiKey, error) {
-	var key model.ApiKey
+func queryKey(db *gorm.DB, id int, projectId string) (*apikeys.ApiKey, error) {
+	var key apikeys.ApiKey
 	err := db.First(&key, "id = ? and project = ?", id, projectId).Error
 	if err != nil {
 		return nil, err
@@ -94,8 +94,8 @@ func queryKey(db *gorm.DB, id int, projectId string) (*model.ApiKey, error) {
 	return &key, nil
 }
 
-func queryKeys(db *gorm.DB, projectId string) []model.ApiKey {
-	var keys []model.ApiKey
+func queryKeys(db *gorm.DB, projectId string) []apikeys.ApiKey {
+	var keys []apikeys.ApiKey
 	db.Find(&keys, "project = ?", projectId)
 	for i := range keys {
 		keys[i].Key = ""
@@ -105,5 +105,5 @@ func queryKeys(db *gorm.DB, projectId string) []model.ApiKey {
 }
 
 func deleteKeyFromDb(db *gorm.DB, keyId int, projectId string) error {
-	return db.Delete(&model.ApiKey{}, "id = ? and project = ?", keyId, projectId).Error
+	return db.Delete(&apikeys.ApiKey{}, "id = ? and project = ?", keyId, projectId).Error
 }

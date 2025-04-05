@@ -3,6 +3,7 @@ package processor
 import (
 	"analytics/domain/events"
 	"analytics/domain/events/pipeline"
+	"analytics/domain/schema"
 	"analytics/internal/log"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
@@ -100,9 +101,9 @@ func (p *ProjectProcessor) NewEventProcessor(events []*events.EventInput) (*pipe
 	if err != nil {
 		return nil, err
 	}
-	uniqueEventTypes := extractUniqueEventTypes(events)
-	schemas := FetchExistingSchemas(uniqueEventTypes, p.db)
-	schemasByType := MakeSchemaMap(schemas)
+	uniqueEventTypes := schema.ExtractUniqueEventTypes(events)
+	schemas := schema.FetchExistingSchemas(uniqueEventTypes, p.db)
+	schemasByType := schema.MakeSchemaMap(schemas)
 	return pipeline.New(&pipeline.Input{
 		Events:          events,
 		ExistingPersons: existingPersons,

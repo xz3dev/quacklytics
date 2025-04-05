@@ -1,26 +1,26 @@
 package pipeline
 
 import (
-	"analytics/model"
+	"analytics/domain/person"
 	"github.com/google/uuid"
 )
 
 type personCreator struct {
-	CreatedPersons  map[string]*model.Person
-	existingPersons map[string]*model.Person
+	CreatedPersons  map[string]*person.Person
+	existingPersons map[string]*person.Person
 }
 
 func (p *personCreator) Process(ctx *PipelineContext) error {
-	p.CreatedPersons = make(map[string]*model.Person)
+	p.CreatedPersons = make(map[string]*person.Person)
 
 	for _, event := range ctx.OutputEvents {
 		_, exists := p.existingPersons[event.DistinctId]
 		if !exists {
 			personId := uuid.New()
-			p.CreatedPersons[event.DistinctId] = &model.Person{
+			p.CreatedPersons[event.DistinctId] = &person.Person{
 				Id:         personId,
 				FirstSeen:  event.Timestamp,
-				Properties: make(model.PersonProperties),
+				Properties: make(person.PersonProperties),
 			}
 			p.existingPersons[event.DistinctId] = p.CreatedPersons[event.DistinctId]
 		}

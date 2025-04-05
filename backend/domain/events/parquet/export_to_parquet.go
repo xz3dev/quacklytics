@@ -1,10 +1,10 @@
-package actions
+package parquet
 
 import (
 	"analytics/config"
 	"analytics/database/analyticsdb"
+	"analytics/domain/filecatalog"
 	"analytics/internal/log"
-	"analytics/model"
 	"analytics/util"
 	"errors"
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func ExportEventsToParquet(projectId string, db *gorm.DB, segment model.DataSegment) error {
+func ExportEventsToParquet(projectId string, db *gorm.DB, segment filecatalog.DataSegment) error {
 	dbd, exists := analyticsdb.LookupTable[projectId]
 	if !exists {
 		return errors.New("project not found")
@@ -78,7 +78,7 @@ WHERE e.timestamp >= '%s' AND e.timestamp <= '%s'
 func createCatalogEntry(
 	projectId string,
 	db *gorm.DB,
-	segment model.DataSegment,
+	segment filecatalog.DataSegment,
 	count uint,
 ) error {
 	filepath := path.Join(config.Config.Paths.Parquet, projectId, segment.Filename)
@@ -87,7 +87,7 @@ func createCatalogEntry(
 		return err
 	}
 
-	entry := model.FileCatalogEntry{
+	entry := filecatalog.FileCatalogEntry{
 		Name:       segment.Filename,
 		Start:      &segment.StartDate,
 		End:        &segment.EndDate,
