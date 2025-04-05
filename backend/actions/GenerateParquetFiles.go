@@ -2,8 +2,8 @@ package actions
 
 import (
 	"analytics/config"
-	"analytics/filecatalog"
-	"analytics/log"
+	filecatalog2 "analytics/domain/filecatalog"
+	"analytics/internal/log"
 	"analytics/model"
 	"gorm.io/gorm"
 	"os"
@@ -14,14 +14,14 @@ import (
 func GenerateParquetFiles(projectId string, db *gorm.DB) {
 	now := time.Now()
 	cutoff := now.AddDate(-2, 0, 0)
-	segments := filecatalog.GenerateTimeFragments(now, cutoff)
+	segments := filecatalog2.GenerateTimeFragments(now, cutoff)
 
 	filenames := make([]string, len(segments))
 	for i, segment := range segments {
 		filenames[i] = segment.Filename
 	}
 
-	existing, err := filecatalog.ListAll(db)
+	existing, err := filecatalog2.ListAll(db)
 	if err != nil {
 		log.Error("FileGen %s: Could not list existing files: %s", projectId, err)
 	}

@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"analytics/model"
+	insights2 "analytics/domain/insights"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"net/http"
@@ -27,7 +27,7 @@ func getInsight(w http.ResponseWriter, r *http.Request) {
 
 	db := sv_mw.GetProjectDB(r, w)
 
-	var insight model.Insight
+	var insight insights2.Insight
 	result := db.Preload("Series").First(&insight, id)
 	if result.Error != nil {
 		http.Error(w, "Insight not found: "+result.Error.Error(), http.StatusNotFound)
@@ -40,7 +40,7 @@ func getInsight(w http.ResponseWriter, r *http.Request) {
 
 func listInsights(w http.ResponseWriter, r *http.Request) {
 	db := sv_mw.GetProjectDB(r, w)
-	var insights []model.Insight
+	var insights []insights2.Insight
 	result := db.Preload("Series").Find(&insights)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
@@ -53,13 +53,13 @@ func listInsights(w http.ResponseWriter, r *http.Request) {
 
 func createInsight(w http.ResponseWriter, r *http.Request) {
 	db := sv_mw.GetProjectDB(r, w)
-	var input model.InsightInput
+	var input insights2.InsightInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	insight := model.Insight{
+	insight := insights2.Insight{
 		InsightInput: input,
 	}
 
@@ -98,7 +98,7 @@ func updateInsight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input model.InsightInput
+	var input insights2.InsightInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -106,7 +106,7 @@ func updateInsight(w http.ResponseWriter, r *http.Request) {
 
 	db := sv_mw.GetProjectDB(r, w)
 
-	var insight model.Insight
+	var insight insights2.Insight
 	result := db.Preload("Series").First(&insight, id)
 	if result.Error != nil {
 		http.Error(w, "Insight not found", http.StatusNotFound)
@@ -166,14 +166,14 @@ func deleteInsight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete associated series first
-	if err := tx.Where("insight_id = ?", id).Delete(&model.Series{}).Error; err != nil {
+	if err := tx.Where("insight_id = ?", id).Delete(&insights2.Series{}).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Delete the insight
-	if err := tx.Delete(&model.Insight{}, id).Error; err != nil {
+	if err := tx.Delete(&insights2.Insight{}, id).Error; err != nil {
 		tx.Rollback()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

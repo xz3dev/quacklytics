@@ -1,7 +1,7 @@
 package testsetup
 
 import (
-	"analytics/log"
+	"analytics/internal/log"
 	"gorm.io/gorm"
 	"testing"
 )

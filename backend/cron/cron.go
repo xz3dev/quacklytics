@@ -1,7 +1,7 @@
 package cron
 
 import (
-	"analytics/log"
+	"analytics/internal/log"
 	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -26,8 +26,7 @@ var _ gocron.Logger = &cronLogger{}
 type cronLogger struct{}
 
 func logger() *zap.SugaredLogger {
-	return log.
-		Logger.
+	return log.Logger.
 		Sugar()
 }
 

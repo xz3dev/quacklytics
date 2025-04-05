@@ -6,9 +6,10 @@ import (
 	"analytics/config"
 	"analytics/cron"
 	"analytics/database/appdb"
-	"analytics/log"
+	"analytics/domain/insights"
+	"analytics/domain/projects"
+	"analytics/internal/log"
 	"analytics/model"
-	"analytics/projects"
 	"analytics/schema"
 	"analytics/server"
 	_ "github.com/marcboeker/go-duckdb"
@@ -43,8 +44,8 @@ func registerTables() {
 	var projectTablesRegistry = []interface{}{
 		&model.Dashboard{},
 		&model.DashboardInsight{},
-		&model.Insight{},
-		&model.Series{},
+		&insights.Insight{},
+		&insights.Series{},
 		&schema.EventSchema{},
 		&schema.EventSchemaProperty{},
 		&schema.EventSchemaPropertyValue{},

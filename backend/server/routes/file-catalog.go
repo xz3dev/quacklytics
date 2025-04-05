@@ -3,10 +3,10 @@ package routes
 import (
 	"analytics/actions"
 	"analytics/config"
-	"analytics/filecatalog"
-	"analytics/log"
+	"analytics/domain/filecatalog"
+	"analytics/domain/projects"
+	"analytics/internal/log"
 	"analytics/model"
-	"analytics/projects"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"

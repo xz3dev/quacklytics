@@ -1,11 +1,16 @@
 package model
 
+import (
+	"analytics/database/types"
+	"analytics/domain/insights"
+)
+
 type Dashboard struct {
-	Base
+	types.Base
 	Name string `gorm:"size:255;not null" json:"name"`
 	DashboardInput
-	Insights []Insight `gorm:"many2many:dashboard_insights;joinForeignKey:DashboardID;JoinReferences:InsightID" json:"insights"`
-	Home     bool      `json:"home" gorm:"default:false"`
+	Insights []insights.Insight `gorm:"many2many:dashboard_insights;joinForeignKey:DashboardID;JoinReferences:InsightID" json:"insights"`
+	Home     bool               `json:"home" gorm:"default:false"`
 }
 
 type DashboardInsight struct {

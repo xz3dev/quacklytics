@@ -2,8 +2,8 @@ package actions
 
 import (
 	"analytics/database/analyticsdb"
-	"analytics/events"
-	"analytics/model"
+	"analytics/domain/events"
+	"analytics/domain/events/processor"
 	"analytics/util"
 	"errors"
 	"slices"
@@ -14,14 +14,14 @@ func FixupPersonsAndSchema(project string) error {
 	if analyticsDb == nil {
 		return errors.New("project not found")
 	}
-	e, err := QueryEvents(analyticsDb, nil)
+	e, err := events.QueryEvents(analyticsDb, nil)
 	if err != nil {
 		return err
 	}
 
-	p := events.GetOrCreateProcessor(project)
+	p := processor.GetOrCreateProcessor(project)
 
-	slices.SortFunc(*e, func(i, j model.EventWithPersonId) int {
+	slices.SortFunc(*e, func(i, j events.EventWithPersonId) int {
 		if i.Timestamp.Equal(j.Timestamp) {
 			return 0
 		}
@@ -32,10 +32,10 @@ func FixupPersonsAndSchema(project string) error {
 		return 1
 	})
 	var outerErr error
-	util.ProcessBatched(e, 10000, func(batch []model.EventWithPersonId) {
-		inputEvents := make([]*model.EventInput, len(batch))
+	util.ProcessBatched(e, 10000, func(batch []events.EventWithPersonId) {
+		inputEvents := make([]*events.EventInput, len(batch))
 		for i, event := range batch {
-			inputEvents[i] = &model.EventInput{
+			inputEvents[i] = &events.EventInput{
 				EventType:  event.EventType,
 				DistinctId: event.DistinctId,
 				Timestamp:  event.Timestamp,

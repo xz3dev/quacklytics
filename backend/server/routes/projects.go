@@ -1,11 +1,10 @@
 package routes
 
 import (
-	"analytics/actions"
 	"analytics/database/appdb"
-	"analytics/log"
+	projects2 "analytics/domain/projects"
+	"analytics/internal/log"
 	"analytics/model"
-	"analytics/projects"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
@@ -25,7 +24,7 @@ type projectData struct {
 func ListProjects(writer http.ResponseWriter, request *http.Request) {
 	dbLookup := request.Context().Value(sv_mw.ProjectDBLookupKey).(*appdb.ProjectDBLookup)
 
-	projectList := projects.ListProjects()
+	projectList := projects2.ListProjects()
 	data := make([]projectData, 0, len(projectList))
 	for _, project := range projectList {
 		projDb, ok := (*dbLookup)[project.ID]
@@ -33,15 +32,15 @@ func ListProjects(writer http.ResponseWriter, request *http.Request) {
 			http.Error(writer, fmt.Sprintf("Project DB not found: %s", project.ID), http.StatusInternalServerError)
 			return
 		}
-		settings, err := projects.QuerySettings(project.ID, projDb)
+		settings, err := projects2.QuerySettings(project.ID, projDb)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		autoload, err := strconv.Atoi(settings[projects.AutoLoadRange])
+		autoload, err := strconv.Atoi(settings[projects2.AutoLoadRange])
 		if err != nil {
-			log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects.AutoLoadRange])
+			log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects2.AutoLoadRange])
 		}
 		if autoload <= 0 {
 			autoload = 6
@@ -49,8 +48,8 @@ func ListProjects(writer http.ResponseWriter, request *http.Request) {
 
 		data = append(data, projectData{
 			Id:        project.ID,
-			Name:      settings[projects.Name],
-			Partition: settings[projects.Partition],
+			Name:      settings[projects2.Name],
+			Partition: settings[projects2.Partition],
 			AutoLoad:  autoload,
 			Files:     project,
 		})
@@ -73,7 +72,7 @@ func CreateProject(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	project, err := actions.CreateProject(input.Name)
+	project, err := projects2.CreateProject(input.Name)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusBadRequest)
 	}
@@ -84,15 +83,15 @@ func CreateProject(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	settings, err := projects.QuerySettings(project.ID, projDb)
-	autoload, err := strconv.Atoi(settings[projects.AutoLoadRange])
+	settings, err := projects2.QuerySettings(project.ID, projDb)
+	autoload, err := strconv.Atoi(settings[projects2.AutoLoadRange])
 	if err != nil {
-		log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects.AutoLoadRange])
+		log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects2.AutoLoadRange])
 	}
 	projectData := projectData{
 		Id:        project.ID,
 		Name:      project.ID,
-		Partition: settings[projects.Partition],
+		Partition: settings[projects2.Partition],
 		AutoLoad:  autoload,
 		Files:     model.ProjectFiles{},
 	}
@@ -112,7 +111,7 @@ func UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, update := range input {
-		projects.UpdateSetting(db, update.Key, update.Value)
+		projects2.UpdateSetting(db, update.Key, update.Value)
 	}
 	ListProjects(w, r)
 }

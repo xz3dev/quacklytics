@@ -3,10 +3,10 @@ package routes
 import (
 	"analytics/actions"
 	"analytics/database/analyticsdb"
-	"analytics/events"
-	"analytics/log"
-	"analytics/model"
-	"analytics/queries"
+	"analytics/domain/events"
+	"analytics/domain/events/processor"
+	"analytics/domain/queries"
+	"analytics/internal/log"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
@@ -33,7 +33,7 @@ func AppendEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var event []model.EventInput
+	var event []events.EventInput
 	err = json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -47,7 +47,7 @@ func AppendEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("wrong api key for project: %s", projectIdFromUrl), http.StatusBadRequest)
 	}
 	for _, e := range event {
-		events.ProcessEvent(projectId, &e)
+		processor.ProcessEvent(projectId, &e)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -70,7 +70,7 @@ func QueryEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := actions.QueryEvents(analyticsDb, queryParams)
+	events, err := events.QueryEvents(analyticsDb, queryParams)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Error("Error while querying events: %v", err)

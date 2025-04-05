@@ -3,7 +3,7 @@ package actions
 import (
 	"analytics/config"
 	"analytics/database/analyticsdb"
-	"analytics/log"
+	"analytics/internal/log"
 	"analytics/model"
 	"analytics/util"
 	"errors"

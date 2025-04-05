@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"analytics/model"
+	"analytics/database/types"
 	"analytics/util"
 	"errors"
 	"gorm.io/gorm"
@@ -9,7 +9,7 @@ import (
 )
 
 type RealtimeToken struct {
-	model.Base
+	types.Base
 	UserID UUID   `gorm:"type:varchar(36);index;not null" json:"-"`
 	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"-"`
 	Token  string `gorm:"unique;not null"`
@@ -18,7 +18,7 @@ type RealtimeToken struct {
 func CreateRealtimeToken(db *gorm.DB, userId UUID) (*RealtimeToken, error) {
 	invalidAt := time.Now().Add(time.Minute * 10)
 	token := &RealtimeToken{
-		Base: model.Base{
+		Base: types.Base{
 			DeletedAt: gorm.DeletedAt{
 				Time:  invalidAt,
 				Valid: true,

@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"analytics/log"
-	"analytics/model"
+	"analytics/database/types"
+	"analytics/internal/log"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
@@ -23,14 +23,14 @@ func (u *User) GetValues() map[string]string {
 }
 
 type RememberToken struct {
-	model.Base
+	types.Base
 	UserID UUID   `gorm:"type:varchar(36);index;not null"`
 	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Token  string `gorm:"unique;not null"`
 }
 
 type RecoveryToken struct {
-	model.Base
+	types.Base
 	UserID    UUID      `gorm:"type:varchar(36);index;not null"`
 	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Token     string    `gorm:"unique;not null"`

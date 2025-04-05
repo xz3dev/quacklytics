@@ -2,7 +2,7 @@ package analyticsdb
 
 import (
 	"analytics/database/analyticsdb/analyticsmigrations"
-	"analytics/log"
+	"analytics/internal/log"
 	"context"
 	"database/sql"
 	"database/sql/driver"

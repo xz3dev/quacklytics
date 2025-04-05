@@ -1,7 +1,8 @@
 package routes
 
 import (
-	"analytics/log"
+	"analytics/domain/insights"
+	"analytics/internal/log"
 	"analytics/model"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
@@ -43,7 +44,7 @@ func loadDashboard(db *gorm.DB, id string) (*model.Dashboard, error) {
 	}
 
 	// Then get insights with order
-	var insights []model.Insight
+	var insights []insights.Insight
 	err = db.Table("insights").
 		Select("insights.*").
 		Joins("JOIN dashboard_insights ON dashboard_insights.insight_id = insights.id").
@@ -65,7 +66,7 @@ func loadDashboards(db *gorm.DB) ([]model.Dashboard, error) {
 
 	// For each dashboard, load its insights
 	for i := range dashboards {
-		var insights []model.Insight
+		var insights []insights.Insight
 		err := db.Table("insights").
 			Select("insights.*").
 			Joins("JOIN dashboard_insights ON dashboard_insights.insight_id = insights.id").

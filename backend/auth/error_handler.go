@@ -1,8 +1,8 @@
 package auth
 
 import (
-	errors2 "analytics/errors"
-	"analytics/log"
+	"analytics/internal/log"
+	errors2 "analytics/server/errors"
 	"errors"
 	"fmt"
 	"github.com/volatiletech/authboss/v3"

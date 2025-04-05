@@ -1,11 +1,11 @@
 package server
 
 import (
-	"analytics/actions"
 	"analytics/auth"
 	"analytics/config"
 	"analytics/database/appdb"
-	"analytics/log"
+	"analytics/domain/projects"
+	"analytics/internal/log"
 	svmw "analytics/server/middlewares"
 	"analytics/server/posthog"
 	"analytics/server/routes"
@@ -41,7 +41,7 @@ func Start(appDb *gorm.DB, projectDbs *appdb.ProjectDBLookup) {
 	}
 
 	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		actions.CreateDefaultProject()
+		projects.CreateDefaultProject()
 		return false, nil
 	})
 

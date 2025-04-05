@@ -2,7 +2,7 @@ package appdb
 
 import (
 	"analytics/config"
-	"analytics/log"
+	"analytics/internal/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"

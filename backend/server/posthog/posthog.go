@@ -2,9 +2,9 @@ package posthog
 
 import (
 	"analytics/actions"
-	events2 "analytics/events"
-	"analytics/log"
-	"analytics/model"
+	"analytics/domain/events"
+	"analytics/domain/events/processor"
+	"analytics/internal/log"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"
@@ -68,16 +68,16 @@ func extractIdentifiers(e posthogEvent) (string, string, bool) {
 }
 
 func PosthogHandler(w http.ResponseWriter, r *http.Request) {
-	var events posthogEventList
-	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+	var ingestedEvents posthogEventList
+	if err := json.NewDecoder(r.Body).Decode(&ingestedEvents); err != nil {
 		http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Create a map to group event inputs by token.
-	eventInputsByToken := make(map[string][]*model.EventInput)
+	eventInputsByToken := make(map[string][]*events.EventInput)
 	now := time.Now()
-	for _, e := range events {
+	for _, e := range ingestedEvents {
 		eventTime := calculateEventTime(e, now)
 
 		token, distinctId, valid := extractIdentifiers(e)
@@ -85,7 +85,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		eventInput := model.EventInput{
+		eventInput := events.EventInput{
 			EventType:  e.Event,
 			DistinctId: distinctId,
 			Timestamp:  eventTime,
@@ -102,7 +102,7 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 			log.Error("Error while validating API key: %v. Skipping %d events.", err, len(eventsByToken))
 			continue
 		}
-		events2.ProcessEvents(projectId, eventsByToken)
+		processor.ProcessEvents(projectId, eventsByToken)
 	}
 
 	w.WriteHeader(http.StatusOK)

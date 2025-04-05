@@ -1,9 +1,9 @@
 package actions
 
 import (
-	"analytics/events"
-	"analytics/log"
-	"analytics/model"
+	"analytics/domain/events"
+	"analytics/domain/events/processor"
+	"analytics/internal/log"
 	"fmt"
 	"github.com/google/uuid"
 	"math"
@@ -38,13 +38,13 @@ func GenerateRandomEvents(projectId string, numEvents int, eventType string) {
 			}
 		}
 
-		eventInput := &model.EventInput{
+		eventInput := &events.EventInput{
 			EventType:  eventType,
 			DistinctId: uuid.New().String(),
 			Timestamp:  timestamp,
 			Properties: randomProperties,
 		}
 
-		events.ProcessEvent(projectId, eventInput)
+		processor.ProcessEvent(projectId, eventInput)
 	}
 }

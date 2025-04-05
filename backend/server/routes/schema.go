@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"analytics/log"
+	"analytics/internal/log"
 	"analytics/schema"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
