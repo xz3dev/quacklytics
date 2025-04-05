@@ -13,7 +13,7 @@ import (
 	"analytics/domain/insights"
 	"analytics/domain/projects"
 	"analytics/domain/schema"
-	"analytics/internal/log"
+	"analytics/log"
 	"analytics/server"
 	_ "github.com/marcboeker/go-duckdb"
 	"gorm.io/gorm"

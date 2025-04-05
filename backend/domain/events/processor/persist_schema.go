@@ -2,7 +2,7 @@ package processor
 
 import (
 	"analytics/domain/schema"
-	"analytics/internal/log"
+	"analytics/log"
 	"gorm.io/gorm"
 	"time"
 )

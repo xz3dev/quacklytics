@@ -2,7 +2,7 @@ package pipeline
 
 import (
 	"analytics/domain/events"
-	"analytics/internal/log"
+	"analytics/log"
 	"time"
 )
 

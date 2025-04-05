@@ -2,7 +2,7 @@ package routes
 
 import (
 	"analytics/auth"
-	"analytics/internal/log"
+	"analytics/log"
 	"analytics/server/middlewares"
 	"encoding/json"
 	"github.com/google/uuid"

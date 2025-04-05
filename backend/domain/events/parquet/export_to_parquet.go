@@ -4,7 +4,7 @@ import (
 	"analytics/config"
 	"analytics/database/analyticsdb"
 	"analytics/domain/filecatalog"
-	"analytics/internal/log"
+	"analytics/log"
 	"analytics/util"
 	"errors"
 	"fmt"

@@ -3,7 +3,7 @@ package parquet
 import (
 	"analytics/config"
 	filecatalog2 "analytics/domain/filecatalog"
-	"analytics/internal/log"
+	"analytics/log"
 	"gorm.io/gorm"
 	"os"
 	"path"

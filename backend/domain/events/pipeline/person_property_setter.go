@@ -2,7 +2,7 @@ package pipeline
 
 import (
 	"analytics/domain/person"
-	"analytics/internal/log"
+	"analytics/log"
 )
 
 type personUpdater struct {

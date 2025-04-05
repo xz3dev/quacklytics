@@ -2,7 +2,7 @@ package processor
 
 import (
 	"analytics/domain/person"
-	"analytics/internal/log"
+	"analytics/log"
 	"database/sql"
 	"encoding/json"
 	"fmt"

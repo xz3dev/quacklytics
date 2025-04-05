@@ -2,7 +2,7 @@ package schema
 
 import (
 	"analytics/domain/events"
-	"analytics/internal/log"
+	"analytics/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"analytics/internal/log"
+	"analytics/log"
 	errors2 "analytics/server/errors"
 	"errors"
 	"fmt"

@@ -4,7 +4,7 @@ import (
 	"analytics/config"
 	"analytics/database/analyticsdb"
 	"analytics/database/appdb"
-	"analytics/internal/log"
+	"analytics/log"
 	"os"
 	"path/filepath"
 	"strings"

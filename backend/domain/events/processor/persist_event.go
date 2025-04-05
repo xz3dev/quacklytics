@@ -2,7 +2,7 @@ package processor
 
 import (
 	"analytics/domain/events"
-	"analytics/internal/log"
+	"analytics/log"
 	"encoding/json"
 	"github.com/google/uuid"
 )

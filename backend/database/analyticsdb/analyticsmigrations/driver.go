@@ -1,7 +1,7 @@
 package analyticsmigrations
 
 import (
-	"analytics/internal/log"
+	"analytics/log"
 	"database/sql"
 	"fmt"
 	"io"

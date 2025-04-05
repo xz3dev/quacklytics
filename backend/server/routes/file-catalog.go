@@ -5,7 +5,7 @@ import (
 	"analytics/domain/events/parquet"
 	"analytics/domain/filecatalog"
 	"analytics/domain/projects"
-	"analytics/internal/log"
+	"analytics/log"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"

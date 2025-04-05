@@ -5,7 +5,7 @@ import (
 	"analytics/config"
 	"analytics/database/appdb"
 	"analytics/domain/projects"
-	"analytics/internal/log"
+	"analytics/log"
 	svmw "analytics/server/middlewares"
 	"analytics/server/posthog"
 	"analytics/server/routes"

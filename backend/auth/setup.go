@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"analytics/internal/log"
+	"analytics/log"
 	"encoding/json"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/defaults"

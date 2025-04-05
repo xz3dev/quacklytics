@@ -2,7 +2,7 @@ package auth
 
 import (
 	"analytics/database/types"
-	"analytics/internal/log"
+	"analytics/log"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"

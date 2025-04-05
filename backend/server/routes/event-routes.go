@@ -6,7 +6,7 @@ import (
 	"analytics/domain/events"
 	"analytics/domain/events/processor"
 	"analytics/domain/queries"
-	"analytics/internal/log"
+	"analytics/log"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"

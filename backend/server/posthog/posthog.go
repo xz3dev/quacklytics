@@ -4,7 +4,7 @@ import (
 	"analytics/domain/apikeys"
 	"analytics/domain/events"
 	"analytics/domain/events/processor"
-	"analytics/internal/log"
+	"analytics/log"
 	svmw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"

@@ -2,7 +2,7 @@ package routes
 
 import (
 	"analytics/domain/schema"
-	"analytics/internal/log"
+	"analytics/log"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"

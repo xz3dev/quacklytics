@@ -3,7 +3,7 @@ package events
 import (
 	"analytics/database/analyticsdb"
 	"analytics/domain/queries"
-	"analytics/internal/log"
+	"analytics/log"
 	"database/sql"
 	"encoding/json"
 )

@@ -4,7 +4,7 @@ import (
 	"analytics/database/types"
 	"analytics/domain/events"
 	"analytics/domain/person"
-	"analytics/internal/log"
+	"analytics/log"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"

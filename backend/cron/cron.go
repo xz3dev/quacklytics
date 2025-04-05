@@ -1,7 +1,7 @@
 package cron
 
 import (
-	"analytics/internal/log"
+	"analytics/log"
 	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

@@ -3,7 +3,7 @@ package routes
 import (
 	"analytics/domain/dashboards"
 	"analytics/domain/insights"
-	"analytics/internal/log"
+	"analytics/log"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
 	"fmt"

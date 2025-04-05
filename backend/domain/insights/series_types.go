@@ -2,7 +2,7 @@ package insights
 
 import (
 	"analytics/database/types"
-	"analytics/internal/log"
+	"analytics/log"
 	"gorm.io/gorm"
 )
 

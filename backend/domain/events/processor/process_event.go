@@ -4,7 +4,7 @@ import (
 	"analytics/domain/events"
 	"analytics/domain/events/pipeline"
 	"analytics/domain/schema"
-	"analytics/internal/log"
+	"analytics/log"
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
 	"slices"

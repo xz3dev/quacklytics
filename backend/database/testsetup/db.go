@@ -3,7 +3,7 @@ package testsetup
 import (
 	"analytics/database/analyticsdb"
 	"analytics/database/analyticsdb/analyticsmigrations"
-	"analytics/internal/log"
+	"analytics/log"
 	"context"
 	"database/sql"
 	"database/sql/driver"
