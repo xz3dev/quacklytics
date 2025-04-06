@@ -5,7 +5,7 @@ import {Input} from "@/components/ui/input"
 import {useState} from "react"
 import {useCreateInsight, useDeleteInsight, useInsights, useUpdateInsight} from "@/services/insights"
 import {formatDistance} from "date-fns"
-import {Insight, InsightType} from "@/model/insight.ts";
+import {Insight, InsightType} from "@/model/insights/insight.ts";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,8 +17,8 @@ import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {ProjectLink} from "@/components/project-link.tsx";
 import {cn} from "@lib/utils/tailwind.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {newValueInsight} from "@/model/value-insight.ts";
-import {newTrendInsight} from "@/model/trend-insight.ts";
+import {newValueInsight} from "@/model/insights/value-insight.ts";
+import {newTrendInsight} from "@/model/insights/trend-insight.ts";
 
 interface Props {
     filter?: (i: Insight) => boolean

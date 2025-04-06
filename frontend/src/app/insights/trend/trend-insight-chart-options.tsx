@@ -1,9 +1,9 @@
 import {useContext} from "react";
 import {TrendInsightContext} from "@app/insights/insight-context.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
-import {TimeBucket, timeBucketData} from "@/model/trend-insight.ts";
+import {TimeBucket, timeBucketData} from "@/model/insights/trend-insight.ts";
 import DateRangePicker from "@/components/date-ranges/data-range-picker.tsx";
-import {determineDateRange} from "@/model/InsightDateRange.ts";
+import {determineDateRange} from "@/model/insights/insight-date-range.ts";
 import {format} from "date-fns";
 import {CalendarRange} from "lucide-react";
 

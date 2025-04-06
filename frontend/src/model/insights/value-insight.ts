@@ -1,4 +1,4 @@
-import {Insight, InsightConfig} from "@/model/insight.ts";
+import {Insight, InsightConfig} from "@/model/insights/insight.ts";
 import {Query} from "@lib/queries.ts";
 
 export interface ValueInsight extends Insight {

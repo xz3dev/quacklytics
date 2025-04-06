@@ -1,4 +1,4 @@
-import {ValueInsight} from "@/model/value-insight.ts";
+import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {buildDateRangeFilters, buildRangeFilters} from "@/model/filters.ts";
 import {useMemo} from "react";
 import {mergeQueries} from "@lib/queries.ts";
@@ -6,7 +6,7 @@ import {useDuckDBQuery} from "@/services/duck-db-queries.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {simpleHash} from "@lib/checksums.ts";
 import {Spinner} from "@/components/spinner.tsx";
-import {determinePreviousDateRange} from "@/model/InsightDateRange.ts";
+import {determinePreviousDateRange} from "@/model/insights/insight-date-range.ts";
 import {ArrowDownRight, ArrowUpRight} from "lucide-react";
 import {isPresent} from "ts-is-present";
 import {cn} from "@lib/utils/tailwind.ts";

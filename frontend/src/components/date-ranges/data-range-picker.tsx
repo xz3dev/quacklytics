@@ -10,7 +10,7 @@ import {Dialog} from "@/components/ui/dialog.tsx"
 import {Button} from "@/components/ui/button.tsx"
 import {CustomDateRangeSelection} from "@/components/date-ranges/custom-date-range-selection.tsx"
 import {IncrementalDurationSelection} from "@/components/date-ranges/incremental-duration-selection.tsx"
-import {determineLabel, InsightDateRange, predefinedRanges} from "@/model/InsightDateRange.ts"
+import {determineLabel, InsightDateRange, predefinedRanges} from "@/model/insights/insight-date-range.ts"
 
 type Props = {
     onChange: (range: InsightDateRange) => void

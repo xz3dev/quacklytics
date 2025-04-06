@@ -2,12 +2,12 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useInsight} from "@/services/insights.ts";
 import {Spinner} from "@/components/spinner.tsx";
-import {Insight} from "@/model/insight.ts";
+import {Insight} from "@/model/insights/insight.ts";
 import {TrendInsightChart} from "@app/insights/trend/trend-insight-chart.tsx";
-import {TrendInsight} from "@/model/trend-insight.ts";
+import {TrendInsight} from "@/model/insights/trend-insight.ts";
 import {TrendInsightContext, ValueInsightContext} from "./insight-context";
 import {ProjectLink} from "@/components/project-link.tsx";
-import {ValueInsight} from "@/model/value-insight.ts";
+import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {ValueInsightChart} from "@app/insights/value/value-insight-chart.tsx";
 
 interface Props {

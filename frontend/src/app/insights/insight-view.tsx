@@ -1,12 +1,12 @@
 import {useInsight} from "@/services/insights.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {Spinner} from "@/components/spinner.tsx";
-import {Insight} from "@/model/insight.ts";
+import {Insight} from "@/model/insights/insight.ts";
 import {BaseInsightContext, TrendInsightContext, ValueInsightContext} from "@app/insights/insight-context";
 import {TrendInsightView} from "@app/insights/trend/trend-insight-view.tsx";
 import {useEffect, useState} from "react";
-import {TrendInsight} from "@/model/trend-insight.ts";
-import {ValueInsight} from "@/model/value-insight.ts";
+import {TrendInsight} from "@/model/insights/trend-insight.ts";
+import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {ValueInsightView} from "@app/insights/value/value-insight-view.tsx";
 
 interface Props {

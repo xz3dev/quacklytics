@@ -6,7 +6,7 @@ import {Input} from "@/components/ui/input.tsx"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx"
 import {useState} from "react"
 import {Duration} from "date-fns"
-import {determineLabel, InsightDateRange} from "@/model/InsightDateRange.ts"
+import {determineLabel, InsightDateRange} from "@/model/insights/insight-date-range.ts"
 
 const units = ['days', 'months', 'years'] as const
 type Unit = typeof units[number]

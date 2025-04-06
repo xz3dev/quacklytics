@@ -1,7 +1,7 @@
 import {createContext} from "react";
-import {Insight} from "@/model/insight.ts";
-import {TrendInsight} from "@/model/trend-insight.ts";
-import {ValueInsight} from "@/model/value-insight.ts";
+import {Insight} from "@/model/insights/insight.ts";
+import {TrendInsight} from "@/model/insights/trend-insight.ts";
+import {ValueInsight} from "@/model/insights/value-insight.ts";
 
 export const TrendInsightContext = createContext<{
     data?: TrendInsight,

@@ -6,7 +6,7 @@ import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useUpdateInsight} from "@/services/insights.ts";
 import {TrendInsightChart} from "@app/insights/trend/trend-insight-chart.tsx";
 import {TrendInsightChartOptions} from "@app/insights/trend/trend-insight-chart-options.tsx";
-import {TrendInsight} from "@/model/trend-insight.ts";
+import {TrendInsight} from "@/model/insights/trend-insight.ts";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 
 

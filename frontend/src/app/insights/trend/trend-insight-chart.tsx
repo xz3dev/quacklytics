@@ -1,6 +1,6 @@
 // src/app/insights/trend/trend-insight-chart.tsx
 import {useDuckDBQueries} from "@/services/duck-db-queries"
-import {TimeBucket, timeBucketData, TrendInsight, TrendSeriesType} from "@/model/trend-insight.ts";
+import {TimeBucket, timeBucketData, TrendInsight, TrendSeriesType} from "@/model/insights/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
 import {useMemo} from "react";
 import {mergeQueries} from "@lib/queries.ts";
@@ -10,7 +10,7 @@ import {ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/u
 import {Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis} from "recharts";
 import {add, format} from "date-fns";
 import {simpleHash} from "@lib/checksums.ts";
-import {determineDateRange} from "@/model/InsightDateRange.ts";
+import {determineDateRange} from "@/model/insights/insight-date-range.ts";
 import {UTCDate} from "@date-fns/utc";
 
 interface Props {

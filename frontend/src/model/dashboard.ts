@@ -1,4 +1,4 @@
-import {Insight} from "@/model/insight.ts";
+import {Insight} from "@/model/insights/insight.ts";
 
 
 export interface Dashboard {

@@ -1,7 +1,7 @@
 import {useQuery, useMutation, useQueryClient, type UseQueryOptions} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
-import {Insight, UsableInsightInput} from '@/model/insight'
-import {TrendInsight} from "@/model/trend-insight.ts";
+import {Insight, UsableInsightInput} from '@/model/insights/insight.ts'
+import {TrendInsight} from "@/model/insights/trend-insight.ts";
 
 export const INSIGHTS_KEY = (project: string) => ['insights', project] as const
 export const INSIGHT_KEY = (project: string, id: number) =>

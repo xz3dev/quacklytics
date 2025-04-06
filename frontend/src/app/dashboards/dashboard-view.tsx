@@ -6,7 +6,7 @@ import {DndContext, DragEndEvent} from '@dnd-kit/core'
 import {arrayMove, rectSortingStrategy, SortableContext} from '@dnd-kit/sortable'
 import {SortableInsightCard} from './sortable-insight-card'
 import {useEffect, useState} from 'react'
-import {Insight} from "@/model/insight.ts";
+import {Insight} from "@/model/insights/insight.ts";
 import {useDebounce} from "@uidotdev/usehooks"
 import {ProjectLink} from "@/components/project-link"
 import {Button} from "@/components/ui/button.tsx";

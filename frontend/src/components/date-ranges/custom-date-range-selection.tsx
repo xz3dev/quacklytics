@@ -6,7 +6,7 @@ import {format} from "date-fns";
 import {Button} from "@/components/ui/button.tsx";
 import {useState} from "react";
 
-import {InsightDateRange} from "@/model/InsightDateRange.ts";
+import {InsightDateRange} from "@/model/insights/insight-date-range.ts";
 
 type Props = {
     onChange: (range: InsightDateRange) => void

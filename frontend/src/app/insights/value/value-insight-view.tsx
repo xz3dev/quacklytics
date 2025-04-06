@@ -4,7 +4,7 @@ import {useContext} from "react";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {useUpdateInsight} from "@/services/insights.ts";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
-import {ValueInsight} from "@/model/value-insight.ts";
+import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {ValueInsightChartOptions} from "@app/insights/value/value-insight-chart-options.tsx";
 import {ValueInsightChart} from "@app/insights/value/value-insight-chart.tsx";
 import {ValueInsightSeriesOptions} from "@app/insights/value/value-insight-series-options.tsx";

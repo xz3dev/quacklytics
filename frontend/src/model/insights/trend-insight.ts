@@ -1,8 +1,8 @@
-import {Insight, InsightConfig} from "@/model/insight.ts";
+import {Insight, InsightConfig} from "@/model/insights/insight.ts";
 import {Field} from "@/model/filters.ts";
-import {determineDateRange} from "@/model/InsightDateRange.ts";
+import {determineDateRange} from "@/model/insights/insight-date-range.ts";
 import {Duration, intervalToDuration} from "date-fns";
-import {Query} from "@/lib/queries";
+import {Query} from "@lib/queries.ts";
 
 export interface TrendInsight extends Insight {
     type: 'Trend'
