@@ -27,7 +27,7 @@ export function DuckDBLoadingIndicator(props: { children: React.ReactNode }) {
                 className="flex items-center justify-between p-3 border rounded-lg shadow-sm bg-muted/20 md:max-w-md mx-auto"
             >
                 <span className="text-sm font-medium">
-                    {task.type === "init" && "Initializing "}
+                    {task.type === "init" && "Initializing DuckDB"}
                     {task.type === "load" && `Downloading ${task.id}`}
                     {task.type === "import" && `Importing ${task.id}`}
 
