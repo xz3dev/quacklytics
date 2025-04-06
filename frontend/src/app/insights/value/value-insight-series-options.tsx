@@ -17,22 +17,22 @@ export function ValueInsightSeriesOptions() {
 
     const handleAddFilter = (filter: FieldFilter) => {
         updateFn?.((insight) => {
-            if (!insight.series[0].query.filters) return
-            insight.series[0].query.filters.push(filter);
+            if (!insight.config.value.series.query.filters) return
+            insight.config.value.series.query.filters.push(filter);
         });
     };
 
     const handleRemoveFilter = (filterIndex: number) => {
         updateFn?.((insight) => {
-            if (!insight.series[0].query.filters) return
-            insight.series[0].query?.filters.splice(filterIndex, 1);
+            if (!insight.config.value.series.query.filters) return
+            insight.config.value.series.query?.filters.splice(filterIndex, 1);
         });
     };
 
     const handleFilterUpdate = (filterIndex: number, filter: FieldFilter) => {
         updateFn?.((insight) => {
-            if (insight.series[0].query?.filters?.[filterIndex]) {
-                insight.series[0].query.filters[filterIndex] = filter;
+            if (insight.config.value.series.query?.filters?.[filterIndex]) {
+                insight.config.value.series.query.filters[filterIndex] = filter;
             }
         });
     };
@@ -48,10 +48,10 @@ export function ValueInsightSeriesOptions() {
     ) {
         console.log(`update`, func, field, distinct);
         updateFn?.((insight) => {
-            if (!insight.series[0]?.query?.aggregations) {
-                insight.series[0].query.aggregations = []
+            if (!insight.config.value.series?.query?.aggregations) {
+                insight.config.value.series.query.aggregations = []
             }
-            insight.series[0].query.aggregations[0] = {
+            insight.config.value.series.query.aggregations[0] = {
                 function: func,
                 alias: 'result_value',
                 field: field ?? {name: 'id', type: 'string'},
@@ -67,13 +67,13 @@ export function ValueInsightSeriesOptions() {
             >
                 <div className="flex flex-wrap items-center gap-2 gap-y-1">
                     <TrendInsightSeriesAggregationSelection
-                        currentFunction={data?.series[0]?.query?.aggregations?.[0]?.function ?? 'COUNT'}
-                        selectedField={data?.series[0]?.query?.aggregations?.[0]?.field}
+                        currentFunction={data?.config.value.series?.query?.aggregations?.[0]?.function ?? 'COUNT'}
+                        selectedField={data?.config.value.series?.query?.aggregations?.[0]?.field}
                         onSelect={(func, field, distinct) =>
                             handleAggregationChange(func, field, distinct)
                         }
                     />
-                    {data?.series[0]?.query?.filters?.map((filter, filterIndex) => (
+                    {data?.config.value.series?.query?.filters?.map((filter, filterIndex) => (
                         <FilterSelector
                             key={filterIndex}
                             filter={filter}

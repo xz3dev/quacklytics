@@ -19,21 +19,21 @@ export function TrendInsightSeriesOptions() {
 
     const handleAddFilter = (filter: FieldFilter, seriesIndex: number) => {
         updateFn?.((insight) => {
-            insight.series?.[seriesIndex]?.query?.filters?.push(filter)
+            insight.config.trend.series?.[seriesIndex]?.query?.filters?.push(filter)
         })
     }
 
     const handleRemoveFilter = (seriesIndex: number, filterIndex: number) => {
         updateFn?.((insight) => {
-            insight.series?.[seriesIndex]?.query?.filters?.splice(filterIndex, 1)
+            insight.config.trend.series?.[seriesIndex]?.query?.filters?.splice(filterIndex, 1)
         })
     }
 
     const handleFilterUpdate = (seriesIndex: number, filterIndex: number, filter: FieldFilter) => {
         console.log(`update`, filter)
         updateFn?.((insight) => {
-            if (insight.series?.[seriesIndex]?.query?.filters?.[filterIndex]) {
-                insight.series[seriesIndex].query.filters[filterIndex] = filter
+            if (insight.config.trend.series?.[seriesIndex]?.query?.filters?.[filterIndex]) {
+                insight.config.trend.series[seriesIndex].query.filters[filterIndex] = filter
             }
         })
     }
@@ -46,14 +46,14 @@ export function TrendInsightSeriesOptions() {
 
     const handleRemoveSeries = (seriesIndex: number) => {
         updateFn?.((insight) => {
-            insight.series?.splice(seriesIndex, 1)
+            insight.config.trend.series?.splice(seriesIndex, 1)
         })
     }
 
     function toggleVisualization(seriesIndex: number) {
         updateFn?.((insight) => {
-            if(!insight.series?.[seriesIndex]) return
-            insight.series[seriesIndex].visualisation = insight.series[seriesIndex].visualisation === 'line' ? 'bar' : 'line'
+            if(!insight.config.trend.series?.[seriesIndex]) return
+            insight.config.trend.series[seriesIndex].visualisation = insight.config.trend.series[seriesIndex].visualisation === 'line' ? 'bar' : 'line'
         })
     }
 
@@ -65,8 +65,8 @@ export function TrendInsightSeriesOptions() {
     ) {
         console.log(`update`, func, field, distinct)
         updateFn?.((insight) => {
-            if (!insight.series?.[seriesIndex]?.query?.aggregations?.[0]) return
-            insight.series[seriesIndex].query.aggregations[0] = {
+            if (!insight.config.trend.series?.[seriesIndex]?.query?.aggregations?.[0]) return
+            insight.config.trend.series[seriesIndex].query.aggregations[0] = {
                 function: func,
                 alias: 'result_value',
                 field: field ?? {name: 'id', type: 'string'},
@@ -77,9 +77,9 @@ export function TrendInsightSeriesOptions() {
 
     const handleDuplicateSeries = (seriesIndex: number) => {
         updateFn?.((insight) => {
-            if (insight.series?.[seriesIndex]) {
-                const newSeries = structuredClone(insight.series[seriesIndex])
-                insight.series.push({
+            if (insight.config.trend.series?.[seriesIndex]) {
+                const newSeries = structuredClone(insight.config.trend.series[seriesIndex])
+                insight.config.trend.series.push({
                     ...newSeries,
                     name: `${newSeries.name} (Copy)`, // Add a suffix to indicate duplication
                 });
@@ -91,7 +91,7 @@ export function TrendInsightSeriesOptions() {
         <div className="flex flex-col items-stretch gap-2">
             {/*<div className="text-sm">{JSON.stringify(data?.series)}</div>*/}
             {
-                data.series?.map((series, seriesIndex) => {
+                data.config.trend.series?.map((series, seriesIndex) => {
                     return <div
                         key={seriesIndex}
                         className="flex gap-2 p-2 bg-muted/40 border border-border rounded-md"
@@ -167,7 +167,7 @@ export function TrendInsightSeriesOptions() {
                 variant="secondary"
                 onClick={() => {
                     updateFn?.((data) => {
-                        data.series = [...(data.series ?? []), {
+                        data.config.trend.series = [...(data.config.trend.series ?? []), {
                             name: 'New Series',
                             visualisation: 'line',
                             query: {
