@@ -6,10 +6,22 @@ import (
 	"testing"
 )
 
-func Setup(t *testing.T) TestSetup {
+type TestSetupConfig struct {
+	ProjectDB bool
+	DuckDB    bool
+}
+
+func Setup(t *testing.T, conf TestSetupConfig) TestSetup {
 	log.Init()
-	testDB := createTestDB(t)
-	testDuckDB := createTestAnalyticsDB(t)
+
+	var testDB *gorm.DB
+	if conf.ProjectDB {
+		testDB = createTestDB(t)
+	}
+	var testDuckDB TestDuckDB
+	if conf.DuckDB {
+		testDuckDB = createTestAnalyticsDB(t)
+	}
 	return TestSetup{
 		ProjectDB: testDB,
 		DuckDB:    testDuckDB,

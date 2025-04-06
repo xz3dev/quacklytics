@@ -12,13 +12,13 @@ export function TrendInsightChartOptions() {
 
     const handleDateRangeChange = (range: string) => {
         updateFn?.((insight) => {
-            insight.config.duration = range
+            insight.config.trend.duration = range
         })
     }
 
     const handleBucketChange = (bucket: TimeBucket) => {
         updateFn?.((insight) => {
-            insight.config.timeBucket = bucket
+            insight.config.trend.timeBucket = bucket
         })
     }
 
@@ -33,13 +33,13 @@ export function TrendInsightChartOptions() {
             <div className="flex items-center gap-2">
                 <DateRangePicker
                     onChange={(range) => handleDateRangeChange(range.value)}
-                    value={data?.config.duration}
+                    value={data?.config.trend.duration}
                 />
 
                 <div className="text-sm text-muted-foreground">grouped by</div>
 
                 <Select
-                    value={data?.config.timeBucket}
+                    value={data?.config.trend.timeBucket}
                     onValueChange={(value: TimeBucket) => handleBucketChange(value)}
                 >
                     <SelectTrigger className="w-[180px]">
@@ -50,7 +50,7 @@ export function TrendInsightChartOptions() {
                             <SelectItem
                                 key={bucket}
                                 value={bucket}
-                                disabled={!bucketData.canActivate(data?.config.duration ?? '')}
+                                disabled={!bucketData.canActivate(data?.config.trend.duration ?? '')}
                             >
                                 {bucketData.label}
                             </SelectItem>
@@ -60,7 +60,7 @@ export function TrendInsightChartOptions() {
 
                 <div className="flex items-center gap-2 pl-4 text-xs text-muted-foreground">
                     <CalendarRange className="w-4 h-4 text-muted-foreground"></CalendarRange>
-                    {renderRange(data?.config.duration)}
+                    {renderRange(data?.config.trend.duration)}
                 </div>
 
 

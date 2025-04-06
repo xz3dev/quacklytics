@@ -17,12 +17,12 @@ type Props = {
 
 export function ValueInsightChart({insight}: Props) {
     const projectId = useProjectId()
-    const dateRangeFilter = buildRangeFilters(insight.config.duration)
-    const prevRange = determinePreviousDateRange(insight.config.duration)
+    const dateRangeFilter = buildRangeFilters(insight.config.value.duration)
+    const prevRange = determinePreviousDateRange(insight.config.value.duration)
     const previousDateRangeFilter = buildDateRangeFilters(prevRange.start, prevRange.end)
 
     const query = useMemo(() => {
-        const series = insight?.series[0]
+        const series = insight?.config.value.series
         const query = mergeQueries(
             series?.query ?? {},
             {
@@ -34,7 +34,7 @@ export function ValueInsightChart({insight}: Props) {
     }, [projectId, insight])
 
     const queryPrev = useMemo(() => {
-        const series = insight?.series[0]
+        const series = insight?.config.value.series
         const query = mergeQueries(
             series?.query ?? {},
             {

@@ -14,8 +14,8 @@ type Dashboard struct {
 }
 
 type DashboardInsight struct {
-	DashboardID uint `gorm:"primaryKey"`
-	InsightID   uint `gorm:"primaryKey"`
+	DashboardID uint `gorm:"primaryKey;index"`
+	InsightID   uint `gorm:"primaryKey;index"`
 	Sort        int  `gorm:"not null;default:0"`
 }
 

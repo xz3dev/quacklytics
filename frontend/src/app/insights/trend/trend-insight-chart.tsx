@@ -21,12 +21,12 @@ export function TrendInsightChart({insight}: Props) {
     const projectId = useProjectId()
 
 
-    const dateRangeFilter = buildRangeFilters(insight.config.duration)
-    const bucketFilter = buildGroupByFilter(insight.config.timeBucket, insight.config.duration)
+    const dateRangeFilter = buildRangeFilters(insight.config.trend.duration)
+    const bucketFilter = buildGroupByFilter(insight.config.trend.timeBucket, insight.config.trend.duration)
 
     // Create a query for each series
     const queries = useMemo(() =>
-            insight?.series?.map((series) => {
+            insight?.config.trend.series?.map((series) => {
                 const query = mergeQueries(
                     series.query ?? {},
                     {
@@ -64,7 +64,7 @@ export function TrendInsightChart({insight}: Props) {
 
 
     const chartData: ChartData[] = useMemo(
-        () => buildChartData(seriesData, insight.config.timeBucket, determineDateRange(insight.config.duration)),
+        () => buildChartData(seriesData, insight.config.trend.timeBucket, determineDateRange(insight.config.trend.duration)),
         [seriesData, insight.config],
     );
 

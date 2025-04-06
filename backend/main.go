@@ -17,9 +17,12 @@ import (
 	"analytics/server"
 	_ "github.com/marcboeker/go-duckdb"
 	"gorm.io/gorm"
+	"os"
 )
 
 func main() {
+	os.Setenv("TZ", "Etc/UTC")
+
 	config.Load()
 	log.Init()
 	registerTables()
@@ -48,7 +51,6 @@ func registerTables() {
 		&dashboards.Dashboard{},
 		&dashboards.DashboardInsight{},
 		&insights.Insight{},
-		&insights.Series{},
 		&schema.EventSchema{},
 		&schema.EventSchemaProperty{},
 		&schema.EventSchemaPropertyValue{},

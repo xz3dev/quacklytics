@@ -10,7 +10,10 @@ export interface Insight {
     updatedAt?: string;
     type: InsightType;
     favorite: boolean
+    config: InsightConfig
 }
+
+export interface InsightConfig {}
 
 export type UsableInsight = TrendInsight | ValueInsight
 export type UsableInsightInput = Omit<UsableInsight, 'id'>

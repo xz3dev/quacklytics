@@ -5,11 +5,10 @@ POST http://{{host}}/{{project}}/insights
 Content-Type: application/json
 
 {
+  "type": "Trend",
   "name": "New Insight 11",
-
-  "description": "This is a new insight",
-  "series": [],
   "config": {
+    "series": [],
     "type": "Trend",
     "data": {
       "timeBucket": "Daily",
@@ -24,23 +23,11 @@ GET http://{{host}}/{{project}}/insights/18
 
 ###
 
-PUT http://{{host}}/{{project}}/insights/20
+PUT http://{{host}}/{{project}}/insights/2
 Content-Type: application/json
 
 {
-  "name": "Updated Insight",
-  "description": "This insight has been updated",
-  "series": [
-    {
-      "name": "Updated Series",
-      "query": {
-        "select": [
-          "column2"
-        ],
-        "from": "table2"
-      }
-    }
-  ]
+  "name": "Updated Insight"
 }
 
 ###

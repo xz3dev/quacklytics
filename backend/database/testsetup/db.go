@@ -15,7 +15,10 @@ import (
 )
 
 func createTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(
+		sqlite.Open(":memory:?_loc=UTC"),
+		&gorm.Config{},
+	)
 	if err != nil {
 		t.Fatalf("failed to create test database: %v", err)
 	}

@@ -1,4 +1,4 @@
-import {Insight} from "@/model/insight.ts";
+import {Insight, InsightConfig} from "@/model/insight.ts";
 import {Field} from "@/model/filters.ts";
 import {determineDateRange} from "@/model/InsightDateRange.ts";
 import {Duration, intervalToDuration} from "date-fns";
@@ -6,13 +6,15 @@ import {Query} from "@/lib/queries";
 
 export interface TrendInsight extends Insight {
     type: 'Trend'
-    series?: TrendSeries[]
-    config: TrendInsightConfig
+    config: InsightConfig & {
+        trend: TrendInsightConfig
+    }
 }
 
 export interface TrendInsightConfig {
     timeBucket: TimeBucket
     duration: string
+    series?: TrendSeries[]
 }
 
 export const trendSeriesTypes = ['line', 'bar'] as const
@@ -27,26 +29,28 @@ export interface TrendSeries {
 
 export const newTrendInsight: Omit<TrendInsight, 'id'> = {
     type: 'Trend',
-    series: [
-        {
-            name: 'default',
-            visualisation: 'line',
-            query: {
-                filters: [],
-                aggregations: [{
-                    function: 'COUNT',
-                    alias: 'result_value',
-                    field: {
-                        name: 'id',
-                        type: 'string',
-                    }
-                }],
-            }
-        }
-    ],
     config: {
-        duration: 'P4W',
-        timeBucket: 'Daily'
+        trend: {
+            duration: 'P30D',
+            timeBucket: 'Daily',
+            series: [
+                {
+                    name: 'default',
+                    visualisation: 'line',
+                    query: {
+                        filters: [],
+                        aggregations: [{
+                            function: 'COUNT',
+                            alias: 'result_value',
+                            field: {
+                                name: 'id',
+                                type: 'string',
+                            }
+                        }],
+                    }
+                }
+            ],
+        },
     },
     favorite: false,
 }
