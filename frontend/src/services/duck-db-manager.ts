@@ -37,24 +37,23 @@ export class DuckDbManager {
 
     async setupTable(conn: AsyncDuckDBConnection) {
         console.log(`Creating events table...`)
-        await conn.query(`
-            create table if not exists events
-            (
-                id
-                UUID
-                primary
-                key,
-                timestamp
-                timestamp,
-                event_type
-                text,
-                distinct_id
-                text,
-                person_id
-                UUID,
-                properties
-                json
-            );
+        await conn.query(`create table if not exists events
+(
+    id
+    UUID
+    primary
+    key,
+    timestamp
+    timestamp,
+    event_type
+    text,
+    distinct_id
+    text,
+    person_id
+    UUID,
+    properties
+    json
+);
         `)
     }
 

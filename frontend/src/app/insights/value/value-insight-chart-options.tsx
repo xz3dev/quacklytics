@@ -15,7 +15,7 @@ export function ValueInsightChartOptions() {
     }
 
     const renderRange = (range: string | undefined) => {
-        if (!range) return <div>All time</div>
+        if (!range) range = 'P30D'
         const {start, end} = determineDateRange(range)
         return <span>{format(start, 'yyyy-MM-dd HH:mm')} - {format(end, 'yyyy-MM-dd HH:mm')}</span>
     }

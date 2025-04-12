@@ -29,7 +29,10 @@ const DateRangePicker = ({onChange, value}: Props) => {
                 label: determineLabel(value)
             })
         } else {
-            setSelectedRange(undefined)
+            setSelectedRange({
+                value: 'P30D',
+                label: determineLabel('P30D')
+            })
         }
     }, [value])
 

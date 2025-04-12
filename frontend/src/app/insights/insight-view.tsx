@@ -2,12 +2,19 @@ import {useInsight} from "@/services/insights.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {Spinner} from "@/components/spinner.tsx";
 import {Insight} from "@/model/insights/insight.ts";
-import {BaseInsightContext, TrendInsightContext, ValueInsightContext} from "@app/insights/insight-context";
+import {
+    BaseInsightContext,
+    FunnelInsightContext,
+    TrendInsightContext,
+    ValueInsightContext
+} from "@app/insights/insight-context";
 import {TrendInsightView} from "@app/insights/trend/trend-insight-view.tsx";
 import {useEffect, useState} from "react";
 import {TrendInsight} from "@/model/insights/trend-insight.ts";
 import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {ValueInsightView} from "@app/insights/value/value-insight-view.tsx";
+import {FunnelInsight} from "@/model/insights/funnel-insights.ts";
+import {FunnelInsightView} from "@app/insights/funnel/funnel-insight-view.tsx";
 
 interface Props {
     insightId: number
@@ -62,6 +69,21 @@ export function InsightView({insightId, readOnly}: Props) {
                     }}>
                         <ValueInsightView/>
                     </ValueInsightContext.Provider>
+                )
+            case 'Funnel':
+                return (
+                    <FunnelInsightContext.Provider value={{
+                        data: localWorkingCopy as FunnelInsight,
+                        update: updateWorkingCopy,
+                        updateFn: (fn: (i: FunnelInsight) => void) => {
+                            if (!localWorkingCopy) return
+                            const copy = structuredClone(localWorkingCopy)
+                            fn(copy as FunnelInsight)
+                            updateWorkingCopy(copy);
+                        },
+                    }}>
+                        <FunnelInsightView/>
+                    </FunnelInsightContext.Provider>
                 )
             default:
                 return <div>Unknown insight type: {insight.type}</div>

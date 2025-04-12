@@ -19,6 +19,7 @@ import {cn} from "@lib/utils/tailwind.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {newValueInsight} from "@/model/insights/value-insight.ts";
 import {newTrendInsight} from "@/model/insights/trend-insight.ts";
+import {newFunnelInsight} from "@/model/insights/funnel-insights.ts";
 
 interface Props {
     filter?: (i: Insight) => boolean
@@ -56,6 +57,9 @@ export function InsightsList({filter, sort, title, createAsFavorite}: Props) {
                     break;
                 case 'Value':
                     defaults = newValueInsight
+                    break;
+                case 'Funnel':
+                    defaults = newFunnelInsight
                     break;
                 default:
                     defaults = newTrendInsight
@@ -125,6 +129,7 @@ export function InsightsList({filter, sort, title, createAsFavorite}: Props) {
                                     <SelectContent>
                                         <SelectItem value="Trend">Trend</SelectItem>
                                         <SelectItem value="Value">Value</SelectItem>
+                                        <SelectItem value="Funnel">Funnel</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -1,7 +1,8 @@
 import {TrendInsight} from "@/model/insights/trend-insight.ts";
 import {ValueInsight} from "@/model/insights/value-insight.ts";
+import {FunnelInsight} from "@/model/insights/funnel-insights.ts";
 
-export type InsightType = 'Trend' | 'Value';
+export type InsightType = 'Trend' | 'Value' | 'Funnel';
 
 export interface Insight {
     id: number;
@@ -15,5 +16,5 @@ export interface Insight {
 
 export interface InsightConfig {}
 
-export type UsableInsight = TrendInsight | ValueInsight
+export type UsableInsight = TrendInsight | ValueInsight | FunnelInsight
 export type UsableInsightInput = Omit<UsableInsight, 'id'>

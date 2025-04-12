@@ -32,7 +32,7 @@ func TestInsightStore_CreateInsight(t *testing.T) {
 				TimeBucket: Daily, // Assuming Daily is a defined TimeBucket constant
 				Duration:   "P7D",
 				Series: &[]TrendSeries{
-					{Name: "Series A", Visualisation: "line", Query: TrendQuery{ /* Add query details if needed */ }},
+					{Name: "Series A", Visualisation: "line", Query: InsightQuery{ /* Add query details if needed */ }},
 				},
 			},
 		},

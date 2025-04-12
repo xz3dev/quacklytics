@@ -33,7 +33,7 @@ export type InsightDateRange = {
 }
 
 export const determineLabel = (range: string | undefined): string => {
-    if (!range) return 'All time'
+    if (!range) range = 'P30D'
     const predefined = predefinedRanges.find(r => r.value === range)?.label
     if (predefined) return predefined
 
@@ -64,10 +64,7 @@ export const determinePreviousDateRange = (range: string | undefined): DateRange
 
 export const determineDateRange = (range: string | undefined): DateRange => {
     if (!range) {
-        return {
-            start: startOfMonth(new UTCDate(1000, 0, 1)),
-            end: endOfDay(new UTCDate()),
-        }
+        range = 'P30D'
     }
     if (range.startsWith('P')) {
         const end = new UTCDate()

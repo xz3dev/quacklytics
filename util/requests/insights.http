@@ -5,15 +5,10 @@ POST http://{{host}}/{{project}}/insights
 Content-Type: application/json
 
 {
-  "type": "Trend",
+  "type": "Funnel",
   "name": "New Insight 11",
   "config": {
-    "series": [],
-    "type": "Trend",
-    "data": {
-      "timeBucket": "Daily",
-      "duration": "4weeks"
-    }
+    "funnel": {},
   }
 }
 
@@ -23,11 +18,30 @@ GET http://{{host}}/{{project}}/insights/18
 
 ###
 
-PUT http://{{host}}/{{project}}/insights/2
+PUT http://{{host}}/{{project}}/insights/7
 Content-Type: application/json
 
 {
-  "name": "Updated Insight"
+  "id": 7,
+  "name": "f12",
+  "type": "Funnel",
+  "favorite": false,
+  "config": {
+    "funnel": {
+      "duration": "P30D",
+      "steps": [
+        {
+          "id": "CV2zG52Jaa",
+          "name": "step 1",
+          "order": 1,
+          "query": {}
+        }
+      ]
+    }
+  },
+  "createdAt": "2025-04-09T19:06:50.025079+02:00",
+  "updatedAt": "2025-04-11T20:23:03.991117+02:00",
+  "deletedAt": null
 }
 
 ###
