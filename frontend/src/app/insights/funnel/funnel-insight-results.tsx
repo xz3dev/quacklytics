@@ -8,7 +8,6 @@ import {simpleHash} from "@lib/checksums";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Card, CardContent, CardHeader} from "@/components/ui/card.tsx";
 import {MoveRight, TrendingDown} from "lucide-react";
-import {cn} from "@lib/utils/tailwind.ts";
 
 interface FunnelInsightResultsProps {
     insight: FunnelInsight;
@@ -124,7 +123,7 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                     <table className="">
                         <tbody>
                         <tr>
-                            <td className="p-0 w-[200px] sticky right-0 top-0 bottom-0">
+                            <td className="p-0">
                                 <div className="relative min-h-60">
                                     <div className="absolute top-0 left-0 w-12 bg-background h-full pointer-events-none">
                                         {Array.from({ length: 6 }).map((_, i) => {
