@@ -1,5 +1,5 @@
 import {useProjectId} from "./use-project-id";
-import {ChartLine, Database, Home, LayoutDashboard, ListTree, LucideIcon, Settings2} from "lucide-react";
+import {ChartLine, Database, Home, LayoutDashboard, ListTree, LucideIcon, Settings2, Filter} from "lucide-react";
 import {useMatch} from "react-router";
 import {useMemo} from "react";
 
@@ -14,6 +14,7 @@ export function useSidebarData(): SidebarData {
     const isData = useMatch('/app/:projectid/data')
     // const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
     const isSettings = useMatch('/app/:projectid/settings')
+    const isQueryTester = useMatch('/app/:projectid/queries')
     const isAnalytics = !!isHome || !!isEvents || !!isInsights || !!isInsight || !!isDashboards || !!isDashboard || !!isData || !!isSettings
 
     const breadcrumbs = useMemo(() => {
@@ -123,6 +124,13 @@ export function useSidebarData(): SidebarData {
                 url: `${projectUrl}/settings`,
                 icon: Settings2,
                 isActive: !!isSettings,
+                items: [],
+            },
+            {
+                title: "Query Tester",
+                url: `${projectUrl}/queries`,
+                icon: Filter,
+                isActive: !!isQueryTester,
                 items: [],
             },
         ],

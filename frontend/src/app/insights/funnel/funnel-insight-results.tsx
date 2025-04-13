@@ -55,8 +55,17 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                     )}
                 </TableBody>
             </Table>
+        </div>
 
-            {q.sql && <pre>{q.sql}</pre>}
+        <div className="flex flex-col gap-6 mt-20">
+            <pre className="border rounded-md p-4 text-xs">
+                {q.sql && q.sql}
+            </pre>
+            <div className="border rounded-md p-4 space-y-2">
+                {q.params.map((param) => (
+                    <div>{param?.toString()}</div>
+                ))}
+            </div>
         </div>
     </>
 }

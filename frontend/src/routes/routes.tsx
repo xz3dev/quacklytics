@@ -15,6 +15,7 @@ import RegisterPage from "@app/register/page.tsx";
 import {ErrorBoundary} from "@/errors/global-error-handler.tsx";
 import Settings from "@/settings/settings.tsx";
 import {EventsList} from "@app/events/events-list.tsx";
+import {QueryTester} from "@app/queries/query-tester.tsx";
 
 
 export function AppRouter() {
@@ -40,6 +41,11 @@ export function AppRouter() {
                     {/*<Route path="data/realtime" element={<RealtimeEventsList></RealtimeEventsList>}></Route>*/}
                     {/*<Route path="data/schema" element={<SchemaView></SchemaView>}></Route>*/}
                     <Route path="settings" element={<Settings></Settings>}></Route>
+
+
+                    {import.meta.env.MODE === 'development' && (
+                        <Route path="queries" element={<QueryTester />}></Route>
+                    )}
                 </Route>
 
 
