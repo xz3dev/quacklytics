@@ -134,7 +134,7 @@ export function DataManager() {
                                         variant="secondary"
                                         onClick={() => loadFiles(file.files)}
                                     >
-                                        Since {format(file.start, 'yyyy-MM-dd')} ({Math.round(bytesToMegabytesBinary(file.accSize))}MB)
+                                        {format(file.start, 'yyyy-MM-dd')} - {format(file.end, 'yyyy-MM-dd')} ({Math.round(bytesToMegabytesBinary(file.accSize))}MB)
                                     </Button>
                                 ))}
                             </div>
