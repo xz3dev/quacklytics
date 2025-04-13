@@ -19,6 +19,14 @@ export function TrendInsightSeriesOptions() {
 
     const handleAddFilter = (filter: FieldFilter, seriesIndex: number) => {
         updateFn?.((insight) => {
+            const q = insight.config.trend.series?.[seriesIndex]?.query
+            if (!q) {
+                console.error(`Series ${seriesIndex} has no query`)
+                return
+            }
+            if (!q.filters) {
+                q.filters = []
+            }
             insight.config.trend.series?.[seriesIndex]?.query?.filters?.push(filter)
         })
     }
