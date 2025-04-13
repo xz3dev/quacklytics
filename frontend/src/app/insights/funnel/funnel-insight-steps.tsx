@@ -2,12 +2,11 @@ import {useContext} from "react";
 import {FunnelInsightContext} from "@app/insights/insight-context.ts";
 import {closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors} from "@dnd-kit/core";
 import {arrayMove, SortableContext, verticalListSortingStrategy} from "@dnd-kit/sortable";
-import {FunnelStep, FunnelStepView} from "@app/insights/funnel/funnel-step-view.tsx";
+import {FunnelStepView} from "@app/insights/funnel/funnel-step-view.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Plus} from "lucide-react";
 import {generateRandomId} from "@lib/utils/ids.ts";
-import {buildFunnelQuery} from "@lib/funnel-queries.ts";
-import {determineDateRange} from "@/model/insights/insight-date-range.ts";
+import {FunnelStep} from "@/model/insights/funnel-insights.ts";
 
 export function FunnelInsightSteps() {
     const {data, updateFn} = useContext(FunnelInsightContext);
@@ -60,7 +59,7 @@ export function FunnelInsightSteps() {
             </DndContext>
             <Button
                 variant="secondary"
-                className="mt-2"
+                className="mt-2 w-full"
                 onClick={handleAddStep}
             >
                 <Plus className="w-5 h-5 mr-2"/>

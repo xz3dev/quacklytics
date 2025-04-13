@@ -3,7 +3,6 @@ import {BaseInsightContext, FunnelInsightContext} from "@app/insights/insight-co
 import {useUpdateInsight} from "@/services/insights.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {InsightSaveControls} from "@app/insights/insight-save-controls.tsx";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {FunnelInsight} from "@/model/insights/funnel-insights.ts";
 import {FunnelInsightResults} from "@app/insights/funnel/funnel-insight-results.tsx";
 import {FunnelInsightSteps} from "@app/insights/funnel/funnel-insight-steps.tsx";
@@ -44,14 +43,7 @@ export function FunnelInsightView() {
             {/*{!readOnly && <FunnelInsightSeriesOptions></FunnelInsightSeriesOptions>}*/}
             {!readOnly && <FunnelInsightResultOptions/>}
             {data && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{data?.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <FunnelInsightResults insight={data}/>
-                    </CardContent>
-                </Card>
+                <FunnelInsightResults insight={data}/>
             )}
         </>
     )
