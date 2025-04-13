@@ -17,6 +17,9 @@ import {
     DialogTrigger
 } from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
+import CodeMirror from '@uiw/react-codemirror';
+import {sql} from "@codemirror/lang-sql";
+import {useTheme} from "@/components/theme/theme-provider.tsx";
 
 interface SavedQuery {
     id: string;
@@ -45,6 +48,8 @@ export function SqlQueryForm({
     const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([]);
     const [queryName, setQueryName] = useState<string>("");
     const [saveDialogOpen, setSaveDialogOpen] = useState<boolean>(false);
+
+    const theme = useTheme()
 
     // Load saved queries from localStorage on component mount
     useEffect(() => {
@@ -235,13 +240,14 @@ export function SqlQueryForm({
 
                     <TabsContent value="editor" className="space-y-4 mt-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="sql-query">SQL Query</Label>
-                            <Textarea
-                                id="sql-query"
-                                placeholder="SELECT * FROM users WHERE id = ?"
-                                className="font-mono h-60"
+                            <Label htmlFor="query" className="invisible">Query</Label>
+                                {/*// height="150px"*/}
+                            <CodeMirror
                                 value={query}
-                                onChange={(e) => setQuery(e.target.value)}
+                                extensions={[sql()]}
+                                theme={theme.effective}
+                                onChange={(value) => setQuery(value)}
+                                placeholder="SELECT * FROM events WHERE event_type = $1"
                             />
                         </div>
                     </TabsContent>
