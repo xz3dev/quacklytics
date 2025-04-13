@@ -62,8 +62,8 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                 {q.sql && q.sql}
             </pre>
             <div className="border rounded-md p-4 space-y-2">
-                {q.params.map((param) => (
-                    <div>{param?.toString()}</div>
+                {q.params.map((param, index) => (
+                    <div key={index}>{param?.toString()}</div>
                 ))}
             </div>
         </div>
