@@ -111,7 +111,7 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
         <Card className="w-full">
             <CardHeader>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">Funnel Visualization</h3>
+                    <h3 className="text-lg font-semibold text-foreground">{insight.name}</h3>
                     <div className="text-sm text-muted-foreground">
                         <span>Total Conversion: {overallConversionRate.toFixed(2)}%</span>
                     </div>
