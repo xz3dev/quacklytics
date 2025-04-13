@@ -2,7 +2,7 @@ import {createDb} from "@lib/duckdb.ts";
 import type {DataType} from '@apache-arrow/ts'
 import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
 import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
-import {buildQuery, Query, QueryResult} from "@lib/queries.ts";
+import {Query, QueryResult} from "@lib/trend-queries.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
 import {processInBatches} from "@lib/utils/batches.ts";
 import {useDuckDbDownloadStore} from "@/services/duck-db-download-state.ts";
@@ -111,7 +111,7 @@ export class DuckDbManager {
             return
         }
 
-        await processInBatches(events, 1000, async (batch) => {
+        await processInBatches(events, 50, async (batch) => {
             await this.importEventsRaw(batch, conn)
         })
 
@@ -128,13 +128,13 @@ export class DuckDbManager {
             console.log(`No events to import.`)
             return
         }
-        events = Array.from(new Map(events.map(event => [event.id, event])).values());
+        events = events.slice()
 
         const batchInsertQuery = `
             insert
             or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
             values
-            ${events.map(() => `(?, epoch_ms(?::BIGINT), ?, ?, ?, ?)`).join(", ")}
+            ${events.map(() => `(?, ?, ?, ?, ?, ?)`).join(", ")}
         `;
 
         const batchParams: any[] = events.flatMap(event => [
@@ -175,8 +175,11 @@ export class DuckDbManager {
         store.updateMaxDate(maxDate)
     }
 
-    async runQuery<T extends Query>(query: Query) {
-        const {sql, params} = buildQuery(query)
+    async runQuery<T extends Query>({sql, params}: {
+        sql: string,
+        params: any[],
+    }) {
+        // const {sql, params} = buildQuery(query)
         const conn = await this.conn
         if (!conn) return
         const preparedQuery = await conn.prepare(sql)

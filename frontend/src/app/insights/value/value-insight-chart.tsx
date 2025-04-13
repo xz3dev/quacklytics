@@ -1,7 +1,7 @@
 import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {buildDateRangeFilters, buildRangeFilters} from "@/model/filters.ts";
 import {useMemo} from "react";
-import {mergeQueries} from "@lib/queries.ts";
+import {buildQuery, mergeQueries} from "@lib/trend-queries.ts";
 import {useDuckDBQuery} from "@/services/duck-db-queries.ts";
 import {useProjectId} from "@/hooks/use-project-id.tsx";
 import {simpleHash} from "@lib/checksums.ts";
@@ -30,7 +30,7 @@ export function ValueInsightChart({insight}: Props) {
             },
         )
         const hash = simpleHash(JSON.stringify(series) + JSON.stringify(insight.config))
-        return {projectId, query, hash}
+        return {projectId, query: buildQuery(query), hash}
     }, [projectId, insight])
 
     const queryPrev = useMemo(() => {
@@ -42,7 +42,7 @@ export function ValueInsightChart({insight}: Props) {
             },
         )
         const hash = simpleHash(JSON.stringify(series) + JSON.stringify(insight.config))
-        return {projectId, query, hash}
+        return {projectId, query: buildQuery(query), hash}
     }, [projectId, insight])
 
 

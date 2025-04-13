@@ -3,7 +3,7 @@ import {useDuckDBQueries} from "@/services/duck-db-queries"
 import {TimeBucket, timeBucketData, TrendInsight, TrendSeriesType} from "@/model/insights/trend-insight.ts";
 import {useProjectId} from "@/hooks/use-project-id";
 import {useMemo} from "react";
-import {mergeQueries} from "@lib/queries.ts";
+import {buildQuery, mergeQueries} from "@lib/trend-queries.ts";
 import {buildGroupByFilter, buildRangeFilters} from "@/model/filters.ts";
 import {Spinner} from "@/components/spinner.tsx";
 import {ChartContainer, ChartTooltip, ChartTooltipContent,} from "@/components/ui/chart"
@@ -38,7 +38,7 @@ export function TrendInsightChart({insight}: Props) {
                 const hash = simpleHash(JSON.stringify(series) + JSON.stringify(insight.config))
                 return ({
                     uniqId: `trend-${hash}`,
-                    query,
+                    query: buildQuery(query),
                     metadata: {
                         visualisation: series.visualisation,
                         name: series.name

@@ -1,240 +1,268 @@
-import {QueryParamValue} from "@lib/queries.ts";
-import {FieldFilter} from "@/model/filters.ts"; // Assumes FieldFilter has { field: { name: string }, ... } structure now
-import {FunnelStep} from "@/model/insights/funnel-insights.ts";
+// Assuming necessary imports are available:
+import { QueryParamValue } from "@lib/queries.ts"; // Or adjust path
+import { FieldFilter, Field } from "@/model/filters.ts"; // Assuming Field type is available
+import { FunnelStep } from "@/model/insights/funnel-insights.ts"; // Or adjust path
+// Assume getFieldExpression is available and imported, similar to its use in buildQuery
+import { getFieldExpression } from "@lib/field.ts"; // Adjust path as needed
 
 // --- Constants for SQL Conditions ---
-const ALWAYS_TRUE = '1=1';
-const ALWAYS_FALSE = '1=0';
+// No longer strictly needed for WHERE clause logic, but can be kept for clarity if desired elsewhere
+// const ALWAYS_TRUE = '1=1';
+// const ALWAYS_FALSE = '1=0';
 
-// Helper function to safely escape single quotes in SQL strings
-function escapeSqlString(value: string): string {
-    if (typeof value !== 'string') return value;
-    return value.replace(/'/g, "''");
-}
+/**
+ * Builds a parameterized SQL WHERE clause string specifically for timestamp filtering.
+ * Uses epoch_ms for comparison, similar to the trend builder.
+ * @param startDate Optional start date (inclusive).
+ * @param endDate Optional end date (inclusive).
+ * @param params The array to push parameter values onto.
+ * @param timestampColumn Name of the timestamp column. Defaults to "timestamp".
+ * @returns SQL condition string or null if no dates provided.
+ */
+function buildTimeFilterClause(
+    startDate: Date | string,
+    endDate: Date | string,
+    params: QueryParamValue[], // Modifies this array
+    timestampColumn: string = '"timestamp"'
+): string | null {
+    const startValue = startDate ? (startDate instanceof Date ? startDate : new Date(startDate)).getTime() : null;
+    const endValue = endDate ? (endDate instanceof Date ? endDate : new Date(endDate)).getTime() : null;
 
-// Helper function to format various JavaScript values into SQL literal representation
-function formatSqlValue(value: QueryParamValue): string {
-    if (value === null || value === undefined) {
-        return 'NULL';
+    if (startValue !== null && endValue !== null) {
+        params.push(startValue, endValue);
+        // Use epoch_ms for comparison
+        return `${timestampColumn} BETWEEN epoch_ms(?::BIGINT) AND epoch_ms(?::BIGINT)`;
+    } else if (startValue !== null) {
+        params.push(startValue);
+        return `${timestampColumn} >= epoch_ms(?::BIGINT)`;
+    } else if (endValue !== null) {
+        params.push(endValue);
+        return `${timestampColumn} <= epoch_ms(?::BIGINT)`;
     }
-    if (typeof value === 'string') {
-        if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/.test(value)) {
-            return `'${escapeSqlString(value)}'`;
-        }
-        return `'${escapeSqlString(value)}'`;
-    }
-    if (typeof value === 'boolean') {
-        return value ? 'TRUE' : 'FALSE';
-    }
-    if (typeof value === 'number') {
-        return value.toString();
-    }
-    if (value instanceof Date) {
-        return `'${value.toISOString()}'`;
-    }
-    console.warn('Unsupported value type encountered in formatSqlValue:', value);
-    return `'${escapeSqlString(String(value))}'`;
+    return null; // No date filters specified
 }
 
 
 /**
- * Builds a SQL WHERE clause string from an array of FieldFilter objects.
- * Handles basic JSON property access assuming 'properties.' prefix maps to DuckDB JSON path.
- * Uses actual schema column names: "event_type", "properties".
- * Assumes filter.field is an object with a 'name' property.
- * Uses constants ALWAYS_TRUE and ALWAYS_FALSE for clarity.
+ * Builds a parameterized SQL WHERE clause string from an array of FieldFilter objects.
+ * Pushes parameter values onto the provided params array.
+ * Assumes existence of getFieldExpression helper.
  * @param filters - Array of filter conditions.
+ * @param params - The array to push parameter values onto.
  * @param jsonColumn - Name of the JSON column in the table (defaults to 'properties').
  * @param tableAlias - Optional alias for the table (e.g., 'e') to prefix column names.
- * @returns A SQL WHERE clause string (e.g., "event_type" = 'value' AND "properties" ->> '$.prop' > 10) or value of ALWAYS_TRUE if no filters.
+ * @returns A SQL WHERE clause string (e.g., "event_type" = ? AND "properties" ->> '$.prop' > ?) or null if no valid filters.
  */
 function buildWhereClause(
     filters: FieldFilter[] | undefined,
-    jsonColumn: string = 'properties', // Keep default as 'properties' for correct schema
+    params: QueryParamValue[], // Modifies this array
+    jsonColumn: string = 'properties',
     tableAlias: string | null = null
-): string {
+): string | null { // Return null if no conditions
     if (!filters || filters.length === 0) {
-        return ALWAYS_TRUE; // Use constant
+        return null; // No conditions
     }
 
-    const prefix = tableAlias ? `${tableAlias}.` : '';
+    const conditions: string[] = [];
 
-    const conditions = filters.map(filter => {
-        // Use filter.field.name based on user's provided code structure
-        const fieldName = filter.field.name as string; // Assuming field is { name: string }
+    filters.forEach(filter => {
+        // Use assumed getFieldExpression helper
+        // Pass tableAlias to getFieldExpression if it supports it
+        const fieldExpr = getFieldExpression(filter.field, undefined, tableAlias); // Assuming getFieldExpression(field, castType?, alias?)
         const operator = (filter.operator as string).toUpperCase();
         const value = filter.value;
 
-        let sqlField = '';
-        // Check if the field refers to a JSON property
-        if (fieldName.startsWith('properties.')) {
-            const jsonPath = fieldName.substring('properties.'.length);
-            // Use correct jsonColumn ('properties')
-            sqlField = `${prefix}"${jsonColumn}" ->> '$.${jsonPath}'`;
-        } else {
-            // Assume standard column, quote the name
-            sqlField = `${prefix}"${fieldName}"`;
-        }
-
-        // Handle different SQL operators (Logic remains the same)
         switch (operator) {
             case '=':
             case '!=':
             case '<>':
                 if (value === null || value === undefined) {
-                    return `${sqlField} ${operator === '=' ? 'IS NULL' : 'IS NOT NULL'}`;
+                    conditions.push(`${fieldExpr} ${operator === '=' ? 'IS NULL' : 'IS NOT NULL'}`);
+                } else {
+                    params.push(value);
+                    conditions.push(`${fieldExpr} ${operator === '<>' ? '!=' : operator} ?`);
                 }
-                return `${sqlField} ${operator === '<>' ? '!=' : operator} ${formatSqlValue(value)}`;
+                break;
             case '>':
             case '<':
             case '>=':
             case '<=':
                 if (value === null || value === undefined) {
-                    console.warn(`Attempting comparison (${operator}) with NULL for field ${fieldName}.`);
-                    return ALWAYS_FALSE; // Use constant
+                    console.warn(`Attempting comparison (${operator}) with NULL for field ${filter.field.name}. This condition will be ignored.`);
+                    // Don't add a condition like '1=0', just skip it.
+                } else {
+                    params.push(value);
+                    conditions.push(`${fieldExpr} ${operator} ?`);
                 }
-                return `${sqlField} ${operator} ${formatSqlValue(value)}`;
+                break;
             case 'IN':
             case 'NOT IN':
                 if (!Array.isArray(value)) {
-                    console.warn(`Value for ${operator} operator on field ${fieldName} is not an array.`);
-                    // Use constants
-                    return operator === 'IN' ? ALWAYS_FALSE : ALWAYS_TRUE;
+                    console.warn(`Value for ${operator} operator on field ${filter.field.name} is not an array. Condition ignored.`);
+                } else if (value.length === 0) {
+                    // WHERE col IN () is always false, WHERE col NOT IN () is always true.
+                    // We can represent "always false" by adding a condition that's guaranteed false,
+                    // or simply omit the filter if possible. For "always true", we just omit the filter.
+                    if (operator === 'IN') {
+                        conditions.push('1=0'); // Add an explicit always-false condition
+                    }
+                    // For NOT IN (), it's always true, so we add no condition.
+                } else {
+                    // Generate multiple placeholders: (?, ?, ?)
+                    const placeholders = value.map(() => '?').join(', ');
+                    value.forEach(val => params.push(val)); // Push each value onto params array
+                    conditions.push(`${fieldExpr} ${operator} (${placeholders})`);
                 }
-                if (value.length === 0) {
-                    // Use constants
-                    return operator === 'IN' ? ALWAYS_FALSE : ALWAYS_TRUE;
-                }
-                const formattedValues = value.map(formatSqlValue).join(', ');
-                return `${sqlField} ${operator} (${formattedValues})`;
+                break;
             case 'LIKE':
             case 'NOT LIKE':
                 if (typeof value !== 'string') {
-                    console.warn(`Value for ${operator} operator on field ${fieldName} must be a string.`);
-                    // Use constants
-                    return operator === 'LIKE' ? ALWAYS_FALSE : ALWAYS_TRUE;
+                    console.warn(`Value for ${operator} operator on field ${filter.field.name} must be a string. Condition ignored.`);
+                } else {
+                    params.push(value);
+                    conditions.push(`${fieldExpr} ${operator} ?`);
                 }
-                return `${sqlField} ${operator} ${formatSqlValue(value)}`;
+                break;
             case 'IS NULL':
-                return `${sqlField} IS NULL`;
+                conditions.push(`${fieldExpr} IS NULL`);
+                break;
             case 'IS NOT NULL':
-                return `${sqlField} IS NOT NULL`;
+                conditions.push(`${fieldExpr} IS NOT NULL`);
+                break;
             default:
-                console.warn(`Unsupported filter operator used: ${operator}`);
-                return ALWAYS_TRUE; // Use constant
+                console.warn(`Unsupported filter operator used: ${operator}. Condition ignored.`);
+                break;
         }
     });
 
-    // Filter out any conditions that might have resulted in empty strings (though current logic avoids this)
-    const validConditions = conditions.filter(c => c && c.length > 0);
-
-    // If after filtering, there are no valid conditions (e.g., all filters were invalid), return ALWAYS_TRUE
-    if (validConditions.length === 0) {
-        return ALWAYS_TRUE;
-    }
-
-    return validConditions.join(' AND ');
+    // Return joined conditions or null if none were valid
+    return conditions.length > 0 ? conditions.join(' AND ') : null;
 }
 
 
 /**
- * Builds a DuckDB SQL query string to calculate the trend of users completing a funnel sequentially.
- * Uses actual schema column names: "timestamp", "event_type", "distinct_id", "properties".
+ * Builds a parameterized DuckDB SQL query string to calculate the total number of users
+ * completing a funnel sequentially within a specified timeframe (summary view).
+ * Returns the SQL string and an array of parameters.
  *
  * @param steps - An array of FunnelStep objects defining the funnel.
- * @param timeGranularity - The time bucket for the trend ('day', 'week', 'month'). Defaults to 'day'.
  * @param eventsTable - The name of the events table in DuckDB. Defaults to 'events'.
- * @returns A string containing the complete DuckDB SQL query.
+ * @param startDate - Optional start date for the analysis (inclusive). Can be Date object or ISO string.
+ * @param endDate - Optional end date for the analysis (inclusive). Can be Date object or ISO string.
+ * @returns An object containing the SQL query string and an array of parameters.
  */
-export function buildFunnelTrendQuery(
+export function buildFunnelQuery(
     steps: FunnelStep[],
-    timeGranularity: 'day' | 'week' | 'month' = 'day',
-    eventsTable: string = 'events'
-): string {
+    eventsTable: string = 'events',
+    startDate: Date | string,
+    endDate: Date | string
+): { sql: string; params: QueryParamValue[] } { // Updated return type
     if (!steps || steps.length === 0) {
-        throw new Error("Funnel definition must include at least one step.");
+        return {
+            sql: '',
+            params: [],
+        }
     }
 
+    const params: QueryParamValue[] = []; // Initialize parameter array
     const ctes: string[] = [];
-    const finalUnionParts: string[] = [];
+    const stepCompletionAliases: string[] = [];
 
+    // --- Base Events CTE with Time Filter ---
+    const timeFilterClause = buildTimeFilterClause(startDate, endDate, params, '"timestamp"'); // Pass params
+    const baseCteName = "Base_Events";
+    const baseCteSql = `
+    ${baseCteName} AS (
+      SELECT * -- Select all columns needed downstream
+      FROM "${eventsTable}"
+      ${timeFilterClause ? `WHERE ${timeFilterClause}` : '-- No time filter applied'}
+    )
+  `;
+    ctes.push(baseCteSql);
+
+    // --- Step Completion CTEs ---
     steps.forEach((step, index) => {
         const stepNum = index + 1;
         const cteName = `Step${stepNum}_Completion`;
+        const stepAlias = `s${stepNum}`;
+        stepCompletionAliases.push(stepAlias);
         const stepTimeAlias = `step${stepNum}_time`;
-        const stepDateAlias = `step${stepNum}_date`;
 
         const isFirstStep = index === 0;
         const prevCteName = isFirstStep ? '' : `Step${index}_Completion`;
         const prevStepAlias = isFirstStep ? '' : `s${index}`;
         const prevStepTimeAlias = isFirstStep ? '' : `step${index}_time`;
         const tableAlias = isFirstStep ? null : 'e';
+        const sourceTable = isFirstStep ? baseCteName : `${baseCteName} ${tableAlias}`;
 
-        // --- SELECT Clause ---
-        // Ensure correct column names "distinct_id" and "timestamp" are used
+        // --- SELECT Clause (Summary Version) ---
         const selectClause = `
       SELECT
           ${tableAlias ? `${tableAlias}.` : ''}"distinct_id",
-          MIN(${tableAlias ? `${tableAlias}.` : ''}"timestamp") AS ${stepTimeAlias},
-          DATE_TRUNC('${timeGranularity}', MIN(${tableAlias ? `${tableAlias}.` : ''}"timestamp")) AS ${stepDateAlias} -- Corrected: Use timestamp
+          MIN(${tableAlias ? `${tableAlias}.` : ''}"timestamp") AS ${stepTimeAlias}
     `;
 
         // --- FROM Clause ---
-        // Ensure correct column name "distinct_id" is used in JOIN
         const fromClause = isFirstStep
-            ? `FROM "${eventsTable}"`
-            : `FROM "${eventsTable}" ${tableAlias} JOIN ${prevCteName} ${prevStepAlias} ON ${tableAlias}."distinct_id" = ${prevStepAlias}."distinct_id"`;
+            ? `FROM ${sourceTable}`
+            : `FROM ${sourceTable} JOIN ${prevCteName} ${prevStepAlias} ON ${tableAlias}."distinct_id" = ${prevStepAlias}."distinct_id"`;
 
         // --- WHERE Clause ---
         const whereConditions: string[] = [];
-        // Ensure correct column name "timestamp" is used for time comparison
         if (!isFirstStep) {
-            whereConditions.push(`${tableAlias}."timestamp" > ${prevStepAlias}.${prevStepTimeAlias}`); // Corrected: Use timestamp
+            whereConditions.push(`${tableAlias}."timestamp" > ${prevStepAlias}.${prevStepTimeAlias}`);
         }
-        // Ensure correct jsonColumn 'properties' is passed to buildWhereClause
-        const stepWhereClause = buildWhereClause(step.query.filters, 'properties', tableAlias); // Corrected: Use 'properties'
-        // Only add the clause if it's not effectively empty (i.e., not just ALWAYS_TRUE)
-        if (stepWhereClause && stepWhereClause !== ALWAYS_TRUE) {
+        // Build parameterized WHERE clause for step filters
+        const stepWhereClause = buildWhereClause(step.query.filters, params, 'properties', tableAlias); // Pass params
+        if (stepWhereClause) { // Add if not null
             whereConditions.push(stepWhereClause);
         }
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
         // --- GROUP BY Clause ---
-        // Ensure correct column name "distinct_id" is used
         const groupByClause = `GROUP BY ${tableAlias ? `${tableAlias}.` : ''}"distinct_id"`;
 
-        // Assemble the CTE definition string
-        const cteSql = `${cteName} AS (
+        // Assemble the Step CTE definition string
+        const stepCteSql = `${cteName} AS (
       ${selectClause}
       ${fromClause}
       ${whereClause}
       ${groupByClause}
     )`;
-        ctes.push(cteSql);
+        ctes.push(stepCteSql);
+    });
 
-        // --- Final UNION ALL Part ---
-        // Ensure correct column name "distinct_id" is used in COUNT
-        finalUnionParts.push(`
-      SELECT
-          ${stepDateAlias} AS event_date,
-          '${escapeSqlString(step.name)}' AS step_name,
-          COUNT(DISTINCT "distinct_id") AS distinct_users
-      FROM ${cteName}
-      GROUP BY 1, 2
-    `);
+    // --- Assemble Final SELECT Statement (Summary Version) ---
+    let finalSelect = 'SELECT\n';
+    let finalFrom = `FROM Step1_Completion ${stepCompletionAliases[0]}\n`;
+
+    steps.forEach((step, index) => {
+        const currentAlias = stepCompletionAliases[index];
+        // Use step name in alias, escape if necessary (basic escaping here)
+        const safeAlias = step.name.replace(/[^a-zA-Z0-9_]/g, '_');
+        finalSelect += `    COUNT(${currentAlias}."distinct_id") AS "${safeAlias}_count"`; // Use safe alias
+
+        if (index < steps.length - 1) {
+            finalSelect += ',\n';
+        } else {
+            finalSelect += '\n';
+        }
+
+        if (index < steps.length - 1) {
+            const nextStepNum = index + 2;
+            const nextAlias = stepCompletionAliases[index + 1];
+            finalFrom += `LEFT JOIN Step${nextStepNum}_Completion ${nextAlias} ON ${currentAlias}."distinct_id" = ${nextAlias}."distinct_id"\n`;
+        }
     });
 
     // --- Assemble the Full Query ---
     const fullQuery = `
-    -- Funnel Trend Analysis Query Generated by buildFunnelTrendQuery (Updated Schema + Merged Changes + Constants)
     WITH ${ctes.join(',\n\n')}
 
-    -- Combine results for each step over time
-    ${finalUnionParts.join('\nUNION ALL\n')}
-
-    -- Order results chronologically and by step name for clarity
-    ORDER BY event_date ASC, step_name ASC;
+    ${finalSelect}
+    ${finalFrom};
   `;
 
-    return fullQuery.trim();
+    // Return the SQL string and the populated parameters array
+    return { sql: fullQuery.trim(), params: params };
 }

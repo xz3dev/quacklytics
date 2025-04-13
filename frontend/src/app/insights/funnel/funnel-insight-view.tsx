@@ -7,6 +7,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx
 import {FunnelInsight} from "@/model/insights/funnel-insights.ts";
 import {FunnelInsightResults} from "@app/insights/funnel/funnel-insight-results.tsx";
 import {FunnelInsightSteps} from "@app/insights/funnel/funnel-insight-steps.tsx";
+import {FunnelInsightResultOptions} from "@app/insights/funnel/funnel-insight-result-options.tsx";
 
 export function FunnelInsightView() {
     const {data, update} = useContext(FunnelInsightContext)
@@ -41,7 +42,7 @@ export function FunnelInsightView() {
             </div>}
             {!readOnly && <FunnelInsightSteps />}
             {/*{!readOnly && <FunnelInsightSeriesOptions></FunnelInsightSeriesOptions>}*/}
-            {/*{!readOnly && <FunnelInsightChartOptions/>}*/}
+            {!readOnly && <FunnelInsightResultOptions/>}
             {data && (
                 <Card>
                     <CardHeader>

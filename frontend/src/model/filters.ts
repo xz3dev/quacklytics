@@ -1,6 +1,6 @@
 import {TimeBucket, timeBucketData} from "@/model/insights/trend-insight.ts";
 import {determineDateRange} from "@/model/insights/insight-date-range.ts";
-import {Query} from "@lib/queries.ts";
+import {Query} from "@lib/trend-queries.ts";
 import {formatDuration} from "date-fns";
 import {UTCDate} from "@date-fns/utc";
 

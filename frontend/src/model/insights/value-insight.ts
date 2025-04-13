@@ -1,5 +1,5 @@
 import {Insight, InsightConfig} from "@/model/insights/insight.ts";
-import {Query} from "@lib/queries.ts";
+import {Query} from "@lib/trend-queries.ts";
 
 export interface ValueInsight extends Insight {
     type: 'Value'
