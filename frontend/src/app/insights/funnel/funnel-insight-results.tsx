@@ -8,6 +8,7 @@ import {simpleHash} from "@lib/checksums";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Card, CardContent, CardHeader} from "@/components/ui/card.tsx";
 import {MoveRight, TrendingDown} from "lucide-react";
+import {cn} from "@lib/utils/tailwind.ts";
 
 interface FunnelInsightResultsProps {
     insight: FunnelInsight;
@@ -108,7 +109,7 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
     }
 
     return (
-        <Card>
+        <Card className="w-full">
             <CardHeader>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold text-foreground">Funnel Visualization</h3>
@@ -119,55 +120,119 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
             </CardHeader>
 
             <CardContent>
-                <div className="flex space-x-2 md:space-x-4 items-baseline justify-start rounded mb-6">
-                    {processedStepData.map((step, index) => (
-                        <div key={step.name || index} className="flex flex-col min-w-0"
-                             title={`Step ${index + 1}: ${step.name}`}>
-                            <div
-                                className="relative w-[200px] h-48 rounded-t-md overflow-hidden group"
-                            >
-                                <div
-                                    className="absolute bottom-0 left-0 w-full rounded-lg bg-chart-1 transition-all duration-500 ease-out hover:opacity-80"
-                                    style={{height: `${step.percentageOfFirst}%`}}
-                                    title={`${step.percentageOfFirst.toFixed(1)}% of initial (${step.value} users)`}
-                                >
-                                    {step.percentageOfFirst > 15 && (
-                                        <span
-                                            className="absolute top-1 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                            {step.percentageOfFirst.toFixed(0)}%
-                                        </span>
-                                    )}
-                                </div>
-                                {step.percentageOfFirst <= 15 && (
-                                    <span
-                                        className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                        {step.percentageOfFirst.toFixed(0)}%
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="mt-2 w-full px-1">
-                                <div className="text-sm font-medium text-foreground truncate" title={step.name}>
-                                    {index + 1}. {step.name}
-                                </div>
-                                <div className="flex items-center text-xs text-muted-foreground mt-2">
-                                    <MoveRight className="h-4 w-4 mr-1 text-green-500 dark:text-green-600"/>
-                                    {step.value} users ({step.percentageOfFirst.toFixed(1)}%)
-                                </div>
-                                {index > 0 && (
-                                    <div
-                                        className="flex items-center text-xs text-muted-foreground mt-1"
-                                        title={`Dropped from Step ${index}: ${step.dropOffFromPrevious} users (${step.dropOffPercentageFromPrevious.toFixed(1)}%)`}
-                                    >
-                                        <TrendingDown className="h-4 w-4 mr-1 text-red-600" />
-                                        -{step.dropOffFromPrevious} (-{step.dropOffPercentageFromPrevious.toFixed(1)}%)
+                <div className="block overflow-x-auto pb-10">
+                    <table className="">
+                        <tbody>
+                        <tr>
+                            <td className="p-0 w-[200px] sticky right-0 top-0 bottom-0">
+                                <div className="relative min-h-60">
+                                    <div className="absolute top-0 left-0 w-12 bg-background h-full pointer-events-none">
+                                        {Array.from({ length: 6 }).map((_, i) => {
+                                            const pct = (i * 20);
+                                            const top = `${pct}%`; // Changed to pct instead of 100-pct
+                                            return (
+                                                <div
+                                                    key={pct}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        bottom: top,
+                                                        left: 0,
+                                                        width: '100%',
+                                                        height: '1px',
+                                                        backgroundColor: 'rgba(100, 100, 100, 0.3)',
+                                                        zIndex: 0,
+                                                    }}
+                                                >
+                                                    <span className="absolute top-0 left-0 text-xs text-muted-foreground pointer-events-none">
+                                                        {pct}% {/* Changed to pct */}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                                </div>
+                            </td>
+                            {processedStepData.map((step, index) => (
+                                <td
+                                    key={`chart-${index}`}
+                                    className="p-0 relative w-[200px] pr-4"
+                                >
+                                    <div className="relative min-h-60 rounded-t-md group">
+                                        <div
+                                            className="absolute bottom-0 left-0 w-full rounded-lg bg-chart-1 transition-all duration-500 ease-out hover:opacity-80 z-10"
+                                            style={{ height: `${step.percentageOfFirst}%` }}
+                                            title={`${step.percentageOfFirst.toFixed(1)}% of initial (${step.value} users)`}
+                                        >
+                                            {step.percentageOfFirst > 15 && (
+                                                <span className="absolute top-1 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                    {step.percentageOfFirst.toFixed(0)}%
+                                                </span>
+                                            )}
+                                        </div>
+                                        {step.percentageOfFirst <= 15 && (
+                                            <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                {step.percentageOfFirst.toFixed(0)}%
+                                            </span>
+                                        )}
+                                    </div>
+                                    {/* Chart Lines */}
+                                    <div
+                                        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+                                    >
+                                        {Array.from({ length: 6 }).map((_, i) => {
+                                            const pct = i * 20;
+                                            const top = `${pct}%`; // Changed to pct instead of 100-pct
+                                            return (
+                                                <div
+                                                    key={pct}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        bottom: top,
+                                                        left: 0,
+                                                        width: '100%',
+                                                        height: '1px',
+                                                        backgroundColor: 'rgba(100, 100, 100, 0.3)',
+                                                        zIndex: 0,
+                                                    }}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                    {/* End Chart Lines */}
+                                </td>
+                            ))}
+                        </tr>
+                        <tr>
+                            <td>
+                                <div className="w-12"></div>
+                            </td>
+                            {processedStepData.map((step, index) => (
+                                <td key={`label-${index}`} className="p-0 pt-2" align="left">
+                                    <div className="w-[200px] px-1">
+                                        <div className="text-sm font-medium text-foreground truncate" title={step.name}>
+                                            {index + 1}. {step.name}
+                                        </div>
+                                        <div className="flex items-center text-xs text-muted-foreground mt-2">
+                                            <MoveRight className="h-4 w-4 mr-1 text-green-500 dark:text-green-600" />
+                                            {step.value} users ({step.percentageOfFirst.toFixed(1)}%)
+                                        </div>
+                                        {index > 0 && (
+                                            <div
+                                                className="flex items-center text-xs text-muted-foreground mt-1"
+                                                title={`Dropped from Step ${index}: ${step.dropOffFromPrevious} users (${step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(1) : 0}%)`}
+                                            >
+                                                <TrendingDown className="h-4 w-4 mr-1 text-red-600" />
+                                                -{step.dropOffFromPrevious} (-{step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(1) : 0}%)
+                                            </div>
+                                        )}
+                                    </div>
+                                </td>
+                            ))}
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div className="overflow-x-auto mb-1">
+                <div className="overflow-x-auto mt-4 mb-1">
                     <h3 className="text-lg font-semibold text-foreground mb-2 px-1">Detailed Results</h3>
                     <Table>
                         <TableHeader>
@@ -190,7 +255,7 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                                     <TableCell
                                         className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.percentageOfPrevious.toFixed(2)}%`}</TableCell>
                                     <TableCell
-                                        className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.dropOffFromPrevious} (${step.dropOffPercentageFromPrevious.toFixed(2)}%)`}</TableCell>
+                                        className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.dropOffFromPrevious} (${step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(2) : 0}%)`}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -201,3 +266,4 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
         </Card>
     );
 }
+
