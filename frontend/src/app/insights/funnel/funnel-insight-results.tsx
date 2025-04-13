@@ -7,6 +7,7 @@ import {useProjectId} from "@/hooks/use-project-id";
 import {simpleHash} from "@lib/checksums";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Card, CardContent, CardHeader} from "@/components/ui/card.tsx";
+import {MoveRight, TrendingDown} from "lucide-react";
 
 interface FunnelInsightResultsProps {
     insight: FunnelInsight;
@@ -118,12 +119,13 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
             </CardHeader>
 
             <CardContent>
-                <div className="flex space-x-2 md:space-x-4 items-baseline justify-center p-4 bg-muted rounded mb-6">
+                <div className="flex space-x-2 md:space-x-4 items-baseline justify-start rounded mb-6">
                     {processedStepData.map((step, index) => (
-                        <div key={step.name || index} className="flex flex-col items-center text-center flex-1 min-w-0"
+                        <div key={step.name || index} className="flex flex-col min-w-0"
                              title={`Step ${index + 1}: ${step.name}`}>
                             <div
-                                className="relative w-full h-48 bg-muted dark:bg-muted rounded-t-md overflow-hidden group">
+                                className="relative w-[200px] h-48 rounded-t-md overflow-hidden group"
+                            >
                                 <div
                                     className="absolute bottom-0 left-0 w-full rounded-lg bg-chart-1 transition-all duration-500 ease-out hover:opacity-80"
                                     style={{height: `${step.percentageOfFirst}%`}}
@@ -148,12 +150,16 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                                 <div className="text-sm font-medium text-foreground truncate" title={step.name}>
                                     {index + 1}. {step.name}
                                 </div>
-                                <div className="text-xs text-muted-foreground mt-2">
+                                <div className="flex items-center text-xs text-muted-foreground mt-2">
+                                    <MoveRight className="h-4 w-4 mr-1 text-green-500 dark:text-green-600"/>
                                     {step.value} users ({step.percentageOfFirst.toFixed(1)}%)
                                 </div>
                                 {index > 0 && (
-                                    <div className="text-xs text-muted-foreground mt-1"
-                                         title={`Dropped from Step ${index}: ${step.dropOffFromPrevious} users (${step.dropOffPercentageFromPrevious.toFixed(1)}%)`}>
+                                    <div
+                                        className="flex items-center text-xs text-muted-foreground mt-1"
+                                        title={`Dropped from Step ${index}: ${step.dropOffFromPrevious} users (${step.dropOffPercentageFromPrevious.toFixed(1)}%)`}
+                                    >
+                                        <TrendingDown className="h-4 w-4 mr-1 text-red-600" />
                                         -{step.dropOffFromPrevious} (-{step.dropOffPercentageFromPrevious.toFixed(1)}%)
                                     </div>
                                 )}

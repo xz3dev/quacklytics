@@ -10,7 +10,6 @@ export interface FunnelInsight extends Insight {
 
 export interface FunnelInsightConfig {
     duration: string
-    conversionWindow: string
     steps?: FunnelStep[]
 }
 

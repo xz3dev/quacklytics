@@ -40,7 +40,6 @@ export function FunnelInsightView() {
                 </div>
             </div>}
             {!readOnly && <FunnelInsightSteps />}
-            {/*{!readOnly && <FunnelInsightSeriesOptions></FunnelInsightSeriesOptions>}*/}
             {!readOnly && <FunnelInsightResultOptions/>}
             {data && (
                 <FunnelInsightResults insight={data}/>
