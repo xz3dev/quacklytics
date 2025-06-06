@@ -5,11 +5,10 @@ your browser. It provides a seamless, lightweight, and high-performance way to p
 expensive server-side compute resources.
 
 ## Why does this exist?
-
-**Save Resources**: Leverage your existing computers performance by running analytical queries entirely in the browser.  
-**Easy to Deploy**: One Binary / Docker Image: No need to install or manage a database. All data is stored in simple files on your filesystem by leveraging sqlite and duckdb.
-**Open Source**: Free to use and extend.
-**Cheap**: Storage is cheap, compute is expensive. That's why everything is a file and as much work happens inside the browser as possible.
+- Saves server resources by using the client for heavy computations
+- Easy to deploy (one binary / docker image).
+- Open Source
+- Cheap to scale (storage is cheap, usually).
 
 ## Getting Started
 
