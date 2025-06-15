@@ -25,7 +25,6 @@ export const newFunnelInsight: Omit<FunnelInsight, 'id'> = {
     config: {
         funnel: {
             duration: 'P30D',
-            conversionWindow: 'P7D',
             steps: []
         }
     },

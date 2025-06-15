@@ -6,12 +6,15 @@ import {useDuckDBQuery} from "@/services/duck-db-queries";
 import {useProjectId} from "@/hooks/use-project-id";
 import {simpleHash} from "@lib/checksums";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Card, CardContent, CardHeader} from "@/components/ui/card.tsx";
 import {MoveRight, TrendingDown} from "lucide-react";
 
 interface FunnelInsightResultsProps {
     insight: FunnelInsight;
+    layoutDirection: LayoutDirection
+    detailedResults?: boolean
 }
+
+type LayoutDirection = 'horizontal' | 'vertical'
 
 interface ProcessedStepData {
     stepConfig: FunnelStep | undefined;
@@ -23,7 +26,7 @@ interface ProcessedStepData {
     dropOffPercentageFromPrevious: number;
 }
 
-export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
+export function FunnelInsightResults({insight, layoutDirection, detailedResults}: FunnelInsightResultsProps) {
     const projId = useProjectId();
     const conf = insight.config.funnel;
     const steps = conf.steps ?? [];
@@ -107,28 +110,19 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
         return <div className="p-4 text-center text-muted-foreground">No funnel data available.</div>;
     }
 
-    return (
-        <Card className="w-full">
-            <CardHeader>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">{insight.name}</h3>
-                    <div className="text-sm text-muted-foreground">
-                        <span>Total Conversion: {overallConversionRate.toFixed(2)}%</span>
-                    </div>
-                </div>
-            </CardHeader>
-
-            <CardContent>
-                <div className="block overflow-x-auto pb-10">
+    return (<>
+            {layoutDirection === 'horizontal' ? (
+                <div className="block overflow-x-auto">
                     <table className="">
                         <tbody>
                         <tr>
                             <td className="p-0">
                                 <div className="relative min-h-60">
-                                    <div className="absolute top-0 left-0 w-12 bg-background h-full pointer-events-none">
-                                        {Array.from({ length: 6 }).map((_, i) => {
+                                    <div
+                                        className="absolute top-0 left-0 w-12 bg-background h-full pointer-events-none">
+                                        {Array.from({length: 6}).map((_, i) => {
                                             const pct = (i * 20);
-                                            const top = `${pct}%`; // Changed to pct instead of 100-pct
+                                            const top = `${pct}%`;
                                             return (
                                                 <div
                                                     key={pct}
@@ -142,9 +136,10 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                                                         zIndex: 0,
                                                     }}
                                                 >
-                                                    <span className="absolute top-0 left-0 text-xs text-muted-foreground pointer-events-none">
-                                                        {pct}% {/* Changed to pct */}
-                                                    </span>
+                                                        <span
+                                                            className="absolute top-0 left-0 text-xs text-muted-foreground pointer-events-none">
+                                                            {pct}%
+                                                        </span>
                                                 </div>
                                             );
                                         })}
@@ -159,28 +154,30 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                                     <div className="relative min-h-60 rounded-t-md group">
                                         <div
                                             className="absolute bottom-0 left-0 w-full rounded-lg bg-chart-1 transition-all duration-500 ease-out hover:opacity-80 z-10"
-                                            style={{ height: `${step.percentageOfFirst}%` }}
+                                            style={{height: `${step.percentageOfFirst}%`}}
                                             title={`${step.percentageOfFirst.toFixed(1)}% of initial (${step.value} users)`}
                                         >
                                             {step.percentageOfFirst > 15 && (
-                                                <span className="absolute top-1 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                                    {step.percentageOfFirst.toFixed(0)}%
-                                                </span>
+                                                <span
+                                                    className="absolute top-1 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                        {step.percentageOfFirst.toFixed(0)}%
+                                                    </span>
                                             )}
                                         </div>
                                         {step.percentageOfFirst <= 15 && (
-                                            <span className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                                {step.percentageOfFirst.toFixed(0)}%
-                                            </span>
+                                            <span
+                                                className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                    {step.percentageOfFirst.toFixed(0)}%
+                                                </span>
                                         )}
                                     </div>
                                     {/* Chart Lines */}
                                     <div
                                         className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
                                     >
-                                        {Array.from({ length: 6 }).map((_, i) => {
+                                        {Array.from({length: 6}).map((_, i) => {
                                             const pct = i * 20;
-                                            const top = `${pct}%`; // Changed to pct instead of 100-pct
+                                            const top = `${pct}%`;
                                             return (
                                                 <div
                                                     key={pct}
@@ -212,7 +209,7 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                                             {index + 1}. {step.name}
                                         </div>
                                         <div className="flex items-center text-xs text-muted-foreground mt-2">
-                                            <MoveRight className="h-4 w-4 mr-1 text-green-500 dark:text-green-600" />
+                                            <MoveRight className="h-4 w-4 mr-1 text-green-500 dark:text-green-600"/>
                                             {step.value} users ({step.percentageOfFirst.toFixed(1)}%)
                                         </div>
                                         {index > 0 && (
@@ -220,7 +217,7 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                                                 className="flex items-center text-xs text-muted-foreground mt-1"
                                                 title={`Dropped from Step ${index}: ${step.dropOffFromPrevious} users (${step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(1) : 0}%)`}
                                             >
-                                                <TrendingDown className="h-4 w-4 mr-1 text-red-600" />
+                                                <TrendingDown className="h-4 w-4 mr-1 text-red-600"/>
                                                 -{step.dropOffFromPrevious} (-{step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(1) : 0}%)
                                             </div>
                                         )}
@@ -231,38 +228,102 @@ export function FunnelInsightResults({insight}: FunnelInsightResultsProps) {
                         </tbody>
                     </table>
                 </div>
-                <div className="overflow-x-auto mt-4 mb-1">
-                    <h3 className="text-lg font-semibold text-foreground mb-2 px-1">Detailed Results</h3>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="text-muted-foreground">Step Name</TableHead>
-                                <TableHead className="text-muted-foreground text-right">Users</TableHead>
-                                <TableHead className="text-muted-foreground text-right">% of First</TableHead>
-                                <TableHead className="text-muted-foreground text-right">% Conv. (Prev)</TableHead>
-                                <TableHead className="text-muted-foreground text-right">Drop-off (Prev)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {processedStepData.map((step, index) => (
-                                <TableRow key={index} className="hover:bg-muted">
-                                    <TableCell
-                                        className="font-medium text-foreground">{index + 1}. {step.name}</TableCell>
-                                    <TableCell className="text-muted-foreground text-right">{step.value}</TableCell>
-                                    <TableCell
-                                        className="text-muted-foreground text-right">{step.percentageOfFirst.toFixed(2)}%</TableCell>
-                                    <TableCell
-                                        className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.percentageOfPrevious.toFixed(2)}%`}</TableCell>
-                                    <TableCell
-                                        className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.dropOffFromPrevious} (${step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(2) : 0}%)`}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+            ) : (
+                <div className="block">
+                    <table className="w-full">
+                        <tbody>
+                        {processedStepData.map((step, index) => (
+                            <tr key={`step-${index}`}>
+                                <td className={`py-4 ${index < processedStepData.length - 1 ? 'border-b' : ''}`}>
+                                    <div className="flex items-start">
+                                        <div className="w-[200px] flex-shrink-0">
+                                            <div className="text-sm font-medium text-foreground" title={step.name}>
+                                                {index + 1}. {step.name}
+                                            </div>
+                                            <div className="flex items-center text-xs text-muted-foreground mt-2">
+                                                <MoveRight className="h-4 w-4 mr-1 text-green-500 dark:text-green-600"/>
+                                                {step.value} users ({step.percentageOfFirst.toFixed(1)}%)
+                                            </div>
+                                            {index > 0 && (
+                                                <div
+                                                    className="flex items-center text-xs text-muted-foreground mt-1"
+                                                    title={`Dropped from Step ${index}: ${step.dropOffFromPrevious} users (${step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(1) : 0}%)`}
+                                                >
+                                                    <TrendingDown className="h-4 w-4 mr-1 text-red-600"/>
+                                                    -{step.dropOffFromPrevious} (-{step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(1) : 0}%)
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-grow relative h-20 ml-4">
+                                            <div className="absolute top-0 left-0 h-full w-full">
+                                                <div className="relative h-full">
+                                                    <div
+                                                        className="absolute top-0 left-0 h-full bg-chart-1 rounded-lg transition-all duration-500 ease-out hover:opacity-80"
+                                                        style={{width: `${step.percentageOfFirst}%`}}
+                                                        title={`${step.percentageOfFirst.toFixed(1)}% of initial (${step.value} users)`}
+                                                    >
+                                                        {step.percentageOfFirst > 15 && (
+                                                            <span
+                                                                className="absolute right-1 top-1/2 transform -translate-y-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                                    {step.percentageOfFirst.toFixed(0)}%
+                                                                </span>
+                                                        )}
+                                                    </div>
+                                                    {step.percentageOfFirst <= 15 && (
+                                                        <span
+                                                            className="absolute top-1/2 transform -translate-y-1/2 text-primary text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                                            style={{left: `calc(${step.percentageOfFirst}% + 4px)`}}
+                                                        >
+                                                                {step.percentageOfFirst.toFixed(0)}%
+                                                            </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
                 </div>
-            </CardContent>
-
-        </Card>
+            )}
+            {detailedResults && <div className="overflow-x-auto mb-1 pt-10">
+                <div className="flex items-center  mb-2 px-1">
+                    <h3 className="text-lg font-semibold text-foreground">Detailed Results</h3>
+                    <div className="w-8 text-center text-muted-foreground"></div>
+                    <div className="text-sm text-muted-foreground">
+                        <span>Total Conversion: {overallConversionRate.toFixed(2)}%</span>
+                    </div>
+                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="text-muted-foreground">Step Name</TableHead>
+                            <TableHead className="text-muted-foreground text-right">Users</TableHead>
+                            <TableHead className="text-muted-foreground text-right">% of First</TableHead>
+                            <TableHead className="text-muted-foreground text-right">% Conv. (Prev)</TableHead>
+                            <TableHead className="text-muted-foreground text-right">Drop-off (Prev)</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {processedStepData.map((step, index) => (
+                            <TableRow key={index} className="hover:bg-muted">
+                                <TableCell
+                                    className="font-medium text-foreground">{index + 1}. {step.name}</TableCell>
+                                <TableCell className="text-muted-foreground text-right">{step.value}</TableCell>
+                                <TableCell
+                                    className="text-muted-foreground text-right">{step.percentageOfFirst.toFixed(2)}%</TableCell>
+                                <TableCell
+                                    className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.percentageOfPrevious.toFixed(2)}%`}</TableCell>
+                                <TableCell
+                                    className="text-muted-foreground text-right">{index === 0 ? '-' : `${step.dropOffFromPrevious} (${step.dropOffPercentageFromPrevious !== undefined ? step.dropOffPercentageFromPrevious.toFixed(2) : 0}%)`}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>}
+        </>
     );
 }
 

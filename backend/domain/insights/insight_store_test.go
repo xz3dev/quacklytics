@@ -23,16 +23,18 @@ func TestInsightStore_CreateInsight(t *testing.T) {
 	db := setupDB(t)
 	store := NewInsightStore(db) // Use NewInsightStore directly
 
+	isFavorite := false
+
 	input := &InsightInput{ // Use types directly
 		Name:     "Test Create Insight",
 		Type:     Trend, // Assuming Trend is a defined InsightType constant
-		Favorite: false,
-		Config: InsightConfig{
+		Favorite: &isFavorite,
+		Config: &InsightConfig{
 			TrendConf: &TrendInsightConfig{
-				TimeBucket: Daily, // Assuming Daily is a defined TimeBucket constant
+				TimeBucket: Daily,
 				Duration:   "P7D",
 				Series: &[]TrendSeries{
-					{Name: "Series A", Visualisation: "line", Query: InsightQuery{ /* Add query details if needed */ }},
+					{Name: "Series A", Visualisation: "line", Query: InsightQuery{}},
 				},
 			},
 		},
@@ -73,7 +75,7 @@ func TestInsightStore_GetInsightByID(t *testing.T) {
 		db := setupDB(t)
 		store := NewInsightStore(db)
 		// Prepare data
-		input := &InsightInput{Name: "Test Get Insight", Type: Trend, Config: InsightConfig{}}
+		input := &InsightInput{Name: "Test Get Insight", Type: Trend, Config: &InsightConfig{}}
 		created, errCreate := store.CreateInsight(input)
 		assert.NoError(t, errCreate)
 		assert.NotNil(t, created)
@@ -105,8 +107,8 @@ func TestInsightStore_ListInsights(t *testing.T) {
 		db := setupDB(t)
 		store := NewInsightStore(db)
 		// Prepare data
-		input1 := &InsightInput{Name: "List Item 1", Type: Trend, Config: InsightConfig{}}
-		input2 := &InsightInput{Name: "List Item 2", Type: Trend, Config: InsightConfig{}}
+		input1 := &InsightInput{Name: "List Item 1", Type: Trend, Config: &InsightConfig{}}
+		input2 := &InsightInput{Name: "List Item 2", Type: Trend, Config: &InsightConfig{}}
 		_, err1 := store.CreateInsight(input1)
 		_, err2 := store.CreateInsight(input2)
 		assert.NoError(t, err1)
@@ -139,6 +141,8 @@ func TestInsightStore_UpdateInsight(t *testing.T) {
 		assert.Nil(t, updatedNotFound)
 	})
 
+	isFavorite := false
+
 	// --- Scenario: Found and Updated ---
 	t.Run("FoundAndUpdate", func(t *testing.T) {
 		db := setupDB(t)
@@ -147,19 +151,20 @@ func TestInsightStore_UpdateInsight(t *testing.T) {
 		initialInput := &InsightInput{
 			Name:     "Initial Name",
 			Type:     Trend,
-			Favorite: false,
-			Config:   InsightConfig{TrendConf: &TrendInsightConfig{Duration: "P1D"}},
+			Favorite: &isFavorite,
+			Config:   &InsightConfig{TrendConf: &TrendInsightConfig{Duration: "P1D"}},
 		}
 		created, errCreate := store.CreateInsight(initialInput)
 		assert.NoError(t, errCreate)
 		assert.NotNil(t, created)
 
+		isFavoriteTrue := true
 		// Prepare update data
 		updateInput := &InsightInput{
 			Name:     "Updated Name",
 			Type:     Trend, // Usually type doesn't change, keep consistent or test changing it if allowed
-			Favorite: true,
-			Config:   InsightConfig{TrendConf: &TrendInsightConfig{Duration: "P2D", TimeBucket: Weekly}}, // Changed config
+			Favorite: &isFavoriteTrue,
+			Config:   &InsightConfig{TrendConf: &TrendInsightConfig{Duration: "P2D", TimeBucket: Weekly}}, // Changed config
 		}
 
 		// Test Update
@@ -199,7 +204,7 @@ func TestInsightStore_DeleteInsight(t *testing.T) {
 		db := setupDB(t)
 		store := NewInsightStore(db)
 		// Prepare data
-		input := &InsightInput{Name: "To Be Deleted", Type: Trend, Config: InsightConfig{}}
+		input := &InsightInput{Name: "To Be Deleted", Type: Trend, Config: &InsightConfig{}}
 		created, errCreate := store.CreateInsight(input)
 		assert.NoError(t, errCreate)
 		assert.NotNil(t, created)
@@ -221,7 +226,7 @@ func TestInsightStore_DeleteInsight(t *testing.T) {
 		db := setupDB(t)
 		store := NewInsightStore(db)
 		// Prepare data
-		input := &InsightInput{Name: "Delete Me Twice", Type: Trend, Config: InsightConfig{}}
+		input := &InsightInput{Name: "Delete Me Twice", Type: Trend, Config: &InsightConfig{}}
 		created, _ := store.CreateInsight(input) // Ignore error for setup simplicity here
 		createdID := created.ID
 

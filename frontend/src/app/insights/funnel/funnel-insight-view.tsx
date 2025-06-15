@@ -7,6 +7,8 @@ import {FunnelInsight} from "@/model/insights/funnel-insights.ts";
 import {FunnelInsightResults} from "@app/insights/funnel/funnel-insight-results.tsx";
 import {FunnelInsightSteps} from "@app/insights/funnel/funnel-insight-steps.tsx";
 import {FunnelInsightResultOptions} from "@app/insights/funnel/funnel-insight-result-options.tsx";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {ProjectLink} from "@/components/project-link.tsx";
 
 export function FunnelInsightView() {
     const {data, update} = useContext(FunnelInsightContext)
@@ -39,10 +41,23 @@ export function FunnelInsightView() {
                     />
                 </div>
             </div>}
-            {!readOnly && <FunnelInsightSteps />}
+            {!readOnly && <FunnelInsightSteps/>}
             {!readOnly && <FunnelInsightResultOptions/>}
             {data && (
-                <FunnelInsightResults insight={data}/>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                            <ProjectLink to={`/insights/${data.id}`}>
+                                <h3>
+                                    {data.name}
+                                </h3>
+                            </ProjectLink>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-6">
+                        <FunnelInsightResults insight={data} layoutDirection="horizontal" detailedResults={true}/>
+                    </CardContent>
+                </Card>
             )}
         </>
     )

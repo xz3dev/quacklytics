@@ -70,7 +70,7 @@ function renderInsight(insight: Insight) {
                     update: () => undefined,
                     updateFn: () => undefined,
                 }}>
-                    <FunnelInsightResults insight={insight as FunnelInsight} />
+                    <FunnelInsightResults insight={insight as FunnelInsight} layoutDirection="vertical"/>
                 </FunnelInsightContext.Provider>
             )
         default:
