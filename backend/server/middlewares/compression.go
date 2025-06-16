@@ -8,7 +8,7 @@ import (
 
 func DecompressionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("compression") == "gzip-js" {
+		if r.URL.Query().Get("compression") == "gzip-js" || r.Header.Get("Content-Encoding") == "gzip" {
 			gzipReader, err := gzip.NewReader(r.Body)
 			if err != nil {
 				http.Error(w, "Unable to create gzip reader", http.StatusBadRequest)

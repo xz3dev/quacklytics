@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 	"net/http"
 	"time"
 )
@@ -16,7 +17,8 @@ import (
 func SetupPosthogRoutes(mux *chi.Mux) {
 	mux.Group(func(mux chi.Router) {
 		mux.Use(svmw.DecompressionMiddleware)
-		mux.Post("/e/", PosthogHandler)
+		mux.Post("/e/", EventHandler)
+		mux.Post("/batch", BatchHandler)
 		mux.Post("/decide/", EmptyOkResponse)
 		mux.Get("/array/{apikey}/config.js", EmptyOkResponse)
 		mux.Get("/array/{apikey}/config", EmptyOkResponse)
@@ -30,10 +32,16 @@ func EmptyOkResponse(w http.ResponseWriter, r *http.Request) {
 
 type posthogEvent struct {
 	UUID       string                 `json:"uuid"`
+	DistinctId string                 `json:"distinct_id"`
 	Event      string                 `json:"event"`
 	Properties map[string]interface{} `json:"properties"`
 	Offset     *int                   `json:"offset"`
 	Timestamp  string                 `json:"timestamp"`
+}
+
+type eventBatch struct {
+	ApiKey string           `json:"api_key"`
+	Batch  posthogEventList `json:"batch"`
 }
 
 type posthogEventList []posthogEvent
@@ -58,6 +66,10 @@ func extractIdentifiers(e posthogEvent) (string, string, bool) {
 		return "", "", false
 	}
 
+	if e.DistinctId != "" {
+		return token, e.DistinctId, true
+	}
+
 	distinctId, ok := e.Properties["distinct_id"].(string)
 	if !ok || distinctId == "" {
 		log.Info("No distinct_id found in event properties. Skipping event: %s", e.UUID)
@@ -67,12 +79,40 @@ func extractIdentifiers(e posthogEvent) (string, string, bool) {
 	return token, distinctId, true
 }
 
-func PosthogHandler(w http.ResponseWriter, r *http.Request) {
+func BatchHandler(w http.ResponseWriter, r *http.Request) {
+	var batch eventBatch
+
+	if err := json.NewDecoder(r.Body).Decode(&batch); err != nil {
+		http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for i := range batch.Batch {
+		batch.Batch[i].Properties["token"] = batch.ApiKey
+	}
+
+	appdb := svmw.GetAppDB(r)
+	queueEvents(appdb, batch.Batch)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Batch processed successfully"))
+}
+
+func EventHandler(w http.ResponseWriter, r *http.Request) {
 	var ingestedEvents posthogEventList
 	if err := json.NewDecoder(r.Body).Decode(&ingestedEvents); err != nil {
 		http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	appdb := svmw.GetAppDB(r)
+	queueEvents(appdb, ingestedEvents)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Events added to Queue"))
+}
+
+func queueEvents(appdb *gorm.DB, ingestedEvents posthogEventList) {
 
 	// Create a map to group event inputs by token.
 	eventInputsByToken := make(map[string][]*events.EventInput)
@@ -94,8 +134,6 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 		eventInputsByToken[token] = append(eventInputsByToken[token], &eventInput)
 	}
 
-	appdb := svmw.GetAppDB(r)
-
 	for token, eventsByToken := range eventInputsByToken {
 		projectId, err := apikeys.ValidateAPIKey(appdb, token)
 		if err != nil {
@@ -104,9 +142,6 @@ func PosthogHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		processor.ProcessEvents(projectId, eventsByToken)
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Events added to Queue"))
 }
 
 func (p *posthogEventList) UnmarshalJSON(data []byte) error {
