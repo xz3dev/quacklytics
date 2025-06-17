@@ -1,9 +1,9 @@
 // Assuming necessary imports are available:
-import { QueryParamValue } from "@lib/queries.ts"; // Or adjust path
-import { FieldFilter, Field } from "@/model/filters.ts"; // Assuming Field type is available
-import { FunnelStep } from "@/model/insights/funnel-insights.ts"; // Or adjust path
+import {QueryParamValue} from "@lib/queries.ts"; // Or adjust path
+import {FieldFilter} from "@/model/filters.ts"; // Assuming Field type is available
+import {FunnelStep} from "@/model/insights/funnel-insights.ts"; // Or adjust path
 // Assume getFieldExpression is available and imported, similar to its use in buildQuery
-import { getFieldExpression } from "@lib/field.ts"; // Adjust path as needed
+import {getFieldExpression} from "@lib/field.ts"; // Adjust path as needed
 
 // --- Constants for SQL Conditions ---
 // No longer strictly needed for WHERE clause logic, but can be kept for clarity if desired elsewhere
@@ -56,8 +56,6 @@ function buildTimeFilterClause(
 function buildWhereClause(
     filters: FieldFilter[] | undefined,
     params: QueryParamValue[], // Modifies this array
-    jsonColumn: string = 'properties',
-    tableAlias: string | null = null
 ): string | null { // Return null if no conditions
     if (!filters || filters.length === 0) {
         return null; // No conditions
@@ -66,9 +64,7 @@ function buildWhereClause(
     const conditions: string[] = [];
 
     filters.forEach(filter => {
-        // Use assumed getFieldExpression helper
-        // Pass tableAlias to getFieldExpression if it supports it
-        const fieldExpr = getFieldExpression(filter.field, undefined, tableAlias); // Assuming getFieldExpression(field, castType?, alias?)
+        const fieldExpr = getFieldExpression(filter.field, undefined);
         const operator = (filter.operator as string).toUpperCase();
         const value = filter.value;
 
@@ -213,7 +209,7 @@ export function buildFunnelQuery(
             whereConditions.push(`${tableAlias}."timestamp" > ${prevStepAlias}.${prevStepTimeAlias}`);
         }
         // Build parameterized WHERE clause for step filters
-        const stepWhereClause = buildWhereClause(step.query.filters, params, 'properties', tableAlias); // Pass params
+        const stepWhereClause = buildWhereClause(step.query.filters, params); // Pass params
         if (stepWhereClause) { // Add if not null
             whereConditions.push(stepWhereClause);
         }
