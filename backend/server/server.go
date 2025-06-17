@@ -123,10 +123,10 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 			routes.SetupProjectSpecificRoutes(mux)
 			routes.SetupAPIKeysRoutes(mux)
 		})
-		mux.Group(func(mux chi.Router) {
-			mux.Use(svmw.NewWebSocketMiddleware().Middleware)
-			mux.Get("/realtime", routes.RealtimeWebSocketEndpoint)
-		})
+		//mux.Group(func(mux chi.Router) {
+		//	mux.Use(svmw.NewWebSocketMiddleware().Middleware)
+		//	mux.Get("/realtime", routes.RealtimeWebSocketEndpoint)
+		//})
 		mux.Group(func(mux chi.Router) {
 			mux.Post("/event", routes.AppendEvent)
 		})
