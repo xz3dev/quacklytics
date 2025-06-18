@@ -23,12 +23,13 @@ export class DuckDbManager {
 
     dataRanges = useDuckDbDataRangeStore()
     downloadState = useDuckDbDownloadStore()
-    fileManager = createDuckDbFileManager(this.projectId, this, this.queryClient)
+    readonly fileManager
 
     constructor(
         private projectId: string,
         private queryClient: QueryClient,
     ) {
+        this.fileManager = createDuckDbFileManager(this.projectId, this, this.queryClient)
         void this.fileManager.getState().loadData()
         this.db.then(() => {
             this.downloadState.getState().finishInit()
