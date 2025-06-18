@@ -43,9 +43,7 @@ export function AppRouter() {
                     <Route path="settings" element={<Settings></Settings>}></Route>
 
 
-                    {import.meta.env.MODE === 'development' && (
-                        <Route path="queries" element={<QueryTester />}></Route>
-                    )}
+                    <Route path="queries" element={<QueryTester />}></Route>
                 </Route>
 
 
