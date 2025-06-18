@@ -89,6 +89,11 @@ func serveFrontend(mux *chi.Mux) {
 			http.ServeFileFS(w, r, frontendDir, "/index.html")
 			return
 		}
+
+		if strings.Contains(r.URL.Path, "/assets") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+		}
+
 		// Serve the file.
 		fileServer.ServeHTTP(w, r)
 	})
