@@ -1,20 +1,20 @@
-POST http://{{host}}/{{project}}/dummy
+POST {{host}}/{{project}}/dummy
 
 ###
 
-GET http://{{host}}/{{project}}/events/parquet/checksums
+GET {{host}}/{{project}}/events/catalog
 
 ###
 
-GET http://{{host}}/{{project}}/events/parquet/export
+GET {{host}}/{{project}}/events/parquet/export
 
 ###
 
-GET http://{{host}}/{{project}}/events/parquet/months/checksums
+GET {{host}}/{{project}}/events/parquet/months/checksums
 
 ###
 
-GET http://{{host}}/{{project}}/events?timestamp__gt=2025-06-03T21%3A14%3A28.974Z
+GET {{host}}/{{project}}/events?timestamp__gt=2024-06-19T18:29:04.300Z
 
 ###
 

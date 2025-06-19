@@ -1,7 +1,7 @@
-GET http://{{host}}/{{project}}/schema
+GET {{host}}/{{project}}/schema
 Accept: application/json
 
 ###
 
-GET http://{{host}}/{{project}}/schema/prop/3710
+GET {{host}}/{{project}}/schema/prop/3710
 Accept: application/json

@@ -1,7 +1,7 @@
-GET http://{{host}}/{{project}}/insights
+GET {{host}}/{{project}}/insights
 
 ###
-POST http://{{host}}/{{project}}/insights
+POST {{host}}/{{project}}/insights
 Content-Type: application/json
 
 {
@@ -14,11 +14,11 @@ Content-Type: application/json
 
 ###
 
-GET http://{{host}}/{{project}}/insights/18
+GET {{host}}/{{project}}/insights/18
 
 ###
 
-PUT http://{{host}}/{{project}}/insights/7
+PUT {{host}}/{{project}}/insights/7
 Content-Type: application/json
 
 {
@@ -46,7 +46,7 @@ Content-Type: application/json
 
 ###
 
-DELETE http://{{host}}/{{project}}/insights/1
+DELETE {{host}}/{{project}}/insights/1
 
 ###
 

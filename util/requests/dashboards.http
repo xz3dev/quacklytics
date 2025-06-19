@@ -1,5 +1,5 @@
 ### Variables
-@baseUrl = http://{{host}}/{{project}}
+@baseUrl = {{host}}/{{project}}
 
 ### List all dashboards
 GET {{baseUrl}}/dashboards

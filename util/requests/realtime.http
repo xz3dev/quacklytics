@@ -1,5 +1,5 @@
 ###
-POST http://{{host}}/auth/realtime
+POST {{host}}/auth/realtime
 
 > {%
     const body = JSON.parse(response.body.toString())

@@ -1,24 +1,24 @@
 ###
 
-POST http://{{host}}/auth/login
+POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "test@test.de",
-  "password": "a123ABCd2e!"
+  "email": {{email}},
+  "password": {{password}}
 }
 
 ###
 
-GET http://{{host}}/auth/me
+GET {{host}}/auth/me
 
 ###
 
-GET http://{{host}}/auth/logout
+GET {{host}}/auth/logout
 
 ###
 
-POST http://{{host}}/auth/register
+POST {{host}}/auth/register
 Content-Type: application/json
 
 {
@@ -29,5 +29,5 @@ Content-Type: application/json
 
 ###
 
-GET http://{{host}}/setup
+GET {{host}}/setup
 
