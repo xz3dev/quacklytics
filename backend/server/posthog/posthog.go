@@ -88,12 +88,16 @@ func BatchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Info("Posthog batch received 1: %d", len(batch.Batch))
 	for i := range batch.Batch {
 		batch.Batch[i].Properties["token"] = batch.ApiKey
 	}
+	log.Info("Posthog batch received 2: %d", len(batch.Batch))
 
 	appdb := svmw.GetAppDB(r)
+	log.Info("Posthog batch received 3: %d", len(batch.Batch))
 	queueEvents(appdb, batch.Batch)
+	log.Info("Posthog batch received 4: %d", len(batch.Batch))
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Batch processed successfully"))
