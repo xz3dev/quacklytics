@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Popover, PopoverContent, PopoverTrigger} from "@radix-ui/react-popover";
-import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive, Info} from "lucide-react";
+import {AlertCircleIcon, ArrowDownCircleIcon, HardDrive, Info, RefreshCw} from "lucide-react";
 import {AutoDownloadRangeSelector} from "@app/data-manager/auto-download-range-selector.tsx";
 import {Card} from "@/components/ui/card.tsx";
 import {FileMetadata, useDownloadFile, useFileCatalog} from "@/services/file-catalog.ts";
@@ -81,19 +81,44 @@ export function DataManager() {
                             className="absolute inset-0 flex items-center justify-center bg-muted/40 backdrop-blur-sm">
                             <Spinner></Spinner>
                         </div>}
-                        <label
-                            className="block mb-1.5 text-xs font-medium text-muted-foreground">
-                            Downloaded Data Range
-                        </label>
-                        {
-                            (dataRanges.minDate && dataRanges.effectiveMaxDate) && (
-                                <div
-                                    className="font-medium text-foreground text-sm"
-                                >
-                                    {format(dataRanges.minDate, 'yyyy-MM-dd')} - {format(dataRanges.effectiveMaxDate, 'yyyy-MM-dd HH:mm')}
-                                </div>
-                            )
-                        }
+                        <div className="flex flex-row gap-2 items-center justify-between">
+                            <div>
+                                <label
+                                    className="block mb-1.5 text-xs font-medium text-muted-foreground">
+                                    Downloaded Data Range
+                                </label>
+                                {
+                                    (dataRanges.minDate && dataRanges.effectiveMaxDate) && (
+                                        <div
+                                            className="font-medium text-foreground text-sm"
+                                        >
+                                            {format(dataRanges.minDate, 'yyyy-MM-dd')} - {format(dataRanges.effectiveMaxDate, 'yyyy-MM-dd HH:mm')}
+                                        </div>
+                                    )
+                                }
+                            </div>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="secondary"
+                                        className="h-full"
+                                        onClick={async () => {
+                                            setIsDbWorking(true);
+                                            try {
+                                                await db.fileManager.getState().loadRecentEvents();
+                                            } finally {
+                                                setIsDbWorking(false);
+                                            }
+                                        }}
+                                    >
+                                        <RefreshCw></RefreshCw>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    Refresh data
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
 
 
                         <label
@@ -104,7 +129,7 @@ export function DataManager() {
                         ></AutoDownloadRangeSelector>
 
                         <div>
-                            <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
+                        <label className="block mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
                                 Storage Consumption
                             </label>
                             <Tooltip defaultOpen={false}>
