@@ -83,6 +83,7 @@ func BatchHandler(w http.ResponseWriter, r *http.Request) {
 	var batch eventBatch
 
 	if err := json.NewDecoder(r.Body).Decode(&batch); err != nil {
+		log.Error("Could not decode request body: %s", err)
 		http.Error(w, "Unable to parse request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
