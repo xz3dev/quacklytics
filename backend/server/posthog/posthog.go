@@ -114,6 +114,7 @@ func EventHandler(w http.ResponseWriter, r *http.Request) {
 
 func queueEvents(appdb *gorm.DB, ingestedEvents posthogEventList) {
 
+	log.Info("Received %d events", len(ingestedEvents))
 	// Create a map to group event inputs by token.
 	eventInputsByToken := make(map[string][]*events.EventInput)
 	now := time.Now()

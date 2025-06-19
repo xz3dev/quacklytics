@@ -54,6 +54,7 @@ func (p *ProjectProcessor) processEventQueue() {
 }
 
 func (p *ProjectProcessor) processBatch(input []*events.EventInput) {
+	log.Info("Project %s: Processing batch of %d events", p.projectID, len(input))
 	startTime := time.Now()
 
 	workingCopy := make([]*events.EventInput, len(input))
