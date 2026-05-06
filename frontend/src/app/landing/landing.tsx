@@ -10,21 +10,21 @@ export function Landing() {
 
     useEffect(() => {
         void checkAuth()
-    }, []);
+    }, [checkAuth]);
     useEffect(() => {
-        console.log(loading, user, setup.data)
-        if(!loading && user) {
+        if (loading || setup.isLoading || !setup.data) return
+
+        if (user) {
             nav("/projects")
-            // return
+            return
         }
-        if (!loading && !user && setup.data) {
-            if (!setup.data.adminRegistered) {
-                nav("/register")
-            } else {
-                nav("/login")
-            }
+
+        if (!setup.data.adminRegistered) {
+            nav("/register")
+        } else {
+            nav("/login")
         }
-    }, [setup, nav]);
+    }, [loading, user, setup.isLoading, setup.data, nav]);
 
     return (
         <>
@@ -32,4 +32,3 @@ export function Landing() {
         </>
     )
 }
-

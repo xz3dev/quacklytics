@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"analytics/config"
 	"analytics/log"
 	"encoding/json"
+	"fmt"
 	"github.com/volatiletech/authboss/v3"
 	"github.com/volatiletech/authboss/v3/defaults"
 	"gorm.io/gorm"
@@ -65,7 +67,11 @@ func SetupAuthboss(db *gorm.DB) (*authboss.Authboss, error) {
 	ab.Config.Core.BodyReader = defaults.NewHTTPBodyReader(true, false)
 	ab.Config.Core.Mailer = defaults.NewLogMailer(os.Stdout)
 	ab.Config.Core.Logger = log.AuthbossLogger
-	ab.Config.Paths.RootURL = "http://localhost:3000"
+	rootPort := 3000
+	if config.Config != nil {
+		rootPort = config.Config.Port
+	}
+	ab.Config.Paths.RootURL = fmt.Sprintf("http://localhost:%d", rootPort)
 	ab.Config.Paths.Mount = "/auth"
 	ab.Config.Paths.AuthLoginOK = "/projects"
 	ab.Config.Paths.RegisterOK = "/projects"

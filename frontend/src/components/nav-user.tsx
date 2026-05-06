@@ -17,6 +17,7 @@ import {useTheme} from "@/components/theme/theme-provider.tsx";
 import {cn} from "@lib/utils/tailwind.ts";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {useAuthStore} from "@/services/auth.ts";
+import {useNavigate} from "react-router";
 
 export function NavUser({user}: {
     user: {
@@ -28,9 +29,11 @@ export function NavUser({user}: {
     const {isMobile} = useSidebar()
     const {theme, setTheme} = useTheme()
     const {logout} = useAuthStore()
+    const navigate = useNavigate()
 
     async function handleLogout() {
         await logout()
+        navigate("/login")
     }
 
     return (

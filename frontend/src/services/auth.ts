@@ -2,8 +2,6 @@
 import {create} from 'zustand'
 import {http} from "@lib/fetch.ts";
 import {User} from '@/model/user';
-import {Simulate} from "react-dom/test-utils";
-import error = Simulate.error;
 
 interface AuthState {
     loading: boolean
@@ -28,9 +26,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             } | undefined = await http.post(`auth/login`, {email, password})
             const user = await http.get<User>(`auth/me`)
             set({user, loading: false})
-            return resp?.location ?? 'projects'
+            return normalizeLocation(resp?.location, '/projects')
         } catch (error) {
             console.error('Login error:', error)
+            set({user: null, loading: false})
             throw error
         }
     },
@@ -65,9 +64,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             )
             const store = get()
             await store.checkAuth()
-            return resp.location
-        } catch (errpr) {
+            return normalizeLocation(resp.location, '/projects')
+        } catch (error) {
             console.error('Register error:', error)
+            set({user: null, loading: false})
             throw error
         }
     }
@@ -75,4 +75,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 interface RegisterResponse {
     location: string
+}
+
+function normalizeLocation(location: string | undefined, fallback: string) {
+    if (!location) return fallback
+    return location.startsWith('/') ? location : `/${location}`
 }
