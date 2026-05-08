@@ -2,8 +2,8 @@ package auth
 
 import (
 	"analytics/config"
+	"github.com/aarondl/authboss/v3"
 	"github.com/gorilla/sessions"
-	"github.com/volatiletech/authboss/v3"
 	"net/http"
 )
 

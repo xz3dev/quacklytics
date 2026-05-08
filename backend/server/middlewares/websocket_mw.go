@@ -3,8 +3,8 @@ package sv_mw
 import (
 	"analytics/auth"
 	"context"
+	"github.com/aarondl/authboss/v3"
 	"github.com/gorilla/websocket"
-	"github.com/volatiletech/authboss/v3"
 	"net/http"
 )
 

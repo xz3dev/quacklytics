@@ -2,7 +2,7 @@ package sv_mw
 
 import (
 	"context"
-	"github.com/volatiletech/authboss/v3"
+	"github.com/aarondl/authboss/v3"
 	"net/http"
 )
 

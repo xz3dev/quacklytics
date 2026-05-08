@@ -5,7 +5,7 @@ import (
 	errors2 "analytics/server/errors"
 	"errors"
 	"fmt"
-	"github.com/volatiletech/authboss/v3"
+	"github.com/aarondl/authboss/v3"
 	"go.uber.org/zap/zapcore"
 	"net/http"
 )

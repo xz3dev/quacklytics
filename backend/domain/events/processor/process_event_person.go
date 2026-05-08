@@ -7,8 +7,8 @@ import (
 	"analytics/log"
 	"encoding/json"
 	"fmt"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
-	"github.com/marcboeker/go-duckdb"
 	"strings"
 	"time"
 )

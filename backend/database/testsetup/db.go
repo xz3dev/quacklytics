@@ -7,7 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"github.com/marcboeker/go-duckdb"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/zeebo/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

@@ -3,7 +3,7 @@ package types
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/marcboeker/go-duckdb"
+	"github.com/duckdb/duckdb-go/v2"
 	"strings"
 )
 

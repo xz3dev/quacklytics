@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/volatiletech/authboss/v3"
+	"github.com/aarondl/authboss/v3"
 	"go.uber.org/zap"
 )
 

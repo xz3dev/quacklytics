@@ -4,7 +4,7 @@ import (
 	"analytics/log"
 	"context"
 	"errors"
-	"github.com/volatiletech/authboss/v3"
+	"github.com/aarondl/authboss/v3"
 	"gorm.io/gorm"
 )
 

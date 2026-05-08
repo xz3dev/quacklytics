@@ -1,8 +1,8 @@
 import {createDb} from "@lib/duckdb.ts";
-import type {DataType} from '@apache-arrow/ts'
-import {AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
+import type {AsyncDuckDB, AsyncDuckDBConnection} from "@duckdb/duckdb-wasm";
 import {AnalyticsEvent, RawEventRow} from "@/model/event.ts";
 import {Query, QueryResult} from "@lib/trend-queries.ts";
+import type {QueryParamValue} from "@lib/queries.ts";
 import {FileDownload} from "@/services/file-catalog.ts";
 import {processInBatches} from "@lib/utils/batches.ts";
 import {useDuckDbDownloadStore} from "@/services/duck-db-download-state.ts";
@@ -11,14 +11,20 @@ import {createDuckDbFileManager} from "@/services/duck-db-file-manager.ts";
 import {QueryClient} from "@tanstack/react-query";
 
 export class DuckDbManager {
-    private db = createDb()
-    private conn = this.db.then(async (db) => {
+    private closed = false
+    private db: Promise<AsyncDuckDB | null> = createDb()
+    private conn: Promise<AsyncDuckDBConnection> = this.db.then(async (db) => {
         if (!db) throw Error(
             'Failed to init to duckdb'
         )
         const con = await db.connect();
-        await this.setupTable(con)
-        return con
+        try {
+            await this.setupTable(con)
+            return con
+        } catch (error) {
+            await con.close()
+            throw error
+        }
     })
 
     dataRanges = useDuckDbDataRangeStore()
@@ -31,9 +37,27 @@ export class DuckDbManager {
     ) {
         this.fileManager = createDuckDbFileManager(this.projectId, this, this.queryClient)
         void this.fileManager.getState().loadData()
-        this.db.then(() => {
-            this.downloadState.getState().finishInit()
-        })
+        this.db
+            .then(() => {
+                this.downloadState.getState().finishInit()
+            })
+            .catch((error) => {
+                console.error('Failed to initialize DuckDB', error)
+                this.downloadState.getState().finishInit()
+            })
+    }
+
+    async close() {
+        if (this.closed) return
+        this.closed = true
+
+        const [connResult, dbResult] = await Promise.allSettled([this.conn, this.db])
+        if (connResult.status === 'fulfilled') {
+            await connResult.value.close().catch((error) => console.warn('Failed to close DuckDB connection', error))
+        }
+        if (dbResult.status === 'fulfilled' && dbResult.value) {
+            await dbResult.value.terminate().catch((error) => console.warn('Failed to terminate DuckDB worker', error))
+        }
     }
 
     async setupTable(conn: AsyncDuckDBConnection) {
@@ -68,7 +92,7 @@ export class DuckDbManager {
             return
         }
 
-        const queries: Promise<any>[] = []
+        const queries: Promise<void>[] = []
 
         console.log(`Importing ${files.length} files...`)
         for (const file of files) {
@@ -82,11 +106,17 @@ export class DuckDbManager {
                     or ignore into events
                     select distinct
                     on (id) id, timestamp, event_type, distinct_id, person_id, properties
-                    from parquet_scan('${file.name}')
+                    from parquet_scan(${sqlString(file.name)})
                 `)
-                    .then(() => this.downloadState.getState().finishTask(file.name, 'import'))
+                    .then(() => undefined)
                     .catch((e) => {
                         console.error(`Failed to import ${file.name}: ${e.message}`)
+                    })
+                    .finally(async () => {
+                        await db.dropFile(file.name).catch((e) => {
+                            console.warn(`Failed to drop DuckDB file buffer ${file.name}: ${e.message}`)
+                        })
+                        this.downloadState.getState().finishTask(file.name, 'import')
                     })
 
 
@@ -138,7 +168,7 @@ export class DuckDbManager {
             ${events.map(() => `(?, ?, ?, ?, ?, ?)`).join(", ")}
         `;
 
-        const batchParams: any[] = events.flatMap(event => [
+        const batchParams: QueryParamValue[] = events.flatMap(event => [
             event.id,
             event.timestamp,
             event.eventType,
@@ -149,7 +179,11 @@ export class DuckDbManager {
 
         try {
             const q = await conn.prepare(batchInsertQuery)
-            await q.query(...batchParams)
+            try {
+                await q.query(...batchParams)
+            } finally {
+                await q.close()
+            }
             console.debug(`Successfully imported ${events.length} event(s)`);
         } catch (e) {
             console.error(`Failed to batch import events: ${e}`);
@@ -167,6 +201,7 @@ export class DuckDbManager {
         `);
 
         const data = result.toArray()[0]
+        if (!data?.min_date || !data?.max_date) return
 
         const minDate = new Date(data.min_date)
         const maxDate = new Date(data.max_date)
@@ -178,33 +213,35 @@ export class DuckDbManager {
 
     async runQuery<T extends Query>({sql, params}: {
         sql: string,
-        params: any[],
+        params: QueryParamValue[],
     }) {
         // const {sql, params} = buildQuery(query)
         const conn = await this.conn
         if (!conn) return
         const preparedQuery = await conn.prepare(sql)
-        const results = await preparedQuery.query(...params)
-        await preparedQuery.close()
-        console.debug(`Returned ${results.toArray().length} rows`)
-        return results
-            .toArray()
-            .map((i: { toJSON(): QueryResult<T> }) => i.toJSON())
+        try {
+            const results = await preparedQuery.query(...params)
+            console.debug(`Returned ${results.toArray().length} rows`)
+            return results
+                .toArray()
+                .map((i: { toJSON(): QueryResult<T> }) => i.toJSON())
+        } finally {
+            await preparedQuery.close()
+        }
     }
 
-    async runEventsQuery<
-        T extends {
-            [key: string]: DataType
-            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        } = any,
-    >(query: string, params?: unknown[]) {
+    async runEventsQuery(query: string, params?: QueryParamValue[]) {
         const conn = await this.conn
         if (!conn) return
         console.debug(query, ...(params ?? []))
-        const preparedQuery = await conn.prepare<T>(query)
-        const results = await preparedQuery.query()
-        console.debug(`Returned ${results.toArray().length} rows`)
-        return this.mapToEvents(results.toArray())
+        const preparedQuery = await conn.prepare(query)
+        try {
+            const results = await preparedQuery.query(...(params ?? []))
+            console.debug(`Returned ${results.toArray().length} rows`)
+            return this.mapToEvents(results.toArray())
+        } finally {
+            await preparedQuery.close()
+        }
     }
 
     mapToEvents(results: RawEventRow[]): AnalyticsEvent[] {
@@ -220,4 +257,8 @@ export class DuckDbManager {
                 }) satisfies AnalyticsEvent,
         )
     }
+}
+
+function sqlString(value: string) {
+    return `'${value.replace(/'/g, "''")}'`
 }

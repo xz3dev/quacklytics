@@ -5,8 +5,8 @@ import (
 	"analytics/log"
 	"encoding/json"
 	"fmt"
-	"github.com/volatiletech/authboss/v3"
-	"github.com/volatiletech/authboss/v3/defaults"
+	"github.com/aarondl/authboss/v3"
+	"github.com/aarondl/authboss/v3/defaults"
 	"gorm.io/gorm"
 	"net/http"
 	"os"
@@ -17,13 +17,13 @@ import (
 	// NOTE: Don't try to pass a list of module names to authboss.Init() if you reference
 	// the module elsewhere in your code. This is a Path of Tears -- authboss will register
 	// the module internally as being needed, ignoring your requested list.
-	_ "github.com/volatiletech/authboss/v3/auth"
-	_ "github.com/volatiletech/authboss/v3/remember"
-	//_ "github.com/volatiletech/authboss/v3/confirm"
-	//_ "github.com/volatiletech/authboss/v3/lock"
-	_ "github.com/volatiletech/authboss/v3/logout"
-	//_ "github.com/volatiletech/authboss/v3/recover"
-	_ "github.com/volatiletech/authboss/v3/register"
+	_ "github.com/aarondl/authboss/v3/auth"
+	_ "github.com/aarondl/authboss/v3/remember"
+	//_ "github.com/aarondl/authboss/v3/confirm"
+	//_ "github.com/aarondl/authboss/v3/lock"
+	_ "github.com/aarondl/authboss/v3/logout"
+	//_ "github.com/aarondl/authboss/v3/recover"
+	_ "github.com/aarondl/authboss/v3/register"
 )
 
 var (

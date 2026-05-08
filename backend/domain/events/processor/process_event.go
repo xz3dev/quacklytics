@@ -5,8 +5,8 @@ import (
 	"analytics/domain/events/pipeline"
 	"analytics/domain/schema"
 	"analytics/log"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
-	"github.com/marcboeker/go-duckdb"
 	"slices"
 	"time"
 )

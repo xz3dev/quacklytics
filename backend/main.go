@@ -15,7 +15,7 @@ import (
 	"analytics/domain/schema"
 	"analytics/log"
 	"analytics/server"
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/duckdb/duckdb-go/v2"
 	"gorm.io/gorm"
 	"os"
 )

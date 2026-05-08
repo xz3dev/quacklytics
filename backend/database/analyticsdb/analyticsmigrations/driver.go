@@ -10,10 +10,10 @@ import (
 
 	"go.uber.org/atomic"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/hashicorp/go-multierror"
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 func init() {

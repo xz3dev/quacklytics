@@ -6,7 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"github.com/marcboeker/go-duckdb"
+	"github.com/duckdb/duckdb-go/v2"
 )
 
 type DuckDB interface {

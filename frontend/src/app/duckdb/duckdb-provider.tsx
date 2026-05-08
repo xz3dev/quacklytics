@@ -12,7 +12,7 @@ export const DuckDbProvider = (props: { children: React.ReactNode }) => {
 
     const factory = useDuckDbManagerFactory()
 
-    const db = useMemo(() => factory.getInstance(projectId, qc), [projectId, qc])
+    const db = useMemo(() => factory.getInstance(projectId, qc), [factory, projectId, qc])
 
     return (
         <DuckDbContext.Provider value={db}>
@@ -47,10 +47,10 @@ export const useDuckDbManagerFactory = create<DuckDbManagerFactoryState>((_, get
         }
         for (const key of instances.keys()) {
             if (key !== projectId) {
+                void instances.get(key)?.close()
                 instances.delete(key);
             }
         }
         return instances.get(projectId)!;
     },
 }));
-

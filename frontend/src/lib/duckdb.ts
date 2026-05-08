@@ -16,21 +16,32 @@ const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     },
 };
 
-export const createDb = async () => {
+export async function createDb() {
     // Check if we're in a browser environment
     if (typeof window === 'undefined' || typeof Worker === 'undefined') {
         console.warn('DuckDB initialization skipped: not in browser environment');
         return null;
     }
+
     // Select a bundle based on browser checks
     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-    // Instantiate the asynchronus version of DuckDB-wasm
+
+    // Instantiate the asynchronous version of DuckDB-wasm
     const worker = new Worker(new URL(bundle.mainWorker!, import.meta.url));
     const logger = new duckdb.ConsoleLogger(LogLevel.WARNING);
     const db = new duckdb.AsyncDuckDB(logger, worker);
-    await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-    const conn = await db.connect();
-    await conn.query(`SET TimeZone='UTC';`);
-    await conn.close();
+    try {
+        await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        const conn = await db.connect();
+        try {
+            await conn.query(`SET TimeZone='UTC';`);
+        } finally {
+            await conn.close();
+        }
+    } catch (error) {
+        await db.terminate();
+        throw error;
+    }
+
     return db;
-};
+}
