@@ -72,10 +72,10 @@ export class DuckDbManager {
     timestamp,
     event_type
     text,
-    distinct_id
+    session_id
     text,
     person_id
-    UUID,
+    text,
     properties
     json
 );
@@ -105,7 +105,7 @@ export class DuckDbManager {
                     insert
                     or ignore into events
                     select distinct
-                    on (id) id, timestamp, event_type, distinct_id, person_id, properties
+                    on (id) id, timestamp, event_type, session_id, person_id, properties
                     from parquet_scan(${sqlString(file.name)})
                 `)
                     .then(() => undefined)
@@ -163,7 +163,7 @@ export class DuckDbManager {
 
         const batchInsertQuery = `
             insert
-            or ignore into events (id, timestamp, event_type, distinct_id, person_id, properties)
+            or ignore into events (id, timestamp, event_type, session_id, person_id, properties)
             values
             ${events.map(() => `(?, ?, ?, ?, ?, ?)`).join(", ")}
         `;
@@ -172,7 +172,7 @@ export class DuckDbManager {
             event.id,
             event.timestamp,
             event.eventType,
-            event.distinctId,
+            event.sessionId ?? null,
             event.personId,
             JSON.stringify(event.properties),
         ]);
@@ -250,7 +250,7 @@ export class DuckDbManager {
                 ({
                     id: row.id,
                     personId: row.person_id,
-                    distinctId: row.distinct_id,
+                    sessionId: row.session_id,
                     timestamp: new Date(Number(row.timestamp)),
                     eventType: row.event_type,
                     properties: JSON.parse(row.properties),

@@ -1,0 +1,35 @@
+{
+  "name": "@quacklytics/client",
+  "version": "0.1.0",
+  "description": "Minimal TypeScript client for Quacklytics event ingestion.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./autotrack": {
+      "types": "./dist/autotrack.d.ts",
+      "import": "./dist/autotrack.js"
+    },
+    "./consent": {
+      "types": "./dist/consent.d.ts",
+      "import": "./dist/consent.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "preact": "^10.26.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

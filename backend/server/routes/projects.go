@@ -13,11 +13,12 @@ import (
 )
 
 type projectData struct {
-	Id        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	Partition string                 `json:"partition"`
-	AutoLoad  int                    `json:"autoload"`
-	Files     projects2.ProjectFiles `json:"files"`
+	Id          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Partition   string                 `json:"partition"`
+	AutoLoad    int                    `json:"autoload"`
+	CorsOrigins []string               `json:"corsOrigins"`
+	Files       projects2.ProjectFiles `json:"files"`
 }
 
 func ListProjects(writer http.ResponseWriter, request *http.Request) {
@@ -46,11 +47,12 @@ func ListProjects(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		data = append(data, projectData{
-			Id:        project.ID,
-			Name:      settings[projects2.Name],
-			Partition: settings[projects2.Partition],
-			AutoLoad:  autoload,
-			Files:     project,
+			Id:          project.ID,
+			Name:        settings[projects2.Name],
+			Partition:   settings[projects2.Partition],
+			AutoLoad:    autoload,
+			CorsOrigins: projects2.ParseCorsOrigins(settings[projects2.CorsOrigins]),
+			Files:       project,
 		})
 	}
 	writer.Header().Set("Content-Type", "application/json")
@@ -88,11 +90,12 @@ func CreateProject(writer http.ResponseWriter, request *http.Request) {
 		log.Warn("Invalid autoload range: %s should be parsable as an integer", settings[projects2.AutoLoadRange])
 	}
 	projectData := projectData{
-		Id:        project.ID,
-		Name:      project.ID,
-		Partition: settings[projects2.Partition],
-		AutoLoad:  autoload,
-		Files:     projects2.ProjectFiles{},
+		Id:          project.ID,
+		Name:        project.ID,
+		Partition:   settings[projects2.Partition],
+		AutoLoad:    autoload,
+		CorsOrigins: projects2.ParseCorsOrigins(settings[projects2.CorsOrigins]),
+		Files:       projects2.ProjectFiles{},
 	}
 
 	json.NewEncoder(writer).Encode(projectData)
@@ -110,7 +113,18 @@ func UpdateProjectSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, update := range input {
-		projects2.UpdateSetting(db, update.Key, update.Value)
+		if update.Key == projects2.CorsOrigins {
+			formatted, err := projects2.FormatCorsOriginsValue(update.Value)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			update.Value = formatted
+		}
+		if err := projects2.UpdateSetting(db, update.Key, update.Value); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	ListProjects(w, r)
 }

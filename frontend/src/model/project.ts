@@ -3,4 +3,5 @@ export interface Project {
     name: string
     partition: string
     autoload: number
+    corsOrigins: string[]
 }

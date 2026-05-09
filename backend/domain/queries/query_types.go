@@ -79,8 +79,14 @@ func createCondition(field string, operation OperationType, value string) (Query
 }
 func BuildSQL(params *QueryParams) (string, []interface{}) {
 	query := `
-select events.id, events.timestamp, events.event_type, events.distinct_id, p.person_id, events.properties from events events
-JOIN person_distinct_ids p ON p.distinct_id = events.distinct_id 
+select events.id,
+       events.timestamp,
+       events.event_type,
+       events.session_id,
+       coalesce(events.person_id, sessions.person_id) as person_id,
+       events.properties
+from events events
+left join sessions sessions on sessions.id = events.session_id
 where 1=1
 `
 	var args []interface{}

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.32.2",
+    "@quacklytics/client": "file:../client",
     "@tailwindcss/vite": "^4.0.14",
     "astro": "^5.1.5",
     "sharp": "^0.32.5",

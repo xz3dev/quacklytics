@@ -17,8 +17,8 @@ const projectsApi = {
     updateSetting: async (
         projectId: string,
         setting: { key: string; value: string }
-    ): Promise<void> => {
-        await http.post(`/${projectId}/settings`, [setting]);
+    ): Promise<Project[]> => {
+        return await http.post<Project[]>(`/${projectId}/settings`, [setting]);
     },
 
 }
@@ -92,6 +92,18 @@ export function useUpdateProjectName() {
                     })
                 }
             )
+        },
+    })
+}
+
+export function useUpdateProjectCorsOrigins() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (params: { projectId: string, value: string }) => {
+            return projectsApi.updateSetting(params.projectId, {key: 'cors_origins', value: params.value});
+        },
+        onSuccess: (projects) => {
+            queryClient.setQueryData<Project[]>([PROJECTS_KEY], projects)
         },
     })
 }

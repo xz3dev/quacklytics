@@ -3,30 +3,14 @@ title: Sending Data
 ---
 
 
-import {Aside} from "@astrojs/starlight/components";
-
-<Aside type="tip">
-    <div>
-        You can use Posthog Client SDKs to send data to Quacklytics. Supported features include:
-        <ul class="!mt-2 !ml-4 list-disc list-outside !mb-4">
-            <li>Sending Events</li>
-            <li>Identifying persons</li>
-        </ul>
-    </div>
-
-    <p class="text-xs opacity-60 !my-0">Quacklytics is not affiliated with Posthog in any way.</p>
-</Aside>
-
 ## Sending events via HTTPs
 
-The **AppendEvent** endpoint allows you to send an event to the server for processing. The endpoint is defined as a **POST** request and expects a JSON payload that follows the `EventInput` structure. Additionally, the URL includes a project identifier as a parameter.
+The **AppendEvent** endpoint allows you to send one event or a batch of events to the server for processing. The API key identifies the project.
 
 ### Endpoint URL
 
-Replace `{projectid}` with your projects ID.
-
 ```
-POST /api/{projectid}/event
+POST /api/event
 ```
 
 ### Request Format
@@ -38,12 +22,14 @@ POST /api/{projectid}/event
 
 **Request Body**
 
-The endpoint accepts an array of events as payload. The payload should include the following fields:
+The endpoint accepts a single event object or an array of events. The payload should include the following fields:
 
 - **eventType**: The type of event (e.g., `"user_signup"`).
-- **distinctId**: A distinct identifier for the session. This can be connected to a person profile using an $identify event.
+- **sessionId**: Optional session identifier for pseudo-anonymous events.
+- **personId**: Optional person identifier. Sending both `sessionId` and `personId` upgrades the session to that person.
 - **timestamp**: The time of the event occurring in ISO 8601 format.
 - **properties**: A map of additional properties. This is stored as JSON and can be queried.
+- **personProperties**: Optional person properties. The latest value by event timestamp wins per property.
 
 ### Example
 
@@ -51,11 +37,15 @@ The endpoint accepts an array of events as payload. The payload should include t
 [
   {
     "eventType": "user_signup",
-    "distinctId": "unique_user_123",
+    "sessionId": "session_abc",
+    "personId": "person_123",
     "timestamp": "2025-02-23T10:00:00Z",
     "properties": {
       "plan": "premium",
       "referrer": "google"
+    },
+    "personProperties": {
+      "email": "test@example.com"
     }
   }
 ]

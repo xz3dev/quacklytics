@@ -6,9 +6,10 @@ import (
 	"analytics/log"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 )
 
-func QueryEvents(dbd *analyticsdb.DuckDBConnection, params *queries.QueryParams) (*[]EventWithPersonId, error) {
+func QueryEvents(dbd analyticsdb.DuckDB, params *queries.QueryParams) (*[]EventOutput, error) {
 	if params == nil {
 		params = &queries.EmptyQueryParams
 	}
@@ -39,27 +40,66 @@ func QueryEvents(dbd *analyticsdb.DuckDBConnection, params *queries.QueryParams)
 	return events, nil
 }
 
-func parseEvents(rows *sql.Rows) (*[]EventWithPersonId, error) {
-	var resultSet []EventWithPersonId
+func parseEvents(rows *sql.Rows) (*[]EventOutput, error) {
+	var resultSet []EventOutput
 	for rows.Next() {
-		var event EventWithPersonId
-		var propertiesJson []byte
+		var event EventOutput
+		var sessionId sql.NullString
+		var personId sql.NullString
+		var propertiesValue any
 		if err := rows.Scan(
 			&event.Id,
 			&event.Timestamp,
 			&event.EventType,
-			&event.DistinctId,
-			&event.PersonId,
-			&propertiesJson,
+			&sessionId,
+			&personId,
+			&propertiesValue,
 		); err != nil {
 			log.Error(err.Error(), err)
 			return nil, err
 		}
-		if err := json.Unmarshal(propertiesJson, &event.Properties); err != nil {
-			log.Error("Error unmarshalling properties:", err)
+		if sessionId.Valid {
+			event.SessionId = &sessionId.String
+		}
+		if personId.Valid {
+			event.PersonId = &personId.String
+		}
+		properties, err := ParseJSONProperties(propertiesValue)
+		if err != nil {
+			log.Error("Error parsing properties:", err)
 			return nil, err
 		}
+		event.Properties = properties
 		resultSet = append(resultSet, event)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return &resultSet, nil
+}
+
+func ParseJSONProperties(value any) (map[string]any, error) {
+	switch properties := value.(type) {
+	case nil:
+		return map[string]any{}, nil
+	case map[string]any:
+		return properties, nil
+	case []byte:
+		return unmarshalJSONProperties(properties)
+	case string:
+		return unmarshalJSONProperties([]byte(properties))
+	default:
+		return nil, fmt.Errorf("unsupported properties type %T", value)
+	}
+}
+
+func unmarshalJSONProperties(value []byte) (map[string]any, error) {
+	var properties map[string]any
+	if err := json.Unmarshal(value, &properties); err != nil {
+		return nil, err
+	}
+	if properties == nil {
+		properties = map[string]any{}
+	}
+	return properties, nil
 }

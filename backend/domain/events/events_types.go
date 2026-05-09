@@ -7,10 +7,12 @@ import (
 )
 
 type EventInput struct {
-	EventType  string         `json:"eventType"`
-	DistinctId string         `json:"distinctId"`
-	Timestamp  time.Time      `json:"timestamp"`
-	Properties map[string]any `json:"properties"`
+	EventType        string         `json:"eventType"`
+	SessionId        *string        `json:"sessionId,omitempty"`
+	PersonId         *string        `json:"personId,omitempty"`
+	Timestamp        time.Time      `json:"timestamp"`
+	Properties       map[string]any `json:"properties,omitempty"`
+	PersonProperties map[string]any `json:"personProperties,omitempty"`
 }
 
 type EventId struct {
@@ -22,10 +24,13 @@ type Event struct {
 	EventInput
 }
 
-type EventWithPersonId struct {
+type EventOutput struct {
 	EventId
-	EventInput
-	PersonId uuid.UUID `json:"personId"`
+	EventType  string         `json:"eventType"`
+	SessionId  *string        `json:"sessionId,omitempty"`
+	PersonId   *string        `json:"personId,omitempty"`
+	Timestamp  time.Time      `json:"timestamp"`
+	Properties map[string]any `json:"properties"`
 }
 
 func (e Event) MarshalJSON() ([]byte, error) {

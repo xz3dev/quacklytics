@@ -61,45 +61,46 @@ docker run -d \
 
 ## Sending Data
 
-The **AppendEvent** endpoint allows you to send an event to the server for processing. The endpoint is defined as a **POST** request and expects a JSON payload that follows the `EventInput` structure. Additionally, the URL includes a project identifier as a parameter.
+The **AppendEvent** endpoint allows you to send one event or a batch of events to the server for processing. The API key identifies the project.
 
 ### Endpoint URL
 
-Replace `{projectid}` with your actual project identifier.
-
 ```
-POST /api/{projectid}/event
+POST /api/event
 ```
 
 ### Request Format
 
-Replace `{projectid}` with your actual project identifier.
-
 **Request Headers**
 
 - **Content-Type:** `application/json`
+- **X-API-KEY:** `your-api-key`
 
 **Request Body**
 
-The endpoint accepts an array of events as payload. The payload should include the following fields:
+The endpoint accepts a single event object or an array of events. The payload should include the following fields:
 
 - **eventType**: The type of event (e.g., `"user_signup"`).
-- **userId**: The unique identifier of the person related to the event. Can be null if unknown.
-- **distinctId**: A distinct identifier for the session. This can later be connected to a userId if subsequent events are sent with a userId.
+- **sessionId**: Optional session identifier for pseudo-anonymous events.
+- **personId**: Optional person identifier. Sending both `sessionId` and `personId` upgrades the session to that person.
 - **timestamp** (ISO 8601 datetime): The time when the event occurred.
-- **properties**: A map of additional properties. This is stored as JSON and can be queried. 
+- **properties**: Event properties stored as JSON and available for querying.
+- **personProperties**: Optional person properties. The latest value by event timestamp wins per property.
 
 ### Example
 
 ```json
 {
   "eventType": "user_signup",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "distinctId": "unique_user_123",
+  "personId": "person_123",
+  "sessionId": "session_abc",
   "timestamp": "2025-02-23T10:00:00Z",
   "properties": {
     "plan": "premium",
     "referrer": "google"
+  },
+  "personProperties": {
+    "email": "test@example.com"
   }
 }
 ```

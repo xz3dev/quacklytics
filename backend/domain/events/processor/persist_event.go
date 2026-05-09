@@ -4,7 +4,6 @@ import (
 	"analytics/domain/events"
 	"analytics/log"
 	"encoding/json"
-	"github.com/google/uuid"
 )
 
 func (p *ProjectProcessor) PersistEvents(events []*events.Event) {
@@ -17,13 +16,20 @@ func (p *ProjectProcessor) PersistEvents(events []*events.Event) {
 			log.Error("Project %s: Error marshaling properties: %v", p.projectID, err)
 			continue
 		}
+		personPropertiesJson, err := json.Marshal(event.PersonProperties)
+		if err != nil {
+			log.Error("Project %s: Error marshaling person properties: %v", p.projectID, err)
+			continue
+		}
 
 		err = appender.AppendRow(
-			mapUuid(uuid.New()),
+			mapUuid(event.Id),
 			event.Timestamp,
 			event.EventType,
-			event.DistinctId,
-			propertiesJson,
+			nullableString(event.SessionId),
+			nullableString(event.PersonId),
+			string(propertiesJson),
+			string(personPropertiesJson),
 		)
 		if err != nil {
 			log.Error("Project %s: Error appending row: %v", p.projectID, err)

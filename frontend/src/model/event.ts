@@ -2,8 +2,8 @@ export interface AnalyticsEvent {
     id: string;
     timestamp: Date;
     eventType: string;
-    personId: string;
-    distinctId: string;
+    personId?: string;
+    sessionId?: string;
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     properties: Record<string, any>;
 }
@@ -11,8 +11,8 @@ export interface AnalyticsEvent {
 export interface RawEventRow {
     id: string;
     event_type: string;
-    person_id: string;
-    distinct_id: string;
+    person_id?: string;
+    session_id?: string;
     timestamp: bigint; // DuckDB returns bigint for timestamp
     properties: string;
 

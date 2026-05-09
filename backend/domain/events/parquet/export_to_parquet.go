@@ -25,9 +25,14 @@ func ExportEventsToParquet(projectId string, db *gorm.DB, segment filecatalog.Da
 
 	selectStmt := fmt.Sprintf(
 		`
-SELECT e.id, e.timestamp, e.event_type, e.distinct_id, p.person_id, e.properties 
-FROM events e 
-LEFT JOIN person_distinct_ids p ON p.distinct_id = e.distinct_id 
+SELECT e.id,
+       e.timestamp,
+       e.event_type,
+       e.session_id,
+       coalesce(e.person_id, s.person_id) as person_id,
+       e.properties
+FROM events e
+LEFT JOIN sessions s ON s.id = e.session_id
 WHERE e.timestamp >= '%s' AND e.timestamp <= '%s'
 `,
 		segment.StartDate.Format(time.DateTime),

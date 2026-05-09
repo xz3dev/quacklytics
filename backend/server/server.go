@@ -7,7 +7,6 @@ import (
 	"analytics/domain/projects"
 	"analytics/log"
 	svmw "analytics/server/middlewares"
-	"analytics/server/posthog"
 	"analytics/server/routes"
 	"embed"
 	"fmt"
@@ -101,11 +100,13 @@ func serveFrontend(mux *chi.Mux) {
 
 func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 	mux := chi.NewMux()
+	mux.Use(ingestionCorsMiddleware(projectDbs))
 
 	mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
 	mux.Get("/auth/me", routes.CurrentUser)
 
 	mux.Get("/setup", routes.SetupStatus)
+	mux.Post("/event", routes.AppendEvent)
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.Middleware2(ab, authboss.RequireNone, authboss.RespondUnauthorized))
@@ -136,7 +137,6 @@ func buildRouter(projectDbs *appdb.ProjectDBLookup) *chi.Mux {
 			mux.Post("/event", routes.AppendEvent)
 		})
 	})
-	posthog.SetupPosthogRoutes(mux)
 
 	return mux
 }

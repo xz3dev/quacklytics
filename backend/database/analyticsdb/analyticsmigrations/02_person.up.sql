@@ -1,14 +1,15 @@
-
 create table persons
 (
-    id         uuid primary key,
-    first_seen timestamp,
-    properties json
+    id                  text primary key,
+    first_seen          timestamp not null,
+    properties          json      not null,
+    property_timestamps json      not null
 );
 
-create table person_distinct_ids
+create table sessions
 (
-    person_id uuid references persons(id),
-    distinct_id text not null,
-    primary key (person_id, distinct_id)
+    id         text primary key,
+    person_id  text references persons(id),
+    first_seen timestamp not null,
+    last_seen  timestamp not null
 );

@@ -36,10 +36,11 @@ func GenerateRandomEvents(projectId string, numEvents int, eventType string) {
 				randomProperties[fmt.Sprintf("prop_%d", j)] = uuid.New().String()
 			}
 		}
+		sessionId := uuid.New().String()
 
 		eventInput := &events.EventInput{
 			EventType:  eventType,
-			DistinctId: uuid.New().String(),
+			SessionId:  &sessionId,
 			Timestamp:  timestamp,
 			Properties: randomProperties,
 		}

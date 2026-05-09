@@ -1,4 +1,4 @@
-package pipeline
+package processor
 
 import (
 	"analytics/domain/events"
@@ -10,29 +10,19 @@ import (
 	"time"
 )
 
-// schemaDiff holds the current event schemas and any updates.
-type schemaDiff struct {
-	EventSchema map[string]*schema.EventSchema
-}
-
-func (sd *schemaDiff) Name() string {
-	return "SchemaDiff"
-}
-
-func (sd *schemaDiff) Process(ctx *PipelineContext) error {
-	for _, event := range ctx.InputEvents {
-		schema := getOrCreateSchema(event.EventType, sd.EventSchema)
-		mergeEventPropertiesIntoSchema(event, schema)
+func mergeEventsIntoSchemas(input []*events.EventInput, schemasByType map[string]*schema.EventSchema) {
+	for _, event := range input {
+		eventSchema := getOrCreateSchema(event.EventType, schemasByType)
+		mergeEventPropertiesIntoSchema(event, eventSchema)
 	}
-	return nil
 }
 
 func getOrCreateSchema(
 	eventType string,
 	schemasByType map[string]*schema.EventSchema,
 ) *schema.EventSchema {
-	if schema, exists := schemasByType[eventType]; exists {
-		return schema
+	if eventSchema, exists := schemasByType[eventType]; exists {
+		return eventSchema
 	}
 	newSchema := &schema.EventSchema{
 		EventType:  eventType,
@@ -42,12 +32,12 @@ func getOrCreateSchema(
 	return newSchema
 }
 
-func mergeEventPropertiesIntoSchema(event *events.EventInput, schema *schema.EventSchema) {
-	propertyMap := createPropertyMap(schema.Properties)
+func mergeEventPropertiesIntoSchema(event *events.EventInput, eventSchema *schema.EventSchema) {
+	propertyMap := createPropertyMap(eventSchema.Properties)
 	for key, value := range event.Properties {
-		updatePropertyValue(key, value, propertyMap, schema.ID)
+		updatePropertyValue(key, value, propertyMap, eventSchema.ID)
 	}
-	schema.Properties = mapToSlice(propertyMap)
+	eventSchema.Properties = mapToSlice(propertyMap)
 }
 
 func createPropertyMap(properties []schema.EventSchemaProperty) map[string]*schema.EventSchemaProperty {

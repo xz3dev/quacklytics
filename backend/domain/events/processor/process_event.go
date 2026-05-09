@@ -2,7 +2,6 @@ package processor
 
 import (
 	"analytics/domain/events"
-	"analytics/domain/events/pipeline"
 	"analytics/domain/schema"
 	"analytics/log"
 	"github.com/duckdb/duckdb-go/v2"
@@ -57,9 +56,19 @@ func (p *ProjectProcessor) processBatch(input []*events.EventInput) {
 	log.Info("Project %s: Processing batch of %d events", p.projectID, len(input))
 	startTime := time.Now()
 
-	workingCopy := make([]*events.EventInput, len(input))
+	workingCopy := make([]*events.EventInput, 0, len(input))
 	for i, event := range input {
-		workingCopy[i] = event
+		normalized := normalizeEvent(event)
+		if normalized == nil {
+			continue
+		}
+		workingCopy = append(workingCopy, normalized)
+		input[i] = normalized
+	}
+
+	if len(workingCopy) == 0 {
+		log.Info("Project %s: No valid events in batch", p.projectID)
+		return
 	}
 
 	slices.SortFunc(workingCopy, func(i, j *events.EventInput) int {
@@ -73,47 +82,51 @@ func (p *ProjectProcessor) processBatch(input []*events.EventInput) {
 		return 1
 	})
 
-	e, err := p.NewEventProcessor(workingCopy)
-	if err != nil {
-		log.Error("Error creating event processor: %v", err)
-		return
+	uniqueEventTypes := schema.ExtractUniqueEventTypes(workingCopy)
+	schemas := schema.FetchExistingSchemas(uniqueEventTypes, p.db)
+	schemasByType := schema.MakeSchemaMap(schemas)
+	mergeEventsIntoSchemas(workingCopy, schemasByType)
+
+	newEvents := make([]*events.Event, 0, len(workingCopy))
+	for _, event := range workingCopy {
+		newEvents = append(newEvents, &events.Event{
+			EventId: events.EventId{
+				Id: uuid.New(),
+			},
+			EventInput: *event,
+		})
 	}
-	result, err := e.Process()
-	if err != nil {
-		log.Error("Error processing events: %v", err)
+
+	if err := p.ProcessIdentities(newEvents); err != nil {
+		log.Error("Error processing identities: %v", err)
 		return
 	}
 
-	p.persistPersons(result)
-	p.PersistAllSchemas(result.Schema)
-	p.PersistEvents(result.NewEvents)
+	p.PersistAllSchemas(schemasByType)
+	p.PersistEvents(newEvents)
 
 	duration := time.Since(startTime)
 	log.Info("Project %s: Processed batch of %d events in %v", p.projectID, len(workingCopy), duration)
-}
-
-func (p *ProjectProcessor) persistPersons(result *pipeline.Output) {
-	p.CreatePersons(result.NewPersons, result.MappedPersons)
-	p.UpdatePersons(result.UpdatedPersons)
-}
-
-func (p *ProjectProcessor) NewEventProcessor(events []*events.EventInput) (*pipeline.EventPipeline, error) {
-	existingPersons, err := p.GetExistingPersons(events)
-	if err != nil {
-		return nil, err
-	}
-	uniqueEventTypes := schema.ExtractUniqueEventTypes(events)
-	schemas := schema.FetchExistingSchemas(uniqueEventTypes, p.db)
-	schemasByType := schema.MakeSchemaMap(schemas)
-	return pipeline.New(&pipeline.Input{
-		Events:          events,
-		ExistingPersons: existingPersons,
-		EventSchema:     schemasByType,
-	}), nil
 }
 
 func mapUuid(id uuid.UUID) duckdb.UUID {
 	var eventId duckdb.UUID
 	copy(eventId[:], id[:])
 	return eventId
+}
+
+func normalizeEvent(event *events.EventInput) *events.EventInput {
+	if event == nil || event.EventType == "" {
+		return nil
+	}
+	if event.Timestamp.IsZero() {
+		event.Timestamp = time.Now().UTC()
+	}
+	if event.Properties == nil {
+		event.Properties = make(map[string]any)
+	}
+	if event.PersonProperties == nil {
+		event.PersonProperties = make(map[string]any)
+	}
+	return event
 }

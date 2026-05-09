@@ -20,7 +20,8 @@ var FieldTypes = map[string]FieldType{
 	"id":         StringField,
 	"timestamp":  DateField,
 	"event_type": StringField,
-	"user_id":    StringField,
+	"session_id": StringField,
+	"person_id":  StringField,
 	"properties": JSONField,
 	// Add other fields as necessary
 }
@@ -65,6 +66,9 @@ func (h JSONFieldHandler) Parse(value string, operation OperationType) (interfac
 }
 
 func (h StringFieldHandler) FormatSQL(field, _ string, _ OperationType) string {
+	if field == "person_id" {
+		return "coalesce(events.person_id, sessions.person_id)"
+	}
 	return field
 }
 

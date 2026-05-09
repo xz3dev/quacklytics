@@ -194,14 +194,14 @@ export function buildFunnelQuery(
         // --- SELECT Clause (Summary Version) ---
         const selectClause = `
       SELECT
-          ${tableAlias ? `${tableAlias}.` : ''}"distinct_id",
+          COALESCE(${tableAlias ? `${tableAlias}.` : ''}"person_id", ${tableAlias ? `${tableAlias}.` : ''}"session_id") AS "actor_id",
           MIN(${tableAlias ? `${tableAlias}.` : ''}"timestamp") AS ${stepTimeAlias}
     `;
 
         // --- FROM Clause ---
         const fromClause = isFirstStep
             ? `FROM ${sourceTable}`
-            : `FROM ${sourceTable} JOIN ${prevCteName} ${prevStepAlias} ON ${tableAlias}."distinct_id" = ${prevStepAlias}."distinct_id"`;
+            : `FROM ${sourceTable} JOIN ${prevCteName} ${prevStepAlias} ON COALESCE(${tableAlias}."person_id", ${tableAlias}."session_id") = ${prevStepAlias}."actor_id"`;
 
         // --- WHERE Clause ---
         const whereConditions: string[] = [];
@@ -216,7 +216,7 @@ export function buildFunnelQuery(
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
         // --- GROUP BY Clause ---
-        const groupByClause = `GROUP BY ${tableAlias ? `${tableAlias}.` : ''}"distinct_id"`;
+        const groupByClause = `GROUP BY "actor_id"`;
 
         // Assemble the Step CTE definition string
         const stepCteSql = `${cteName} AS (
@@ -236,7 +236,7 @@ export function buildFunnelQuery(
         const currentAlias = stepCompletionAliases[index];
         // Use step name in alias, escape if necessary (basic escaping here)
         const safeAlias = step.name.replace(/[^a-zA-Z0-9_]/g, '_');
-        finalSelect += `    COUNT(${currentAlias}."distinct_id") AS "${safeAlias}_count"`; // Use safe alias
+        finalSelect += `    COUNT(${currentAlias}."actor_id") AS "${safeAlias}_count"`; // Use safe alias
 
         if (index < steps.length - 1) {
             finalSelect += ',\n';
@@ -247,7 +247,7 @@ export function buildFunnelQuery(
         if (index < steps.length - 1) {
             const nextStepNum = index + 2;
             const nextAlias = stepCompletionAliases[index + 1];
-            finalFrom += `LEFT JOIN Step${nextStepNum}_Completion ${nextAlias} ON ${currentAlias}."distinct_id" = ${nextAlias}."distinct_id"\n`;
+            finalFrom += `LEFT JOIN Step${nextStepNum}_Completion ${nextAlias} ON ${currentAlias}."actor_id" = ${nextAlias}."actor_id"\n`;
         }
     });
 

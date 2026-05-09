@@ -2,17 +2,13 @@ import * as duckdb from '@duckdb/duckdb-wasm';
 import {LogLevel} from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
-import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
+    // DuckDB 1.33.1-dev53 can fail to link the EH bundle in some browsers.
+    // The MVP bundle avoids the new EH-only filesystem imports.
     mvp: {
         mainModule: duckdb_wasm,
         mainWorker: mvp_worker,
-    },
-    eh: {
-        mainModule: duckdb_wasm_eh,
-        mainWorker: eh_worker,
     },
 };
 
@@ -26,8 +22,25 @@ export async function createDb() {
     // Select a bundle based on browser checks
     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
 
+    try {
+        return await instantiateDb(bundle);
+    } catch (error) {
+        if (bundle.mainModule === MANUAL_BUNDLES.mvp.mainModule) {
+            throw error;
+        }
+
+        console.warn('Failed to initialize selected DuckDB WASM bundle, retrying with MVP bundle', error);
+        return await instantiateDb({
+            mainModule: MANUAL_BUNDLES.mvp.mainModule,
+            mainWorker: MANUAL_BUNDLES.mvp.mainWorker,
+            pthreadWorker: null,
+        });
+    }
+}
+
+async function instantiateDb(bundle: duckdb.DuckDBBundle) {
     // Instantiate the asynchronous version of DuckDB-wasm
-    const worker = new Worker(new URL(bundle.mainWorker!, import.meta.url));
+    const worker = new Worker(bundle.mainWorker!);
     const logger = new duckdb.ConsoleLogger(LogLevel.WARNING);
     const db = new duckdb.AsyncDuckDB(logger, worker);
     try {

@@ -6,7 +6,7 @@ import (
 
 func ValidateAPIKey(appdb *gorm.DB, apiKey string) (string, error) {
 	var key ApiKey
-	err := appdb.Find(&key, "key = ?", apiKey).Error
+	err := appdb.First(&key, "key = ?", apiKey).Error
 	if err != nil {
 		return "", err
 	}

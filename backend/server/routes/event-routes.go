@@ -2,9 +2,11 @@ package routes
 
 import (
 	"analytics/database/analyticsdb"
+	"analytics/database/appdb"
 	"analytics/domain/apikeys"
 	"analytics/domain/events"
 	"analytics/domain/events/processor"
+	"analytics/domain/projects"
 	"analytics/domain/queries"
 	"analytics/log"
 	sv_mw "analytics/server/middlewares"
@@ -32,25 +34,67 @@ func AppendEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid ApiKey", http.StatusUnauthorized)
 		return
 	}
-
-	var event []events.EventInput
-	err = json.NewDecoder(r.Body).Decode(&event)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Fatal(err.Error(), err)
+	if !allowIngestionOrigin(w, r, projectId) {
+		http.Error(w, "Origin is not allowed for this project", http.StatusForbidden)
 		return
 	}
 
-	projectIdFromUrl := sv_mw.GetProjectID(r)
+	event, err := decodeEventPayload(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
 
-	if projectId != projectIdFromUrl {
+	projectIdFromUrl := chi.URLParam(r, "projectid")
+	if projectIdFromUrl != "" && projectId != projectIdFromUrl {
 		http.Error(w, fmt.Sprintf("wrong api key for project: %s", projectIdFromUrl), http.StatusBadRequest)
+		return
 	}
-	for _, e := range event {
-		processor.ProcessEvent(projectId, &e)
-	}
+
+	processor.ProcessEvents(projectId, event)
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func allowIngestionOrigin(w http.ResponseWriter, r *http.Request, projectId string) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	dbLookup, ok := r.Context().Value(sv_mw.ProjectDBLookupKey).(*appdb.ProjectDBLookup)
+	if !ok {
+		return false
+	}
+	projectDb, ok := (*dbLookup)[projectId]
+	if !ok {
+		return false
+	}
+	settings, err := projects.QuerySettings(projectId, projectDb)
+	if err != nil || !projects.IsCorsOriginAllowed(settings, origin) {
+		return false
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Add("Vary", "Origin")
+	return true
+}
+
+func decodeEventPayload(r *http.Request) ([]*events.EventInput, error) {
+	var raw json.RawMessage
+	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+		return nil, err
+	}
+
+	var batch []*events.EventInput
+	if err := json.Unmarshal(raw, &batch); err == nil {
+		return batch, nil
+	}
+
+	var single events.EventInput
+	if err := json.Unmarshal(raw, &single); err != nil {
+		return nil, err
+	}
+	return []*events.EventInput{&single}, nil
 }
 
 func QueryEvents(w http.ResponseWriter, r *http.Request) {

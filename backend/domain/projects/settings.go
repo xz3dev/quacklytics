@@ -9,6 +9,7 @@ const (
 	Name          ProjectSettingKey = "name"
 	Partition     ProjectSettingKey = "partition"
 	AutoLoadRange ProjectSettingKey = "autoload"
+	CorsOrigins   ProjectSettingKey = "cors_origins"
 )
 
 func QuerySettings(projectId string, db *gorm.DB) (map[ProjectSettingKey]string, error) {
@@ -26,6 +27,7 @@ func QuerySettings(projectId string, db *gorm.DB) (map[ProjectSettingKey]string,
 		Name:          projectId,
 		Partition:     "",
 		AutoLoadRange: "6",
+		CorsOrigins:   "",
 	}
 
 	for key, defaultValue := range defaults {
