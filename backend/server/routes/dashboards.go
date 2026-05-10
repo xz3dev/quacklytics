@@ -6,6 +6,7 @@ import (
 	"analytics/log"
 	sv_mw "analytics/server/middlewares"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -16,6 +17,7 @@ import (
 func SetupDashoardRoutes(mux chi.Router) {
 	mux.Get("/dashboards", listDashboards)
 	mux.Post("/dashboards", createDashboard)
+	mux.Post("/dashboards/default", restoreDefaultDashboard)
 	mux.Get("/dashboards/{id}", getDashboard)
 	mux.Put("/dashboards/{id}", updateDashboard)
 	mux.Delete("/dashboards/{id}", deleteDashboard)
@@ -124,6 +126,26 @@ func createDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(fullDashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func restoreDefaultDashboard(w http.ResponseWriter, r *http.Request) {
+	db := sv_mw.GetProjectDB(r, w)
+
+	dashboard, err := dashboards.RestoreDefaultDashboard(db)
+	if err != nil {
+		if errors.Is(err, dashboards.ErrDashboardsExist) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

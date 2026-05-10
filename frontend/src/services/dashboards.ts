@@ -1,6 +1,7 @@
 import {useQuery, useMutation, useQueryClient, type UseQueryOptions} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
 import {Dashboard, DashboardInput} from "@/model/dashboard.ts";
+import {INSIGHTS_KEY} from "@/services/insights.ts";
 
 export const DASHBOARDS_KEY = (project: string) => ['dashboards', project] as const
 export const DASHBOARD_KEY = (project: string, id: number) =>
@@ -14,6 +15,10 @@ const dashboardsApi = {
 
     createDashboard: async (params: { project: string, data: DashboardInput }): Promise<Dashboard> => {
         return http.post<Dashboard>(`${params.project}/dashboards`, params.data)
+    },
+
+    restoreDefaultDashboard: async (project: string): Promise<Dashboard> => {
+        return http.post<Dashboard>(`${project}/dashboards/default`)
     },
 
     deleteDashboard: async (params: { project: string, dashboardId: number }): Promise<void> => {
@@ -89,9 +94,29 @@ export function useDeleteDashboard(project: string) {
         mutationFn: (dashboardId: number) => dashboardsApi.deleteDashboard({project, dashboardId}),
         onSuccess: (_, dashboardId) => {
             queryClient.setQueryData<Dashboard[]>(
-                DASHBOARD_KEY(project, dashboardId),
+                DASHBOARDS_KEY(project),
                 (old = []) => old.filter(dashboard => dashboard.id !== dashboardId)
             )
+            queryClient.removeQueries({queryKey: DASHBOARD_KEY(project, dashboardId)})
+        },
+    })
+}
+
+export function useRestoreDefaultDashboard(project: string) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: () => dashboardsApi.restoreDefaultDashboard(project),
+        onSuccess: (dashboard) => {
+            queryClient.setQueryData<Dashboard[]>(
+                DASHBOARDS_KEY(project),
+                () => [dashboard]
+            )
+            queryClient.setQueryData<Dashboard>(
+                DASHBOARD_KEY(project, dashboard.id),
+                () => dashboard
+            )
+            void queryClient.invalidateQueries({queryKey: INSIGHTS_KEY(project)})
         },
     })
 }

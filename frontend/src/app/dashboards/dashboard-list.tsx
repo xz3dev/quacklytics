@@ -8,7 +8,8 @@ import {
     useDeleteDashboard,
     useDashboards,
     useUpdateDashboard,
-    useSetHomeDashboard
+    useSetHomeDashboard,
+    useRestoreDefaultDashboard
 } from "@/services/dashboards"
 import {formatDistance} from "date-fns"
 import {Dashboard} from "@/model/dashboard"
@@ -18,10 +19,11 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import {Home, MoreHorizontal, Plus, Star} from "lucide-react"
+import {Home, MoreHorizontal, Plus, RotateCcw, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id"
 import {ProjectLink} from "@/components/project-link"
 import {cn} from "@lib/utils/tailwind.ts"
+import {toast} from "sonner";
 
 interface Props {
     filter?: (d: Dashboard) => boolean
@@ -36,6 +38,7 @@ export function DashboardList({filter, sort, title}: Props) {
     const updateDashboardMutation = useUpdateDashboard(projectId)
     const setHomeDashboardMutation = useSetHomeDashboard(projectId)
     const deleteDashboardMutation = useDeleteDashboard(projectId)
+    const restoreDefaultDashboardMutation = useRestoreDefaultDashboard(projectId)
 
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [newDashboardName, setNewDashboardName] = useState("")
@@ -76,6 +79,15 @@ export function DashboardList({filter, sort, title}: Props) {
         await updateDashboardMutation.mutateAsync({...dashboard, favorite: !dashboard.favorite})
     }
 
+    const handleRestoreDefaultDashboard = async () => {
+        try {
+            await restoreDefaultDashboardMutation.mutateAsync()
+            toast.success("Default dashboard restored")
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to restore default dashboard")
+        }
+    }
+
     return (
         <>
             <div className="flex justify-between items-center">
@@ -102,6 +114,25 @@ export function DashboardList({filter, sort, title}: Props) {
                     </DialogContent>
                 </Dialog>
             </div>
+
+            {allDashboards.length === 0 && (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed py-12 text-center">
+                    <div>
+                        <h3 className="text-lg font-semibold">No dashboards</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Restore the default web analytics dashboard for autotracked pageviews, clicks, and client properties.
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={handleRestoreDefaultDashboard}
+                        disabled={restoreDefaultDashboardMutation.isPending}
+                    >
+                        <RotateCcw className="h-4 w-4"/>
+                        Restore Default Dashboard
+                    </Button>
+                </div>
+            )}
 
             <Table>
                 <TableHeader>
