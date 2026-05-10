@@ -6,12 +6,12 @@ import tailwindcss from "@tailwindcss/vite";
 
 const homePort = Number(process.env.HOME_PORT ?? process.env.PUBLIC_HOME_PORT ?? 3002);
 
-function quacklyticsDevTracking() {
+function quacklyticsHomepageTracking() {
     return {
-        name: 'quacklytics-dev-tracking',
+        name: 'quacklytics-homepage-tracking',
         hooks: {
             'astro:config:setup': ({injectScript}) => {
-                injectScript('page', 'import "/src/dev-analytics.ts";');
+                injectScript('page', 'import "/src/quacklytics-analytics.ts";');
             },
         },
     };
@@ -31,7 +31,7 @@ export default defineConfig({
         ],
     },
     integrations: [
-        quacklyticsDevTracking(),
+        quacklyticsHomepageTracking(),
         starlight({
             title: 'Quacklytics',
             customCss: [
