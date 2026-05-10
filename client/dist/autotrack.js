@@ -42,7 +42,7 @@ export function enableClickAutotracking(options) {
         const sessionId = resolveIdentity(options.sessionId);
         const personId = resolveIdentity(options.personId);
         const payload = {
-            eventType: options.eventType ?? "$autoclick",
+            eventType: options.eventType ?? "$click",
             properties,
         };
         void options.client
@@ -59,6 +59,58 @@ export function enableClickAutotracking(options) {
             doc.removeEventListener("click", listener, { capture: options.capture ?? true });
         },
     };
+}
+export function trackPageview(options) {
+    const doc = options.document ?? globalThis.document;
+    const location = options.location ?? doc?.location ?? globalThis.location;
+    const sessionId = resolveIdentity(options.sessionId);
+    const personId = resolveIdentity(options.personId);
+    return options.client.send({
+        eventType: options.eventType ?? "$pageview",
+        properties: {
+            ...buildPageviewProperties(doc, location),
+            ...(options.properties ?? {}),
+        },
+        ...(sessionId ? { sessionId } : {}),
+        ...(personId ? { personId } : {}),
+    });
+}
+function buildPageviewProperties(doc, location) {
+    const properties = {};
+    if (location?.href) {
+        properties.url = location.href;
+    }
+    if (location?.origin) {
+        properties.origin = location.origin;
+    }
+    if (location?.protocol) {
+        properties.protocol = location.protocol;
+    }
+    if (location?.host) {
+        properties.host = location.host;
+    }
+    if (location?.hostname) {
+        properties.hostname = location.hostname;
+    }
+    if (location?.port) {
+        properties.port = location.port;
+    }
+    if (location?.pathname) {
+        properties.pathname = location.pathname;
+    }
+    if (location?.search) {
+        properties.search = location.search;
+    }
+    if (location?.hash) {
+        properties.hash = location.hash;
+    }
+    if (doc?.title) {
+        properties.title = doc.title;
+    }
+    if (doc?.referrer) {
+        properties.referrer = doc.referrer;
+    }
+    return properties;
 }
 function buildClickProperties(element, options) {
     const htmlElement = element instanceof options.document.defaultView.HTMLElement ? element : null;

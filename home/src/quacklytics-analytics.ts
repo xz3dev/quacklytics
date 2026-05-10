@@ -13,6 +13,7 @@ if (typeof document !== "undefined" && apiKey) {
     hostname,
     port,
     protocol,
+    autoTrackPageviews: false,
   });
 
   console.log("Quacklytics homepage tracking enabled");
@@ -35,6 +36,10 @@ if (typeof document !== "undefined" && apiKey) {
     onError(error) {
       console.warn("Quacklytics click autotracking failed", error);
     },
+  });
+
+  void consent.client.trackPageview().catch((error) => {
+    console.warn("Quacklytics pageview tracking failed", error);
   });
 
   queueMicrotask(() => consent.showBanner());

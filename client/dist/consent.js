@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "preact/jsx-runtime";
 import { render } from "preact";
+import { trackPageview } from "./autotrack";
 const DEFAULT_BANNER_HTML = "We use lightweight analytics to understand which parts of this site are useful. Accept to include a persistent visitor id, or continue with session-only analytics.";
 export function createCookieConsent(options) {
     const doc = options.document ?? globalThis.document;
@@ -15,6 +16,9 @@ export function createCookieConsent(options) {
         },
         sendBatch(events) {
             return sendEvents(events);
+        },
+        trackPageview(options = {}) {
+            return trackPageview({ ...options, client: consentClient });
         },
     };
     function sendEvents(events) {

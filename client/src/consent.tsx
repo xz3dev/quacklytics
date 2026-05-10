@@ -1,6 +1,7 @@
 import { render } from "preact";
 import type { JSX } from "preact";
 import type { AnalyticsClient, AnalyticsEvent, EventProperties } from "./index";
+import { trackPageview } from "./autotrack";
 
 export type ConsentDecision = "accepted" | "rejected";
 
@@ -64,6 +65,9 @@ export function createCookieConsent(options: CookieConsentOptions): CookieConsen
     },
     sendBatch(events) {
       return sendEvents(events);
+    },
+    trackPageview(options = {}) {
+      return trackPageview({ ...options, client: consentClient });
     },
   };
 

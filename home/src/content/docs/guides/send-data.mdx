@@ -50,3 +50,25 @@ The endpoint accepts a single event object or an array of events. The payload sh
   }
 ]
 ```
+
+## Sending events via the TypeScript client
+
+The client automatically sends a `$pageview` event when it is created in a browser. Disable that with `autoTrackPageviews: false` and call `trackPageview()` manually when you want to control timing, for example after consent has been resolved.
+
+```ts
+import { createClient } from "@quacklytics/client";
+import { enableClickAutotracking } from "@quacklytics/client/autotrack";
+
+const client = createClient({
+  apiKey: "your-api-key",
+  hostname: "localhost",
+  port: 3000,
+  autoTrackPageviews: false,
+});
+
+await client.trackPageview();
+
+enableClickAutotracking({ client }); // emits $click events
+```
+
+Browser context such as user agent, browser name and version, operating system, device type, device model, language, timezone, viewport, and current page URL is added to every event's `properties`.
