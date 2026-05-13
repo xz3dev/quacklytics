@@ -190,11 +190,12 @@ export function buildFunnelQuery(
         const prevStepTimeAlias = isFirstStep ? '' : `step${index}_time`;
         const tableAlias = isFirstStep ? null : 'e';
         const sourceTable = isFirstStep ? baseCteName : `${baseCteName} ${tableAlias}`;
+        const actorExpression = `COALESCE(${tableAlias ? `${tableAlias}.` : ''}"person_id", ${tableAlias ? `${tableAlias}.` : ''}"session_id")`;
 
         // --- SELECT Clause (Summary Version) ---
         const selectClause = `
       SELECT
-          COALESCE(${tableAlias ? `${tableAlias}.` : ''}"person_id", ${tableAlias ? `${tableAlias}.` : ''}"session_id") AS "actor_id",
+          ${actorExpression} AS "actor_id",
           MIN(${tableAlias ? `${tableAlias}.` : ''}"timestamp") AS ${stepTimeAlias}
     `;
 
@@ -216,7 +217,7 @@ export function buildFunnelQuery(
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
         // --- GROUP BY Clause ---
-        const groupByClause = `GROUP BY "actor_id"`;
+        const groupByClause = `GROUP BY ${actorExpression}`;
 
         // Assemble the Step CTE definition string
         const stepCteSql = `${cteName} AS (

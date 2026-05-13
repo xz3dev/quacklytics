@@ -1,3 +1,4 @@
 events.csv
 .env
 node_modules/
+.plan

@@ -9,7 +9,8 @@ import {
     useDashboards,
     useUpdateDashboard,
     useSetHomeDashboard,
-    useRestoreDefaultDashboard
+    useRestoreDefaultDashboard,
+    useCreateTemplateDashboard
 } from "@/services/dashboards"
 import {formatDistance} from "date-fns"
 import {Dashboard} from "@/model/dashboard"
@@ -19,7 +20,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import {Home, MoreHorizontal, Plus, RotateCcw, Star} from "lucide-react"
+import {BarChart3, Boxes, Home, MoreHorizontal, Plus, RotateCcw, Star} from "lucide-react"
 import {useProjectId} from "@/hooks/use-project-id"
 import {ProjectLink} from "@/components/project-link"
 import {cn} from "@lib/utils/tailwind.ts"
@@ -39,6 +40,7 @@ export function DashboardList({filter, sort, title}: Props) {
     const setHomeDashboardMutation = useSetHomeDashboard(projectId)
     const deleteDashboardMutation = useDeleteDashboard(projectId)
     const restoreDefaultDashboardMutation = useRestoreDefaultDashboard(projectId)
+    const createTemplateDashboardMutation = useCreateTemplateDashboard(projectId)
 
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [newDashboardName, setNewDashboardName] = useState("")
@@ -88,6 +90,18 @@ export function DashboardList({filter, sort, title}: Props) {
         }
     }
 
+    const handleCreateTemplateDashboard = async (template: 'product_analytics' | 'web_analytics') => {
+        try {
+            await createTemplateDashboardMutation.mutateAsync({
+                template,
+                data: {home: allDashboards.length === 0},
+            })
+            toast.success("Dashboard template created")
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to create dashboard template")
+        }
+    }
+
     return (
         <>
             <div className="flex justify-between items-center">
@@ -120,17 +134,35 @@ export function DashboardList({filter, sort, title}: Props) {
                     <div>
                         <h3 className="text-lg font-semibold">No dashboards</h3>
                         <p className="text-sm text-muted-foreground">
-                            Restore the default web analytics dashboard for autotracked pageviews, clicks, and client properties.
+                            Start from a template or create a dashboard manually.
                         </p>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={handleRestoreDefaultDashboard}
-                        disabled={restoreDefaultDashboardMutation.isPending}
-                    >
-                        <RotateCcw className="h-4 w-4"/>
-                        Restore Default Dashboard
-                    </Button>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => handleCreateTemplateDashboard('product_analytics')}
+                            disabled={createTemplateDashboardMutation.isPending}
+                        >
+                            <Boxes className="h-4 w-4"/>
+                            Product analytics
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => handleCreateTemplateDashboard('web_analytics')}
+                            disabled={createTemplateDashboardMutation.isPending}
+                        >
+                            <BarChart3 className="h-4 w-4"/>
+                            Web analytics
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={handleRestoreDefaultDashboard}
+                            disabled={restoreDefaultDashboardMutation.isPending}
+                        >
+                            <RotateCcw className="h-4 w-4"/>
+                            Restore default
+                        </Button>
+                    </div>
                 </div>
             )}
 

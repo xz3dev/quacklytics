@@ -15,3 +15,10 @@ export interface DashboardInput {
     name: string
     favorite: boolean
 }
+
+export type DashboardTemplate = 'web_analytics' | 'product_analytics'
+
+export interface DashboardTemplateInput {
+    name?: string
+    home?: boolean
+}

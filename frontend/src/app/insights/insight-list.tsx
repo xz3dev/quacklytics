@@ -20,6 +20,9 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {newValueInsight} from "@/model/insights/value-insight.ts";
 import {newTrendInsight} from "@/model/insights/trend-insight.ts";
 import {newFunnelInsight} from "@/model/insights/funnel-insights.ts";
+import {newBreakdownInsight} from "@/model/insights/breakdown-insight.ts";
+import {newRetentionInsight} from "@/model/insights/retention-insight.ts";
+import {newPathInsight} from "@/model/insights/path-insight.ts";
 
 interface Props {
     filter?: (i: Insight) => boolean
@@ -60,6 +63,15 @@ export function InsightsList({filter, sort, title, createAsFavorite}: Props) {
                     break;
                 case 'Funnel':
                     defaults = newFunnelInsight
+                    break;
+                case 'Breakdown':
+                    defaults = newBreakdownInsight
+                    break;
+                case 'Retention':
+                    defaults = newRetentionInsight
+                    break;
+                case 'Path':
+                    defaults = newPathInsight
                     break;
                 default:
                     defaults = newTrendInsight
@@ -130,6 +142,9 @@ export function InsightsList({filter, sort, title, createAsFavorite}: Props) {
                                         <SelectItem value="Trend">Trend</SelectItem>
                                         <SelectItem value="Value">Value</SelectItem>
                                         <SelectItem value="Funnel">Funnel</SelectItem>
+                                        <SelectItem value="Breakdown">Breakdown</SelectItem>
+                                        <SelectItem value="Retention">Retention</SelectItem>
+                                        <SelectItem value="Path">Path</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

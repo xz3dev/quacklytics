@@ -45,6 +45,7 @@ export function buildQuery(query: Query): {
     params: QueryParamValue[]
 } {
     const params: QueryParamValue[] = []
+    const usesActorField = query.aggregations?.some(agg => agg.field.name === 'COALESCE(person_id, session_id)') ?? false
     let sql = 'SELECT '
     const selectParts: string[] = []
 
@@ -52,7 +53,9 @@ export function buildQuery(query: Query): {
     if (query.aggregations && query.aggregations.length > 0) {
         for (const agg of query.aggregations) {
             const castType = agg.function === 'COUNT' ? undefined : 'FLOAT'
-            const fieldExpr = getFieldExpression(agg.field, castType)
+            const fieldExpr = agg.field.name === 'COALESCE(person_id, session_id)'
+                ? 'actor_id'
+                : getFieldExpression(agg.field, castType)
             const optionalDistinct = agg.distinct ? 'distinct ' : ''
             const aggExpr = `${agg.function}(${optionalDistinct}${fieldExpr})${agg.alias ? ` AS ${agg.alias}` : ''}`
             selectParts.push(aggExpr)
@@ -79,7 +82,9 @@ export function buildQuery(query: Query): {
     }
 
     sql += selectParts.join(', ')
-    sql += ' FROM events'
+    sql += usesActorField
+        ? ' FROM (SELECT COALESCE(person_id, session_id) AS actor_id, * FROM events) events'
+        : ' FROM events'
 
     // Construct WHERE clause
     if (query.filters && query.filters.length > 0) {

@@ -1,4 +1,4 @@
-import {useDashboard, useSetDashboardInsights, useUpdateDashboard} from "@/services/dashboards"
+import {useApplyDashboardTemplate, useDashboard, useSetDashboardInsights, useUpdateDashboard} from "@/services/dashboards"
 import {useProjectId} from "@/hooks/use-project-id"
 import {Spinner} from "@/components/spinner"
 import {DashboardManageInsights} from "@app/dashboards/dashboard-manage-insights"
@@ -10,7 +10,7 @@ import {Insight} from "@/model/insights/insight.ts";
 import {useDebounce} from "@uidotdev/usehooks"
 import {ProjectLink} from "@/components/project-link"
 import {Button} from "@/components/ui/button.tsx";
-import {Edit} from "lucide-react";
+import {BarChart3, Boxes, Edit, Plus} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Input} from "@/components/ui/input"
 
@@ -26,6 +26,7 @@ export function DashboardView({dashboardId, readOnly}: Props) {
     const debouncedInsights = useDebounce(insights, 1000)
     const setDashboardInsights = useSetDashboardInsights(projectId)
     const updateDashboard = useUpdateDashboard(projectId)
+    const applyDashboardTemplate = useApplyDashboardTemplate(projectId)
 
     const [dashboardName, setDashboardName] = useState(dashboard?.name ?? "")
     const [isEditingName, setIsEditingName] = useState(false);
@@ -64,6 +65,13 @@ export function DashboardView({dashboardId, readOnly}: Props) {
                 return arrayMove(items, oldIndex, newIndex)
             })
         }
+    }
+
+    const applyTemplate = async (template: 'product_analytics' | 'web_analytics') => {
+        await applyDashboardTemplate.mutateAsync({
+            dashboardId: dashboard.id,
+            template,
+        })
     }
 
     return (
@@ -128,18 +136,47 @@ export function DashboardView({dashboardId, readOnly}: Props) {
                 <div className="flex-1"/>
                 {!readOnly && <DashboardManageInsights dashboard={dashboard}/>}
             </div>
-            <DndContext onDragEnd={handleDragEnd}>
-                <SortableContext items={insights} strategy={rectSortingStrategy}>
-                    <div className="grid gap-4 py-4 grid-cols-2 items-stretch">
-                        {insights.map(insight => (
-                            <SortableInsightCard
-                                key={insight.id}
-                                insight={insight}
-                            />
-                        ))}
-                    </div>
-                </SortableContext>
-            </DndContext>
+            {!readOnly && insights.length === 0 ? (
+                <div className="grid gap-3 rounded-md border border-dashed p-4 md:grid-cols-3">
+                    <ProjectLink to="/insights">
+                        <Button variant="outline" className="h-auto min-h-24 w-full justify-start gap-3 p-4">
+                            <Plus className="h-4 w-4"/>
+                            <span>Add an insight manually</span>
+                        </Button>
+                    </ProjectLink>
+                    <Button
+                        variant="outline"
+                        className="h-auto min-h-24 justify-start gap-3 p-4"
+                        onClick={() => applyTemplate('product_analytics')}
+                        disabled={applyDashboardTemplate.isPending}
+                    >
+                        <Boxes className="h-4 w-4"/>
+                        Apply product analytics template
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="h-auto min-h-24 justify-start gap-3 p-4"
+                        onClick={() => applyTemplate('web_analytics')}
+                        disabled={applyDashboardTemplate.isPending}
+                    >
+                        <BarChart3 className="h-4 w-4"/>
+                        Apply web analytics template
+                    </Button>
+                </div>
+            ) : (
+                <DndContext onDragEnd={handleDragEnd}>
+                    <SortableContext items={insights} strategy={rectSortingStrategy}>
+                        <div className="grid gap-4 py-4 grid-cols-2 items-stretch">
+                            {insights.map(insight => (
+                                <SortableInsightCard
+                                    key={insight.id}
+                                    insight={insight}
+                                />
+                            ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            )}
         </div>
     )
 }

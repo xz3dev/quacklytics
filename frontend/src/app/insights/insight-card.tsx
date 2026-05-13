@@ -5,12 +5,25 @@ import {Spinner} from "@/components/spinner.tsx";
 import {Insight} from "@/model/insights/insight.ts";
 import {TrendInsightChart} from "@app/insights/trend/trend-insight-chart.tsx";
 import {TrendInsight} from "@/model/insights/trend-insight.ts";
-import {FunnelInsightContext, TrendInsightContext, ValueInsightContext} from "./insight-context";
+import {
+    BreakdownInsightContext,
+    FunnelInsightContext,
+    PathInsightContext,
+    RetentionInsightContext,
+    TrendInsightContext,
+    ValueInsightContext
+} from "./insight-context";
 import {ProjectLink} from "@/components/project-link.tsx";
 import {ValueInsight} from "@/model/insights/value-insight.ts";
 import {ValueInsightChart} from "@app/insights/value/value-insight-chart.tsx";
 import {FunnelInsight} from "@/model/insights/funnel-insights.ts";
 import {FunnelInsightResults} from "@app/insights/funnel/funnel-insight-results.tsx";
+import {BreakdownInsight} from "@/model/insights/breakdown-insight.ts";
+import {BreakdownInsightChart} from "@app/insights/breakdown/breakdown-insight-chart.tsx";
+import {RetentionInsight} from "@/model/insights/retention-insight.ts";
+import {RetentionInsightChart} from "@app/insights/retention/retention-insight-chart.tsx";
+import {PathInsight} from "@/model/insights/path-insight.ts";
+import {PathInsightChart} from "@app/insights/path/path-insight-chart.tsx";
 
 interface Props {
     insightId: number
@@ -72,6 +85,36 @@ function renderInsight(insight: Insight) {
                 }}>
                     <FunnelInsightResults insight={insight as FunnelInsight} layoutDirection="vertical"/>
                 </FunnelInsightContext.Provider>
+            )
+        case 'Breakdown':
+            return (
+                <BreakdownInsightContext.Provider value={{
+                    data: insight as BreakdownInsight,
+                    update: () => undefined,
+                    updateFn: () => undefined,
+                }}>
+                    <BreakdownInsightChart insight={insight as BreakdownInsight}/>
+                </BreakdownInsightContext.Provider>
+            )
+        case 'Retention':
+            return (
+                <RetentionInsightContext.Provider value={{
+                    data: insight as RetentionInsight,
+                    update: () => undefined,
+                    updateFn: () => undefined,
+                }}>
+                    <RetentionInsightChart insight={insight as RetentionInsight}/>
+                </RetentionInsightContext.Provider>
+            )
+        case 'Path':
+            return (
+                <PathInsightContext.Provider value={{
+                    data: insight as PathInsight,
+                    update: () => undefined,
+                    updateFn: () => undefined,
+                }}>
+                    <PathInsightChart insight={insight as PathInsight}/>
+                </PathInsightContext.Provider>
             )
         default:
             return <div>Unknown insight type: {insight.type}</div>

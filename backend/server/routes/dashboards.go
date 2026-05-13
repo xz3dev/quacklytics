@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -18,11 +19,13 @@ func SetupDashoardRoutes(mux chi.Router) {
 	mux.Get("/dashboards", listDashboards)
 	mux.Post("/dashboards", createDashboard)
 	mux.Post("/dashboards/default", restoreDefaultDashboard)
+	mux.Post("/dashboards/templates/{template}", createTemplateDashboard)
 	mux.Get("/dashboards/{id}", getDashboard)
 	mux.Put("/dashboards/{id}", updateDashboard)
 	mux.Delete("/dashboards/{id}", deleteDashboard)
 	mux.Put("/dashboards/{id}/insights", setDashboardInsights)
 	mux.Put("/dashboards/{id}/home", setHomeDashboard)
+	mux.Post("/dashboards/{id}/templates/{template}", applyTemplateDashboard)
 }
 
 func parseDashboardId(id string) (int, error) {
@@ -145,6 +148,67 @@ func restoreDefaultDashboard(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func createTemplateDashboard(w http.ResponseWriter, r *http.Request) {
+	template := dashboards.DashboardTemplate(chi.URLParam(r, "template"))
+	var input dashboards.TemplateDashboardInput
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			if !errors.Is(err, io.EOF) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+	}
+
+	db := sv_mw.GetProjectDB(r, w)
+	dashboard, err := dashboards.CreateDashboardFromTemplate(db, template, input)
+	if err != nil {
+		if errors.Is(err, dashboards.ErrUnknownDashboardTemplate) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func applyTemplateDashboard(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	dashboardID, err := parseDashboardId(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	template := dashboards.DashboardTemplate(chi.URLParam(r, "template"))
+
+	db := sv_mw.GetProjectDB(r, w)
+	dashboard, err := dashboards.ApplyTemplateToDashboard(db, uint(dashboardID), template)
+	if err != nil {
+		if errors.Is(err, dashboards.ErrUnknownDashboardTemplate) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, dashboards.ErrDashboardNotEmpty) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(dashboard); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

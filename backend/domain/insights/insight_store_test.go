@@ -61,6 +61,123 @@ func TestInsightStore_CreateInsight(t *testing.T) {
 	assert.DeepEqual(t, created.Config, fetched.Config)
 }
 
+func TestInsightStore_SerializesNewInsightConfigs(t *testing.T) {
+	tests := []struct {
+		name        string
+		insightType InsightType
+		config      *InsightConfig
+		assert      func(t *testing.T, config *InsightConfig)
+	}{
+		{
+			name:        "Breakdown",
+			insightType: Breakdown,
+			config: &InsightConfig{
+				BreakdownConf: &BreakdownInsightConfig{
+					Duration: "P30D",
+					Dimension: Field{
+						Name:     "$.pagePath",
+						DataType: "string",
+					},
+					Aggregation: Aggregation{
+						Function: AggregationCount,
+						Field:    Field{Name: "id", DataType: "string"},
+						Alias:    "result_value",
+					},
+					Limit: 10,
+				},
+			},
+			assert: func(t *testing.T, config *InsightConfig) {
+				if config.BreakdownConf == nil {
+					t.Fatal("expected breakdown config")
+				}
+				assert.Equal(t, "$.pagePath", config.BreakdownConf.Dimension.Name)
+				assert.Equal(t, 10, config.BreakdownConf.Limit)
+			},
+		},
+		{
+			name:        "Retention",
+			insightType: Retention,
+			config: &InsightConfig{
+				RetentionConf: &RetentionInsightConfig{
+					Duration:     "P30D",
+					CohortBucket: Daily,
+					ActivationQuery: InsightQuery{
+						Filters: []FieldFilter{
+							{
+								Field:    Field{Name: "event_type", DataType: "string"},
+								Operator: OperatorEquals,
+								Value:    "$pageview",
+							},
+						},
+					},
+					ReturnQuery: InsightQuery{},
+					MaxPeriods:  14,
+				},
+			},
+			assert: func(t *testing.T, config *InsightConfig) {
+				if config.RetentionConf == nil {
+					t.Fatal("expected retention config")
+				}
+				assert.Equal(t, Daily, config.RetentionConf.CohortBucket)
+				assert.Equal(t, 14, config.RetentionConf.MaxPeriods)
+			},
+		},
+		{
+			name:        "Path",
+			insightType: Path,
+			config: &InsightConfig{
+				PathConf: &PathInsightConfig{
+					Duration: "P30D",
+					AnchorQuery: InsightQuery{
+						Filters: []FieldFilter{
+							{
+								Field:    Field{Name: "event_type", DataType: "string"},
+								Operator: OperatorEquals,
+								Value:    "$pageview",
+							},
+						},
+					},
+					Direction: "forward",
+					StepField: Field{Name: "$.pagePath", DataType: "string"},
+					MaxSteps:  5,
+					Limit:     10,
+				},
+			},
+			assert: func(t *testing.T, config *InsightConfig) {
+				if config.PathConf == nil {
+					t.Fatal("expected path config")
+				}
+				assert.Equal(t, "$.pagePath", config.PathConf.StepField.Name)
+				assert.Equal(t, "forward", config.PathConf.Direction)
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db := setupDB(t)
+			store := NewInsightStore(db)
+			isFavorite := false
+			input := &InsightInput{
+				Name:     test.name,
+				Type:     test.insightType,
+				Favorite: &isFavorite,
+				Config:   test.config,
+			}
+
+			created, err := store.CreateInsight(input)
+			assert.NoError(t, err)
+			assert.Equal(t, test.insightType, created.Type)
+
+			var fetched Insight
+			result := db.First(&fetched, created.ID)
+			assert.NoError(t, result.Error)
+			assert.DeepEqual(t, test.config, fetched.Config)
+			test.assert(t, fetched.Config)
+		})
+	}
+}
+
 func TestInsightStore_GetInsightByID(t *testing.T) {
 	t.Run("NotFound", func(t *testing.T) {
 		db := setupDB(t)

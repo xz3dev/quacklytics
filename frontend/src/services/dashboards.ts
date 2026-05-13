@@ -1,6 +1,6 @@
 import {useQuery, useMutation, useQueryClient, type UseQueryOptions} from '@tanstack/react-query'
 import {http} from '@/lib/fetch'
-import {Dashboard, DashboardInput} from "@/model/dashboard.ts";
+import {Dashboard, DashboardInput, DashboardTemplate, DashboardTemplateInput} from "@/model/dashboard.ts";
 import {INSIGHTS_KEY} from "@/services/insights.ts";
 
 export const DASHBOARDS_KEY = (project: string) => ['dashboards', project] as const
@@ -19,6 +19,22 @@ const dashboardsApi = {
 
     restoreDefaultDashboard: async (project: string): Promise<Dashboard> => {
         return http.post<Dashboard>(`${project}/dashboards/default`)
+    },
+
+    createTemplateDashboard: async (params: {
+        project: string,
+        template: DashboardTemplate,
+        data?: DashboardTemplateInput
+    }): Promise<Dashboard> => {
+        return http.post<Dashboard>(`${params.project}/dashboards/templates/${params.template}`, params.data ?? {})
+    },
+
+    applyTemplateToDashboard: async (params: {
+        project: string,
+        dashboardId: number,
+        template: DashboardTemplate,
+    }): Promise<Dashboard> => {
+        return http.post<Dashboard>(`${params.project}/dashboards/${params.dashboardId}/templates/${params.template}`, {})
     },
 
     deleteDashboard: async (params: { project: string, dashboardId: number }): Promise<void> => {
@@ -115,6 +131,54 @@ export function useRestoreDefaultDashboard(project: string) {
             queryClient.setQueryData<Dashboard>(
                 DASHBOARD_KEY(project, dashboard.id),
                 () => dashboard
+            )
+            void queryClient.invalidateQueries({queryKey: INSIGHTS_KEY(project)})
+        },
+    })
+}
+
+export function useCreateTemplateDashboard(project: string) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (params: { template: DashboardTemplate, data?: DashboardTemplateInput }) =>
+            dashboardsApi.createTemplateDashboard({project, template: params.template, data: params.data}),
+        onSuccess: (dashboard) => {
+            queryClient.setQueryData<Dashboard[]>(
+                DASHBOARDS_KEY(project),
+                (old = []) => dashboard.home
+                    ? [...old.map((item) => ({...item, home: false})), dashboard]
+                    : [...old, dashboard]
+            )
+            queryClient.setQueryData<Dashboard>(
+                DASHBOARD_KEY(project, dashboard.id),
+                () => dashboard
+            )
+            void queryClient.invalidateQueries({queryKey: INSIGHTS_KEY(project)})
+        },
+    })
+}
+
+export function useApplyDashboardTemplate(project: string) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (params: { dashboardId: number, template: DashboardTemplate }) =>
+            dashboardsApi.applyTemplateToDashboard({
+                project,
+                dashboardId: params.dashboardId,
+                template: params.template,
+            }),
+        onSuccess: (updatedDashboard) => {
+            queryClient.setQueryData<Dashboard[]>(
+                DASHBOARDS_KEY(project),
+                (old) => old?.map((dashboard) =>
+                    dashboard.id === updatedDashboard.id ? updatedDashboard : dashboard
+                ),
+            )
+            queryClient.setQueryData<Dashboard>(
+                DASHBOARD_KEY(project, updatedDashboard.id),
+                () => updatedDashboard,
             )
             void queryClient.invalidateQueries({queryKey: INSIGHTS_KEY(project)})
         },

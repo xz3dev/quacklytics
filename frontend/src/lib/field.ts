@@ -4,10 +4,10 @@ import { Field } from "@/model/filters"
 export function getFieldExpression(field: Field, castType?: string): string {
     let expression = ''
     const isJsonField = field.name.startsWith('$.') || field.isProperty
-    const nameCleaned = (field.alias ?? field.name).replace(/\$\./g, '')
+    const nameCleaned = field.name.replace(/\$\./g, '')
     if (isJsonField) {
         const jsonPath = `$.${nameCleaned}`
-        expression = `CAST(properties->>'${jsonPath}' AS ${castType ?? 'VARCHAR'})`
+        expression = `CAST(COALESCE(json_extract_string(properties, '${jsonPath}'), json_extract_string(json_extract_string(properties, '$'), '${jsonPath}')) AS ${castType ?? 'VARCHAR'})`
     } else {
         if (castType) {
             expression = `CAST(${nameCleaned} AS ${castType})`

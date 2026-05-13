@@ -26,9 +26,12 @@ type Insight struct {
 }
 
 type InsightConfig struct {
-	TrendConf  *TrendInsightConfig  `json:"trend,omitempty"`
-	ValueConf  *ValueInsightConfig  `json:"value,omitempty"`
-	FunnelConf *FunnelInsightConfig `json:"funnel,omitempty"`
+	TrendConf     *TrendInsightConfig     `json:"trend,omitempty"`
+	ValueConf     *ValueInsightConfig     `json:"value,omitempty"`
+	FunnelConf    *FunnelInsightConfig    `json:"funnel,omitempty"`
+	BreakdownConf *BreakdownInsightConfig `json:"breakdown,omitempty"`
+	RetentionConf *RetentionInsightConfig `json:"retention,omitempty"`
+	PathConf      *PathInsightConfig      `json:"path,omitempty"`
 }
 
 type TimeBucket string
