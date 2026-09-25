@@ -126,13 +126,26 @@ export function buildPathQuery(config: PathInsightConfig): BuiltQuery {
     const {start, end} = determineDateRange(config.duration)
     const params: QueryParamValue[] = []
     const stepExpr = nullableLabelExpression(getAliasedFieldExpression(config.stepField))
+    // The anchor predicate appears before the date predicates in the SQL.
+    const anchorWhere = buildWhereClause(config.anchorQuery.filters ?? [], params)
     const where = buildWhereClause([
         dateFilter('>=', start),
         dateFilter('<=', end),
-        ...(config.anchorQuery.filters ?? []),
     ], params)
     const transitionFunction = config.direction === 'backward' ? 'LAG' : 'LEAD'
     const limit = safeLimit(config.limit, 10)
+    const maxSteps = safeLimit(config.maxSteps, 1)
+    const transitionColumns = Array.from({length: maxSteps}, (_, index) => {
+        const distance = index + 1
+        return `${transitionFunction}(step_value, ${distance}) OVER (
+                        PARTITION BY actor_id
+                        ORDER BY timestamp ASC
+                    ) AS target_step_${distance}`
+    }).join(',\n                    ')
+    const unionedTransitions = Array.from({length: maxSteps}, (_, index) => {
+        const distance = index + 1
+        return `SELECT source_step, target_step_${distance} AS target_step, ${distance} AS step_distance FROM sequenced WHERE is_anchor`
+    }).join('\n                UNION ALL\n                ')
 
     return {
         sql: `
@@ -140,6 +153,7 @@ export function buildPathQuery(config: PathInsightConfig): BuiltQuery {
                 SELECT
                     COALESCE(person_id, session_id) AS actor_id,
                     timestamp,
+                    (${anchorWhere || 'TRUE'}) AS is_anchor,
                     ${stepExpr} AS step_value
                 FROM events
                 ${where ? `WHERE ${where}` : ''}
@@ -148,20 +162,22 @@ export function buildPathQuery(config: PathInsightConfig): BuiltQuery {
             sequenced AS (
                 SELECT
                     step_value AS source_step,
-                    ${transitionFunction}(step_value) OVER (
-                        PARTITION BY actor_id
-                        ORDER BY timestamp ASC
-                    ) AS target_step
+                    is_anchor,
+                    ${transitionColumns}
                 FROM filtered
+            ),
+            transitions AS (
+                ${unionedTransitions}
             )
             SELECT
                 source_step,
                 target_step,
+                step_distance,
                 COUNT(*) AS result_value
-            FROM sequenced
+            FROM transitions
             WHERE target_step IS NOT NULL
-            GROUP BY source_step, target_step
-            ORDER BY result_value DESC
+            GROUP BY source_step, target_step, step_distance
+            ORDER BY result_value DESC, step_distance ASC, source_step ASC, target_step ASC
             LIMIT ${limit}
         `.trim(),
         params,
@@ -222,7 +238,7 @@ function getAliasedFieldExpression(field: Field, castType?: string, tableAlias?:
 }
 
 function nullableLabelExpression(expression: string): string {
-    return `COALESCE(NULLIF(${expression}, ''), '(missing)')`
+    return `COALESCE(NULLIF(CAST(${expression} AS VARCHAR), ''), '(missing)')`
 }
 
 function safeLimit(limit: number | undefined, fallback: number): number {

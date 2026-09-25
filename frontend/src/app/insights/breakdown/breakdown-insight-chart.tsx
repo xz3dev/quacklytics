@@ -9,6 +9,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 
 interface Props {
     insight: BreakdownInsight
+    showTable?: boolean
 }
 
 interface BreakdownRow {
@@ -16,7 +17,7 @@ interface BreakdownRow {
     result_value: bigint | number | string
 }
 
-export function BreakdownInsightChart({insight}: Props) {
+export function BreakdownInsightChart({insight, showTable = true}: Props) {
     const projectId = useProjectId()
     const query = useMemo(() => ({
         query: buildBreakdownQuery(insight.config.breakdown),
@@ -52,22 +53,24 @@ export function BreakdownInsightChart({insight}: Props) {
                     </div>
                 )
             })}
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Value</TableHead>
-                        <TableHead className="text-right">Events</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {rows.map((row) => (
-                        <TableRow key={`table-${row.dimension_value}`}>
-                            <TableCell className="max-w-[240px] truncate" title={row.dimension_value}>{row.dimension_value}</TableCell>
-                            <TableCell className="text-right tabular-nums">{Number(row.result_value)}</TableCell>
+            {showTable && (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Value</TableHead>
+                            <TableHead className="text-right">Events</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {rows.map((row) => (
+                            <TableRow key={`table-${row.dimension_value}`}>
+                                <TableCell className="max-w-[240px] truncate" title={row.dimension_value}>{row.dimension_value}</TableCell>
+                                <TableCell className="text-right tabular-nums">{Number(row.result_value)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            )}
         </div>
     )
 }

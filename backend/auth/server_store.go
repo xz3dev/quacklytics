@@ -12,6 +12,8 @@ type ServerStore struct {
 	db *gorm.DB
 }
 
+var ErrRegistrationClosed = errors.New("registration is closed: an account already exists. Please log in")
+
 func NewAuthStore(db *gorm.DB) *ServerStore {
 	return &ServerStore{db: db}
 }
@@ -67,12 +69,14 @@ func (a *ServerStore) UseRememberToken(ctx context.Context, pid string, token st
 func (a *ServerStore) Create(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
 	log.Debug("Creating user %v", u)
-	var existingUsers []User
-	a.db.Find(&existingUsers)
-	if len(existingUsers) > 0 {
-		return errors.New("only one user is allowed as of right now")
+	var count int64
+	if err := a.db.WithContext(ctx).Model(&User{}).Count(&count).Error; err != nil {
+		return err
 	}
-	err := a.db.Create(u).Error
+	if count > 0 {
+		return ErrRegistrationClosed
+	}
+	err := a.db.WithContext(ctx).Create(u).Error
 	return err
 }
 

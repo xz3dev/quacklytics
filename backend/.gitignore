@@ -5,3 +5,4 @@ public/static/frontend
 server/public/frontend
 application.conf
 _data2
+/_backups/20260924-135128/app.db

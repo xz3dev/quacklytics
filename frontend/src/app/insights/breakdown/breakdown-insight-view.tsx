@@ -6,6 +6,7 @@ import {InsightSaveControls} from "@app/insights/insight-save-controls.tsx";
 import {BreakdownInsight} from "@/model/insights/breakdown-insight.ts";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {BreakdownInsightChart} from "@app/insights/breakdown/breakdown-insight-chart.tsx";
+import {BreakdownInsightOptions} from "@app/insights/breakdown/breakdown-insight-options.tsx";
 
 export function BreakdownInsightView() {
     const {data, update} = useContext(BreakdownInsightContext)
@@ -32,13 +33,14 @@ export function BreakdownInsightView() {
                     <InsightSaveControls save={handleSave} discard={handleDiscard}/>
                 </div>
             </div>}
+            {!readOnly && <BreakdownInsightOptions/>}
             {data && (
                 <Card>
                     <CardHeader>
                         <CardTitle>{data.name}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <BreakdownInsightChart insight={data}/>
+                        <BreakdownInsightChart insight={data} showTable={true}/>
                     </CardContent>
                 </Card>
             )}

@@ -7,12 +7,12 @@ import birb from "@assets/birb.svg";
 import {useAuthStore} from "@/services/auth.ts";
 import {FormEvent, useState} from "react";
 import {Link, useNavigate} from "react-router";
+import {isAxiosError} from "axios";
 
 export function RegisterForm({
                                  className,
                                  ...props
                              }: React.ComponentProps<"div">) {
-    // Assuming your auth store provides a register method. If it doesn't, update accordingly.
     const {register: registerUser} = useAuthStore();
     const [error, setError] = useState<string>("");
     const navigate = useNavigate();
@@ -35,7 +35,9 @@ export function RegisterForm({
             const newLocation = await registerUser(email, password);
             navigate(newLocation);
         } catch (err) {
-            setError("Registration failed. Please check your details.");
+            setError(isAxiosError(err) && err.response?.data?.code === "registration_closed"
+                ? "An account already exists. Registration is closed. Please log in."
+                : "Registration failed. Please check your details.");
             console.error("Registration error:", err);
         }
     };

@@ -6,6 +6,7 @@ import {InsightSaveControls} from "@app/insights/insight-save-controls.tsx";
 import {RetentionInsight} from "@/model/insights/retention-insight.ts";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {RetentionInsightChart} from "@app/insights/retention/retention-insight-chart.tsx";
+import {RetentionInsightOptions} from "@app/insights/retention/retention-insight-options.tsx";
 
 export function RetentionInsightView() {
     const {data, update} = useContext(RetentionInsightContext)
@@ -32,6 +33,7 @@ export function RetentionInsightView() {
                     <InsightSaveControls save={handleSave} discard={handleDiscard}/>
                 </div>
             </div>}
+            {!readOnly && <RetentionInsightOptions/>}
             {data && (
                 <Card>
                     <CardHeader>

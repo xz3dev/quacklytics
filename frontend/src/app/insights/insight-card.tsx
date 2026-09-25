@@ -93,7 +93,7 @@ function renderInsight(insight: Insight) {
                     update: () => undefined,
                     updateFn: () => undefined,
                 }}>
-                    <BreakdownInsightChart insight={insight as BreakdownInsight}/>
+                    <BreakdownInsightChart insight={insight as BreakdownInsight} showTable={false}/>
                 </BreakdownInsightContext.Provider>
             )
         case 'Retention':

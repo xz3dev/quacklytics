@@ -21,7 +21,7 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="analytics_default.db2" single-connection="true" uuid="a623bca1-5942-493a-99d8-0e7e9cbdf35b">
+    <data-source source="LOCAL" name="analytics_default.db2" connection-mode="Single" single-connection="true" uuid="a623bca1-5942-493a-99d8-0e7e9cbdf35b">
       <driver-ref>duckdb</driver-ref>
       <synchronize>true</synchronize>
       <configured-by-url>true</configured-by-url>

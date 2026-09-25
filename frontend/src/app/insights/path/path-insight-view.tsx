@@ -6,6 +6,7 @@ import {InsightSaveControls} from "@app/insights/insight-save-controls.tsx";
 import {PathInsight} from "@/model/insights/path-insight.ts";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {PathInsightChart} from "@app/insights/path/path-insight-chart.tsx";
+import {PathInsightOptions} from "@app/insights/path/path-insight-options.tsx";
 
 export function PathInsightView() {
     const {data, update} = useContext(PathInsightContext)
@@ -32,6 +33,7 @@ export function PathInsightView() {
                     <InsightSaveControls save={handleSave} discard={handleDiscard}/>
                 </div>
             </div>}
+            {!readOnly && <PathInsightOptions/>}
             {data && (
                 <Card>
                     <CardHeader>

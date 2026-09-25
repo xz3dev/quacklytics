@@ -3,6 +3,7 @@ package auth
 import (
 	"analytics/log"
 	errors2 "analytics/server/errors"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aarondl/authboss/v3"
@@ -27,6 +28,15 @@ type errorHandler struct {
 func (e errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := e.Handler(w, r)
 	if err == nil {
+		return
+	}
+	if errors.Is(err, ErrRegistrationClosed) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{
+			"code":    "registration_closed",
+			"message": ErrRegistrationClosed.Error(),
+		})
 		return
 	}
 
