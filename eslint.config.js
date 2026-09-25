@@ -1,0 +1,7 @@
+import tseslint from 'typescript-eslint'
+import unusedImports from 'eslint-plugin-unused-imports'
+export default tseslint.config(
+ {ignores:['**/node_modules/**','**/dist/**','**/routeTree.gen.ts','backend/**','poc/**','apps/home/**','playwright-report/**','test-results/**']},
+ {files:['apps/web/src/**/*.{ts,tsx}','packages/**/*.ts','packages/**/*.tsx','tests/**/*.ts','scripts/**/*.ts'],languageOptions:{parser:tseslint.parser,parserOptions:{ecmaFeatures:{jsx:true}}},plugins:{'@typescript-eslint':tseslint.plugin,'unused-imports':unusedImports},rules:{'unused-imports/no-unused-imports':'error','@typescript-eslint/no-explicit-any':'error','@typescript-eslint/no-non-null-assertion':'error','@typescript-eslint/ban-ts-comment':['error',{'ts-ignore':true,'ts-nocheck':true,'ts-expect-error':true}],'no-restricted-syntax':['error',{selector:'TSAsExpression:not([typeAnnotation.type="TSTypeReference"][typeAnnotation.typeName.name="const"])',message:'Use runtime validation, narrowing, inference or satisfies instead of type assertions.'},{selector:'TSTypeAssertion',message:'Do not bypass type checking with an assertion.'}]}},
+ {files:['apps/web/src/**/*.{ts,tsx}'],languageOptions:{parserOptions:{project:'./apps/web/tsconfig.json'}},rules:{'@typescript-eslint/no-unsafe-assignment':'error','@typescript-eslint/no-unsafe-call':'error','@typescript-eslint/no-unsafe-member-access':'error','@typescript-eslint/no-unsafe-return':'error','@typescript-eslint/no-unsafe-argument':'error'}}
+)

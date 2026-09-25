@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+  :root {
+    --background: 0 0% 97%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 15%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 0 0% 89%;
+    --accent-foreground: 0 0% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 84%;
+    --input: 0 0% 91%;
+    --ring: 0 0% 40%;
+    --chart-1: 220 72% 55%;
+    --chart-2: 267 84% 62%;
+    --chart-3: 262 72% 77%;
+    --chart-4: 232 78% 77%;
+    --chart-5: 340 80% 68%;
+    --radius: 0.5rem;
+    --shadow-floating: 0 12px 40px -12px rgb(0 0 0 / 0.18);
+    --sidebar-background: 0 0% 93%;
+    --sidebar-foreground: 0 0% 27%;
+    --sidebar-primary: 0 0% 15%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 86%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 82%;
+    --sidebar-ring: 0 0% 40%;
+  }
+  .dark {
+    --background: 0 0% 9%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 17%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 22%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 19%;
+    --muted-foreground: 0 0% 68%;
+    --accent: 0 0% 27%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 30%;
+    --input: 0 0% 24%;
+    --ring: 0 0% 72%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --shadow-floating: 0 12px 40px -12px rgb(0 0 0 / 0.4);
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 23%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 30%;
+    --sidebar-ring: 0 0% 72%;
+  }
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.dark {
+  input {
+    color-scheme: dark;
+  }
+}
+
+.analytics-tooltip {
+  --ts-chart-tooltip-background: hsl(var(--popover));
+  --ts-chart-tooltip-color: hsl(var(--popover-foreground));
+  --ts-chart-tooltip-border: 1px solid hsl(var(--border) / 0.5);
+  --ts-chart-tooltip-border-radius: 12px;
+  --ts-chart-tooltip-shadow: 0 6px 24px -8px rgb(0 0 0 / 0.2);
+  --ts-chart-tooltip-padding: 12px 14px;
+  --ts-chart-tooltip-font: 400 12px/1.5 system-ui, sans-serif;
+  --ts-chart-tooltip-max-width: min(320px, calc(100% - 16px));
+  min-width: min(180px, calc(100% - 16px));
+}
+
+.analytics-tooltip .ts-chart-tooltip__title {
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  padding-bottom: 6px;
+}
+
+.analytics-tooltip .ts-chart-tooltip__rows {
+  display: grid;
+  gap: 7px;
+}
+
+.analytics-tooltip .ts-chart-tooltip__row > :last-child {
+  padding-left: 20px;
+  font-weight: 600;
+}

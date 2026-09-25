@@ -1,0 +1,41 @@
+# Local development only. Credentials below are intentionally public.
+services:
+  garage:
+    image: dxflrs/garage:v2.3.0
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    ports:
+      - "127.0.0.1:3900:3900"
+    environment:
+      GARAGE_DEFAULT_ACCESS_KEY: GK11111111111111111111111111111111
+      GARAGE_DEFAULT_SECRET_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      GARAGE_DEFAULT_BUCKET: quacklytics
+    volumes:
+      - ./dev/garage.toml:/etc/garage.toml:ro
+      - garage-data:/var/lib/garage
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  garage-init:
+    image: amazon/aws-cli:2.34.0
+    depends_on:
+      garage:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: GK11111111111111111111111111111111
+      AWS_SECRET_ACCESS_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      AWS_DEFAULT_REGION: garage
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+    volumes:
+      - ./dev/cors.json:/cors.json:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        for attempt in $$(seq 1 30); do
+          aws --endpoint-url http://garage:3900 s3api put-bucket-cors --bucket quacklytics --cors-configuration file:///cors.json && exit 0
+          sleep 1
+        done
+        exit 1
+volumes:
+  garage-data:

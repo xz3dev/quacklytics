@@ -41,13 +41,10 @@ jobs:
           push: true
           platforms: linux/arm64
           provenance: false
-          build-args: |
-            GOOS=linux
-            GOARCH=arm64
           tags: |
             ghcr.io/xz3dev/quacklytics/arm64:latest
             ghcr.io/xz3dev/quacklytics/arm64:${{ github.sha }}
-            ghcr.io/xz3dev/quacklytics/amd64:${{ github.ref_name }}
+            ghcr.io/xz3dev/quacklytics/arm64:${{ github.ref_name }}
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: Dockerfile
@@ -81,9 +78,6 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          build-args: |
-            GOOS=linux
-            GOARCH=amd64
           tags: |
             ghcr.io/xz3dev/quacklytics/amd64:latest
             ghcr.io/xz3dev/quacklytics/amd64:${{ github.sha }}

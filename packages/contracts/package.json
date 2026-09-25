@@ -1,0 +1,12 @@
+{
+  "name": "@quacklytics/contracts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./orbit": "./src/orbit.ts"
+  },
+  "dependencies": {
+    "zod": "latest"
+  }
+}

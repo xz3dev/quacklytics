@@ -3,3 +3,14 @@ events.csv
 node_modules/
 .plan
 /.playwright-mcp
+# Workspace outputs and local data
+**/dist/
+/apps/web/data/
+**/.astro/
+**/.tanstack/
+**/*.tsbuildinfo
+apps/web/src/routeTree.gen.ts
+playwright-report/
+test-results/
+
+.env.local

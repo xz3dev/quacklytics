@@ -1,11 +1,25 @@
-# this is for local testing purposes. view /docs/docker-compose.yml for a deployment example.
-
+include:
+  - compose.dev.yml
 services:
-  atest:
-    build:
-      context: .
-      no_cache: true
+  analytics:
+    build: .
     ports:
-      - "3001:3000"
+      - "3000:3000"
+    depends_on:
+      garage-init:
+        condition: service_completed_successfully
+    environment:
+      APP_ORIGIN: http://localhost:3000
+      DATA_DIR: /data
+      S3_ENDPOINT: http://garage:3900
+      S3_PUBLIC_ENDPOINT: http://127.0.0.1:3900
+      S3_REGION: garage
+      S3_BUCKET: quacklytics
+      S3_ACCESS_KEY_ID: GK11111111111111111111111111111111
+      S3_SECRET_ACCESS_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
     volumes:
-      - ./backend/application.conf:/app/application.conf
+      - analytics-data:/data
+    stop_grace_period: 20s
+    restart: unless-stopped
+volumes:
+  analytics-data:

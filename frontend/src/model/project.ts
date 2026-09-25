@@ -1,7 +1,0 @@
-export interface Project {
-    id: string
-    name: string
-    partition: string
-    autoload: number
-    corsOrigins: string[]
-}

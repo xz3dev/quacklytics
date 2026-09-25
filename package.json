@@ -1,0 +1,41 @@
+{
+  "name": "quacklytics",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd apps/web dev",
+    "build": "bun run --cwd packages/tracker build && bun run --cwd apps/web build",
+    "start": "bun run --cwd apps/web start",
+    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd packages/tracker typecheck && tsc -p tsconfig.tooling.json",
+    "lint": "eslint apps/web/src packages tests scripts",
+    "test:e2e": "playwright test",
+    "test": "bun run test:e2e",
+    "check:boundaries": "bun scripts/check-boundaries.ts",
+    "check": "bun run build && bun run typecheck && bun run lint && bun run check:boundaries && bun run test:e2e",
+    "format": "prettier --write apps/web/src packages tests scripts apps/web/server.ts",
+    "build:docs": "bun run --cwd packages/tracker build && bun run --cwd apps/home build",
+    "seed:dev": "bun scripts/seed-dev.ts",
+    "storage:up": "docker compose -f compose.dev.yml up -d --wait garage && docker compose -f compose.dev.yml run --rm garage-init",
+    "storage:down": "docker compose -f compose.dev.yml down"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "latest",
+    "@types/bun": "1.3.4",
+    "eslint": "^9.39.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "latest",
+    "zod": "^4.6.5",
+    "prettier": "3.8.1",
+    "@types/node": "^22.10.2",
+    "eslint-plugin-unused-imports": "4.4.1"
+  },
+  "patchedDependencies": {
+    "@duckdb/duckdb-wasm@1.33.1-dev53.0": "patches/@duckdb%2Fduckdb-wasm@1.33.1-dev53.0.patch"
+  }
+}

@@ -1,130 +1,123 @@
-# This is _Quacklytics_ 🦆
+# Quacklytics 🦆
 
-_Quacklytics_ is an open-source analytics service built using **DuckDB** and designed to run analytical queries directly inside
-your browser. It provides a seamless, lightweight, and high-performance way to process your data without the need for
-expensive server-side compute resources.
+Self-hosted analytics with a TypeScript backend and analytical queries running in your browser.
 
-## Why does this exist?
-- Saves server resources by using the client for heavy computations
-- Easy to deploy (one binary / docker image).
-- Open Source
-- Cheap to scale (storage is cheap, usually).
+## Development
 
-## Getting Started
+Use Bun **1.3.4** (the runtime used for benchmarks and E2E validation).
 
-Currently only deployment via docker is supported. Single binaries will be available at a later stage.
-
-### Preparations (required for both methods)
-
-You must create an empty configuration file called `application.conf` in your working directory.
-
-```shell
-touch application.conf
+```sh
+bun install --frozen-lockfile
+cp .env.example apps/web/.env.local
+bun run storage:up
+bun run dev
 ```
 
-This file will be populated with the default config on first start.
-If you want to modify the config before that, you can grab
-the [default config](backend/config/default.conf) from the git repo.
+Garage runs at `http://127.0.0.1:3900` with a private `quacklytics` bucket. `storage:up` is repeatable and configures CORS for the development and test origins. `bun run storage:down` stops it while retaining its named volume. The example credentials are public and intended only for local development.
 
-### Architecture
-There are 2 image variants: ARM64 and AMD64. Choose whatever you need depending on your servers architecture:
-- `ghcr.io/xz3dev/quacklytics/amd64` for Intel/AMD based CPUs
-- `ghcr.io/xz3dev/quacklytics/arm64` for ARM / Apple Silicon based CPUs
+Open `http://127.0.0.1:3000`, register the first administrator, then create a project.
+Registration closes after the first account. Project settings provide ingestion keys and allowed browser origins.
 
-### Using Docker Compose
-```yaml
-services:
-  quacklytics:
-    image: ghcr.io/xz3dev/quacklytics/amd64:latest # arm64 or amd64
-    ports:
-      - "3001:3000"
-    volumes:
-      - data:/_data
-      - tmp:/_tmp
-
-
-volumes:
-  data:
-  tmp:
+```sh
+bun run build
+bun run start
 ```
 
-### Using Docker Run
+`bun run check` builds the production app, type-checks, lints, checks browser/server boundaries, and runs Playwright E2E tests. Install the test browser once with `bunx playwright install chromium` (Linux CI uses `--with-deps`). Start Garage with `bun run storage:up` before testing. Tests use fresh temporary SQLite directories, unique project object prefixes in the development bucket, and the production server.
 
-```shell
-docker run -d \
-  -p 3001:3000 \
-  -v data:/_data \
-  -v tmp:/_tmp \
-  --name quacklytics \
-  ghcr.io/xz3dev/quacklytics/amd64:latest
+## Workspace
+
+- `apps/web`: TanStack Start application and TypeScript backend worker.
+- `packages/contracts`: Zod schemas and inferred API, chart, query, and event types shared across the application.
+- `packages/tracker`: TypeScript ingestion client, pageviews, click tracking, and consent UI.
+- `apps/home`: Astro documentation website.
+- `tests/e2e`: browser, HTTP, tracker retry, and process crash/restart flows.
+- `poc/ingestion`: original benchmark harness and results.
+- `poc/legacy-go-backend`: historical Go implementation retained for those benchmarks; excluded from the app and Docker image.
+
+TanStack Start/Router handles routing, Query handles requests and analytical query caching, DB provides reactive insight/dashboard collections, Form handles authentication/project creation, Store holds browser state, Table/Virtual render tabular data, Charts renders analytics, Pacer debounces queries, and Hotkeys provides query execution shortcuts.
+
+Bun's native `bun:sqlite` is authoritative. Every connection enables WAL, `synchronous=FULL`, foreign keys, and a busy timeout. App metadata/authentication lives in `app.sqlite`; each project has its own SQLite database. HTTP ingestion commits events, sessions, identities, schemas, idempotency records, and export jobs in one transaction before acknowledging the request.
+
+A backend worker isolates synchronous SQLite from the web server. DuckDB on the server converts snapshots to compressed Parquet, stages them temporarily, and uploads them to S3 before publishing the catalog. S3 is the only supported Parquet store. DuckDB-WASM executes analytical SQL over an `events` view referencing private S3 objects through signed HTTPS URLs (HTTP on localhost). Browser reads use HTTP ranges, without importing whole snapshots into a local events table. Export jobs survive restarts, retry every 30 seconds, and also run on catalog requests. Browser catalogs refresh every 15 seconds while visible. Revisions include late events and identity changes. Signed URLs expire after one hour and refresh before expiry, including after an inactive tab resumes. Superseded objects are retained for one hour after replacement; background cleanup also removes abandoned uploads.
+
+Exports are partitioned by UTC month. Only dirty partitions are rebuilt; identity upgrades also invalidate historical session partitions. A consistent SQLite read transaction captures all dirty partitions before the catalog is atomically published. All historical partitions are available to browser queries through remote Parquet reads. Open or reload the project to fetch the latest catalog; there is no periodic data refresh. Signed access is renewed when needed for queries in long-lived tabs. The benchmark figures in `poc` measure ingestion pipelines, not this complete HTTP application.
+
+## Configuration and Docker
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ORIGIN` | `http://127.0.0.1:3000` | Exact public origin for authentication |
+| `DATA_DIR` | `./data` relative to `apps/web` | Durable SQLite/auth directory |
+| `S3_ENDPOINT` | Required | Backend S3-compatible endpoint |
+| `S3_PUBLIC_ENDPOINT` | `S3_ENDPOINT` | Browser-reachable endpoint used when signing URLs |
+| `S3_REGION` | Required | Bucket region (`garage` for local development) |
+| `S3_BUCKET` | Required | Private Parquet bucket |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Required | Backend-only bucket credentials |
+| `PORT` | `3000` | Production listen port |
+| `HOST` | `0.0.0.0` | Production bind address |
+| `AUTH_SECRET` | Generated and persisted in `DATA_DIR/auth-secret` | Optional stable authentication secret |
+
+```sh
+docker compose up --build
 ```
 
-## Sending Data
+The included Compose file starts Garage and the app for local development, using `http://localhost:3000` and persistent SQLite and Garage volumes. For production, supply your own private S3 bucket and credentials; configure its CORS to allow your app origin, GET/HEAD and Range, and expose Content-Range, Content-Length, Accept-Ranges, ETag and Last-Modified (see `dev/cors.json`). The browser endpoint must be accessible to users and use HTTPS outside localhost. Set `APP_ORIGIN` to your external HTTPS origin behind a reverse proxy. Keep one application process per data directory on a local filesystem. To back up, stop the service and copy the entire data directory, including the auth secret and SQLite WAL files. Back up the S3 bucket as well. Local Parquet directories and the old download endpoint are no longer supported. Existing SQLite events are automatically re-exported when the S3 destination is first configured or changed; old local Parquet files are not read.
 
-The **AppendEvent** endpoint allows you to send one event or a batch of events to the server for processing. The API key identifies the project.
+This is a breaking, pre-deployment migration: use a **new empty data directory**. The old Go database, HOCON config, password hashes, and ingestion protocol are not imported. Startup rejects unmarked nonempty directories.
 
-### Endpoint URL
+## Ingestion
 
-```
-POST /api/event
-```
-
-### Request Format
-
-**Request Headers**
-
-- **Content-Type:** `application/json`
-- **X-API-KEY:** `your-api-key`
-
-**Request Body**
-
-The endpoint accepts a single event object or an array of events. The payload should include the following fields:
-
-- **eventType**: The type of event (e.g., `"user_signup"`).
-- **sessionId**: Optional session identifier for pseudo-anonymous events.
-- **personId**: Optional person identifier. Sending both `sessionId` and `personId` upgrades the session to that person.
-- **timestamp** (ISO 8601 datetime): The time when the event occurred.
-- **properties**: Event properties stored as JSON and available for querying.
-- **personProperties**: Optional person properties. The latest value by event timestamp wins per property.
-
-### Example
+`POST /api/ingest`, with `Content-Type: application/json` and `X-API-KEY` from project settings:
 
 ```json
 {
-  "eventType": "user_signup",
-  "personId": "person_123",
-  "sessionId": "session_abc",
-  "timestamp": "2025-02-23T10:00:00Z",
-  "properties": {
-    "plan": "premium",
-    "referrer": "google"
-  },
-  "personProperties": {
-    "email": "test@example.com"
-  }
+  "requestId": "bb7b720a-0d30-4f6b-a159-910a56b70c51",
+  "events": [{
+    "id": "24fc73e5-aa9b-4c28-bc3f-3bd02a5bc0c3",
+    "eventType": "signup",
+    "timestamp": "2026-09-25T12:00:00Z",
+    "sessionId": "browser-session",
+    "personId": "person-1",
+    "properties": {"plan": "pro"},
+    "personProperties": {"name": "Ada"}
+  }]
 }
 ```
 
-## Contributing
+Batches contain 1–1000 events and at most 2 MB of JSON. Retry the same payload with the same request/event IDs after transport errors or 5xx/429 responses. Reusing an ID with different content returns 409 and rolls back the batch. Response `{committed, duplicates, revision}` is sent after commit. Nested JSON values retain their types. Sending a session and person together links historical anonymous events; a session cannot be reassigned to a different person. Person properties use event timestamp, then event ID, to resolve ties deterministically.
 
-We welcome contributions from the community! If you'd like to contribute:
+```ts
+import { createClient } from '@quacklytics/client'
 
-1. Fork the repository.
-2. Make your changes.
-3. Submit a pull request.
-
-Please make sure to follow our [contribution guidelines](CONTRIBUTING.md).
-
-## License
-
-Quacklytics is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Screenshots
-
-![Screenshot](util/screenshots/insight.png)
-![Screenshot](util/screenshots/dashboard.png)
-
----
+const client = createClient({
+  hostname: 'https://analytics.example.com',
+  apiKey: 'your-project-key',
+  autoTrackPageviews: false,
+})
+await client.send({ eventType: 'signup', properties: { plan: 'pro' } })
 ```
-Happy Quacking! 🦆
+
+The tracker creates stable IDs and retries transient failures without duplicating committed events. Browser ingestion requires its exact origin in the project's allowed origins; server-to-server ingestion requires the key. Administrative endpoints require the administrator's session cookie.
+
+See [AGENTS.md](AGENTS.md) for the E2E-first testing policy [MIGRATION_REPORT.md](MIGRATION_REPORT.md) for implementation/verification results, and [MIGRATION_PLAN.md](MIGRATION_PLAN.md) for the original design.
+
+## Development demo data
+
+Generate realistic Orbit product activity through your local ingestion endpoint:
+
+```sh
+QUACKLYTICS_API_KEY=your-local-key bun run seed:dev
 ```
+
+To create a new demo project with all six chart types already configured, supply your existing local admin credentials:
+
+```sh
+QUACKLYTICS_PASSWORD=your-local-password bun run seed:dev --email you@example.com
+```
+
+Defaults are 250 users per chart family and 365 days of history (roughly 350 events per day). Run `bun run seed:dev --help` for options and see [the demo guide](scripts/demo/README.md) for event names and chart recipes. Each run adds a fresh dataset.
+
+### DuckDB WASM range-read patch
+
+`patches/@duckdb%2Fduckdb-wasm@1.33.1-dev53.0.patch` fixes the MVP worker's signed-URL range probe to read `Content-Range` instead of splitting `Content-Length` ([upstream issue #2228](https://github.com/duckdb/duckdb-wasm/issues/2228)). Bun applies it on install. Browser E2E coverage verifies HTTP 206 reads directly from Garage; keep that assertion when upgrading DuckDB.
