@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   ListTree,
   LucideIcon,
-  Settings2,
+  Cable,
   Filter,
 } from "lucide-react";
 import { useMatch } from "@/lib/navigation";
@@ -21,7 +21,7 @@ export function useSidebarData(): SidebarData {
   const isEvents = useMatch("/app/:projectid/events");
   const isData = useMatch("/app/:projectid/data");
   // const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
-  const isSettings = useMatch("/app/:projectid/settings");
+  const isIngestion = useMatch("/app/:projectid/ingestion");
   const isQueryTester = useMatch("/app/:projectid/queries");
   const projectUrl = `/app/${projectId}`;
 
@@ -79,10 +79,10 @@ export function useSidebarData(): SidebarData {
         ],
       },
       {
-        title: "Settings",
-        url: `${projectUrl}/settings`,
-        icon: Settings2,
-        isActive: !!isSettings,
+        title: "Ingestion",
+        url: `${projectUrl}/ingestion`,
+        icon: Cable,
+        isActive: !!isIngestion,
         items: [],
       },
       {

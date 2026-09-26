@@ -184,12 +184,12 @@ export async function handleApi(request: Request): Promise<Response> {
       }));
       if (id) {
         const key = keys.find((key) => key.id === id);
-        if (!key) throw new RequestError(404, "API key not found");
+        if (!key) throw new RequestError(404, "ingestion key not found");
         const fullKey = readApiKeySecret(key.id);
         if (!fullKey)
           throw new RequestError(
             409,
-            "This older key cannot be recovered. Create a new API key to copy its full value.",
+            "This older key cannot be recovered. Create a new ingestion key to copy its full value.",
           );
         return json({ ...key, key: fullKey });
       }

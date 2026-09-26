@@ -12,7 +12,7 @@ interface ApiKeyRowProps {
 }
 
 export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
-  // Disable automatic fetching until the API key is requested.
+  // Disable automatic fetching until the ingestion key is requested.
   const { data, refetch, isFetching, error } = useApiKey(projectId, apiKey.id, {
     enabled: false,
   });
@@ -33,23 +33,23 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
     if (data?.key && !isFetching) {
       try {
         await navigator.clipboard.writeText(data.key);
-        toast.success("API key copied to clipboard!");
+        toast.success("ingestion key copied to clipboard!");
       } catch (error) {
-        console.error("Failed to copy API key:", error);
-        toast.error("Failed to copy API key");
+        console.error("Failed to copy ingestion key:", error);
+        toast.error("Failed to copy ingestion key");
       }
     }
   };
 
   const handleDelete = async () => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this API key?",
+      "Are you sure you want to delete this ingestion key?",
     );
     if (!confirmed) return;
     try {
       await deleteMutation.mutateAsync(apiKey.id);
     } catch (error) {
-      console.error("Failed to delete API key:", error);
+      console.error("Failed to delete ingestion key:", error);
     }
   };
 
@@ -83,7 +83,7 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
             <>
               <Button
                 variant="ghost"
-                aria-label="Copy API key"
+                aria-label="Copy ingestion key"
                 onClick={handleCopy}
                 className="ml-2 p-1 w-6"
               >
@@ -91,7 +91,7 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
               </Button>
               <Button
                 variant="ghost"
-                aria-label="Hide API key"
+                aria-label="Hide ingestion key"
                 onClick={handleToggleKey}
                 className="ml-2 p-1 w-6"
               >
@@ -102,7 +102,7 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
           {!isKeyVisible && (
             <Button
               variant="ghost"
-              aria-label="Reveal API key"
+              aria-label="Reveal ingestion key"
               onClick={handleToggleKey}
               className="ml-2 p-1 w-6"
             >

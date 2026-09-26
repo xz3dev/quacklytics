@@ -17,7 +17,7 @@ export function useProjectSwitch() {
       `/app/${newProjectId}`,
     );
 
-    navigate(`${newPath}${location.search}`);
+    navigate(`${newPath}${location.searchStr}`);
   };
 
   return switchProject;

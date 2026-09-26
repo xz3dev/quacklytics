@@ -1,5 +1,6 @@
+import { RenameProjectDialog } from "./rename-project-dialog";
 import * as React from "react";
-import { ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsUpDown, Pencil, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,9 @@ export function ProjectSwitcher() {
 
   const activeProject = projects.find(
     (project) => project.id === activeProjectId,
+  );
+  const [editingProject, setEditingProject] = React.useState<Project | null>(
+    null,
   );
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [newProjectName, setNewProjectName] = React.useState("");
@@ -84,6 +88,7 @@ export function ProjectSwitcher() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
+              aria-label="Select project"
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
@@ -108,16 +113,30 @@ export function ProjectSwitcher() {
               Projects
             </DropdownMenuLabel>
             {projects.map((project) => (
-              <DropdownMenuItem
-                key={project.id}
-                onClick={() => navigateToProject(project)}
-                className="gap-2 p-2"
-              >
-                <div className="flex size-6 items-center justify-center rounded-sm bg-muted">
-                  {project.name?.[0]?.toUpperCase()}
-                </div>
-                {project.name}
-              </DropdownMenuItem>
+              <div key={project.id} className="flex items-center gap-1">
+                <DropdownMenuItem
+                  onClick={() => navigateToProject(project)}
+                  className="min-w-0 flex-1 gap-2 p-2"
+                >
+                  <div className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-muted">
+                    {project.name?.[0]?.toUpperCase()}
+                  </div>
+                  <span className="truncate">{project.name}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  asChild
+                  onSelect={() => setEditingProject(project)}
+                >
+                  <button
+                    type="button"
+                    aria-label={`Rename ${project.name}`}
+                    title="Rename project"
+                    className="justify-center p-2"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                </DropdownMenuItem>
+              </div>
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -130,6 +149,13 @@ export function ProjectSwitcher() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+
+      {editingProject && (
+        <RenameProjectDialog
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+        />
+      )}
 
       {/* Project creation dialog */}
       {isCreateOpen && (

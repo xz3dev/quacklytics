@@ -35,7 +35,7 @@ test("project pages share insight spacing in both themes and remain usable on mo
     ["data", "Data"],
     ["events", "Events"],
     ["queries", "Queries"],
-    ["settings", "Settings"],
+    ["ingestion", "Ingestion"],
   ];
   for (const theme of ["light", "dark"]) {
     await page.addInitScript(

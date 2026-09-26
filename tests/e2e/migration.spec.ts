@@ -149,17 +149,19 @@ function event(eventType: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-test("API key copy uses the complete persisted key and respects project isolation", async ({
+test("ingestion key copy uses the complete persisted key and respects project isolation", async ({
   page,
   context,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const fixture = await projectFixture(page, "Copy key E2E");
-  await page.goto(`/app/${fixture.project}/settings`);
+  await page.goto(`/app/${fixture.project}/ingestion`);
   await page
-    .getByRole("button", { name: "Reveal API key", exact: true })
+    .getByRole("button", { name: "Reveal ingestion key", exact: true })
     .click();
-  await page.getByRole("button", { name: "Copy API key", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Copy ingestion key", exact: true })
+    .click();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe(fixture.key);
@@ -167,9 +169,11 @@ test("API key copy uses the complete persisted key and respects project isolatio
 
   await page.reload();
   await page
-    .getByRole("button", { name: "Reveal API key", exact: true })
+    .getByRole("button", { name: "Reveal ingestion key", exact: true })
     .click();
-  await page.getByRole("button", { name: "Copy API key", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Copy ingestion key", exact: true })
+    .click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toBe(fixture.key);
   const ingested = await page.request.post("/api/ingest", {
@@ -194,7 +198,7 @@ test("API key copy uses the complete persisted key and respects project isolatio
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(page.getByText("No API keys found.")).toBeVisible();
+  await expect(page.getByText("No ingestion keys found.")).toBeVisible();
   expect(
     (
       await page.request.get(`/api/${fixture.project}/apikeys/${fixture.keyId}`)
@@ -213,7 +217,7 @@ test("API key copy uses the complete persisted key and respects project isolatio
   ).toBe(401);
 });
 
-test("unrecoverable API keys display an error without offering a truncated copy", async ({
+test("unrecoverable ingestion keys display an error without offering a truncated copy", async ({
   page,
 }) => {
   const fixture = await projectFixture(page, "Old key E2E");
@@ -224,21 +228,21 @@ test("unrecoverable API keys display an error without offering a truncated copy"
         status: 409,
         json: {
           error:
-            "This older key cannot be recovered. Create a new API key to copy its full value.",
+            "This older key cannot be recovered. Create a new ingestion key to copy its full value.",
         },
       }),
   );
-  await page.goto(`/app/${fixture.project}/settings`);
+  await page.goto(`/app/${fixture.project}/ingestion`);
   await page
-    .getByRole("button", { name: "Reveal API key", exact: true })
+    .getByRole("button", { name: "Reveal ingestion key", exact: true })
     .click();
   await expect(
     page.getByText(
-      "This older key cannot be recovered. Create a new API key to copy its full value.",
+      "This older key cannot be recovered. Create a new ingestion key to copy its full value.",
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Copy API key", exact: true }),
+    page.getByRole("button", { name: "Copy ingestion key", exact: true }),
   ).toHaveCount(0);
 });
 
@@ -610,9 +614,25 @@ test("tracker retries an acknowledged request and browser SQL refreshes late dat
   ).toBeVisible();
 });
 
-test("settings and insight edits persist through the UI", async ({ page }) => {
+test("project rename, ingestion and insight edits persist through the UI", async ({
+  page,
+}) => {
   const fixture = await projectFixture(page, "Editing E2E");
-  await page.goto(`/app/${fixture.project}/settings`);
+  await page.goto(`/app/${fixture.project}/ingestion`);
+  await expect(
+    page.getByRole("link", { name: "Settings", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Rename Editing E2E", exact: true })
+    .click();
+  await page.getByLabel("Project name", { exact: true }).fill("   ");
+  await expect(
+    page.getByRole("button", { name: "Save", exact: true }),
+  ).toBeDisabled();
+
   await page
     .getByLabel("Project name", { exact: true })
     .fill("Renamed project");
@@ -621,19 +641,43 @@ test("settings and insight edits persist through the UI", async ({ page }) => {
     page.getByText("Project name updated!", { exact: true }),
   ).toBeVisible();
   await page
-    .getByLabel("Allowed origins", { exact: true })
+    .getByLabel("New origin", { exact: true })
     .fill("https://example.com");
-  await page.getByRole("button", { name: "Save origins", exact: true }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(
-    page.getByText("Allowed ingestion origins updated!", { exact: true }),
+    page.getByRole("button", {
+      name: "Remove https://example.com",
+      exact: true,
+    }),
   ).toBeVisible();
   await page.reload();
+
+  await expect(
+    page.getByRole("button", { name: "Select project", exact: true }),
+  ).toContainText("Renamed project");
+  await page
+    .getByRole("button", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Rename Renamed project", exact: true })
+    .click();
   await expect(page.getByLabel("Project name", { exact: true })).toHaveValue(
     "Renamed project",
   );
-  await expect(page.getByLabel("Allowed origins", { exact: true })).toHaveValue(
-    "https://example.com",
-  );
+  await page
+    .getByLabel("Project name", { exact: true })
+    .fill("Discarded rename");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Select project", exact: true }),
+  ).toContainText("Renamed project");
+
+  await expect(
+    page.getByRole("button", {
+      name: "Remove https://example.com",
+      exact: true,
+    }),
+  ).toBeVisible();
   const insights = z
     .array(z.object({ id: z.number(), type: z.string() }))
     .parse(
@@ -1422,4 +1466,106 @@ test("breakdown aligns bars beside truncated labels and exposes full labels on h
   await page.reload();
   await expect(label).toBeVisible();
   await expect(chart).toContainText("2");
+});
+
+test("project picker renames another project without switching and preserves errors", async ({
+  page,
+}) => {
+  const active = await projectFixture(page, "Active rename project");
+  const other = await projectFixture(page, "Other rename project");
+  await page.goto(`/app/${active.project}/ingestion`);
+  await page
+    .getByRole("button", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Rename Other rename project", exact: true })
+    .click();
+  const name = page.getByLabel("Project name", { exact: true });
+  await name.fill("Renamed other project");
+  await page.route(`**/api/${other.project}/settings`, (route) =>
+    route.fulfill({ status: 500, json: { error: "Rename unavailable" } }),
+  );
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Rename unavailable");
+  await expect(name).toHaveValue("Renamed other project");
+  await page.unroute(`**/api/${other.project}/settings`);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page).toHaveURL(`/app/${active.project}/ingestion`);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Select project", exact: true }),
+  ).toContainText("Active rename project");
+  await page
+    .getByRole("button", { name: "Select project", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem")
+    .filter({ has: page.getByText("Renamed other project", { exact: true }) })
+    .click();
+  await expect(page).toHaveURL(`/app/${other.project}/ingestion`);
+  await expect(
+    page.getByRole("button", { name: "Select project", exact: true }),
+  ).toContainText("Renamed other project");
+  await page
+    .getByRole("button", { name: "Create ingestion key", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Reveal ingestion key", exact: true }),
+  ).toHaveCount(2);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Reveal ingestion key", exact: true }),
+  ).toHaveCount(2);
+});
+
+test("allowed origins add and remove immediately with validation, persistence and isolation", async ({
+  page,
+}) => {
+  const fixture = await projectFixture(page, "Origins list");
+  const other = await projectFixture(page, "Isolated origins");
+  await page.goto(`/app/${fixture.project}/ingestion`);
+  const input = page.getByLabel("New origin", { exact: true });
+  const add = page.getByRole("button", { name: "Add", exact: true });
+  const remove = page.getByRole("button", {
+    name: "Remove https://example.com",
+    exact: true,
+  });
+  await expect(page.getByRole("button", { name: "Save origins" })).toHaveCount(
+    0,
+  );
+  await input.fill("https://example.com/path");
+  await add.click();
+  await expect(page.getByRole("alert")).toContainText("without a path");
+  await expect(remove).toHaveCount(0);
+  await input.fill("https://example.com");
+  await add.click();
+  await expect(remove).toBeVisible();
+  await expect(input).toHaveValue("");
+  await input.fill("https://example.com");
+  await add.click();
+  await expect(page.getByRole("alert")).toContainText("already allowed");
+  await expect(remove).toHaveCount(1);
+  await page.reload();
+  await expect(remove).toBeVisible();
+  const ingest = () =>
+    page.request.post("/api/ingest", {
+      headers: { "X-API-KEY": fixture.key, Origin: "https://example.com" },
+      data: { requestId: crypto.randomUUID(), events: [event("origin-list")] },
+    });
+  expect((await ingest()).status()).toBe(200);
+  await page.route(`**/api/${fixture.project}/settings`, (route) =>
+    route.fulfill({ status: 500, json: { error: "Origins unavailable" } }),
+  );
+  await remove.click();
+  await expect(page.getByRole("alert")).toHaveText("Origins unavailable");
+  await expect(remove).toBeVisible();
+  await page.unroute(`**/api/${fixture.project}/settings`);
+  await remove.click();
+  await expect(remove).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByText("No allowed origins added.")).toBeVisible();
+  expect((await ingest()).status()).toBe(403);
+  await page.goto(`/app/${other.project}/ingestion`);
+  await expect(page.getByText("No allowed origins added.")).toBeVisible();
 });
