@@ -19,6 +19,14 @@ import { Button } from "@/components/ui/button.tsx";
 import { Plus } from "lucide-react";
 import { generateRandomId } from "@lib/utils/ids.ts";
 import { FunnelStep } from "@/model/insights/funnel-insights.ts";
+import { funnelCountingMode } from "@quacklytics/contracts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function FunnelInsightSteps() {
   const { data, updateFn } = useContext(FunnelInsightContext);
@@ -58,6 +66,39 @@ export function FunnelInsightSteps() {
 
   return (
     <div>
+      <div className="mb-5 space-y-2">
+        <label htmlFor="funnel-counting-mode" className="text-sm font-medium">
+          Count
+        </label>
+        <Select
+          value={data?.config.funnel.countingMode ?? "uniqueUsers"}
+          onValueChange={(value) => {
+            const countingMode = funnelCountingMode.parse(value);
+            updateFn?.((draft) => {
+              draft.config.funnel.countingMode = countingMode;
+            });
+          }}
+        >
+          <SelectTrigger
+            id="funnel-counting-mode"
+            aria-label="Funnel counting method"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="uniqueUsers">Unique users</SelectItem>
+            <SelectItem value="uniqueSessions">Unique sessions</SelectItem>
+            <SelectItem value="eventCount">Event count</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          {data?.config.funnel.countingMode === "eventCount"
+            ? "Counts each matching event after the user completes the preceding steps. Repeated events can make conversion exceed 100%."
+            : data?.config.funnel.countingMode === "uniqueSessions"
+              ? "Counts each session once per step. All preceding steps must occur in the same session."
+              : "Counts each user once per step, across sessions. Anonymous visitors are identified by session."}
+        </p>
+      </div>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

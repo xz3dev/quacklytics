@@ -63,7 +63,7 @@ test("Bun demo command provisions real chart data and supports an existing inges
   const projects = project
     .array()
     .parse(await (await page.request.get("/api/projects")).json());
-  const demo = projects.find((item) => item.name.startsWith("Orbit · Demo"));
+  const demo = projects.find((item) => item.name.startsWith("Demo "));
   if (!demo) throw new Error("Demo project not created");
   const exportedCount = async () => {
     const files = z
@@ -79,8 +79,16 @@ test("Bun demo command provisions real chart data and supports an existing inges
     .parse(await (await page.request.get(`/api/${demo.id}/dashboards`)).json());
   let playground = dashboards.find((item) => item.home);
   if (!playground) throw new Error("No home dashboard");
-  expect(playground.name).toBe("Orbit · Chart playground");
+  expect(playground.name).toBe("Chart playground");
   expect(new Set(playground.insights.map((item) => item.type)).size).toBe(6);
+  expect(playground.insights.map((item) => item.name)).toEqual([
+    "Daily workspace visits and completed tasks",
+    "Revenue this month (EUR)",
+    "Feature adoption",
+    "Pricing to paid subscription",
+    "Workspace retention by signup cohort",
+    "Journeys from the home page",
+  ]);
   if (process.env.E2E_DEV === "1") {
     await page.goto(`/app/${demo.id}/dashboards`);
     const created = page.waitForResponse(
@@ -173,16 +181,16 @@ test("Bun demo command provisions real chart data and supports an existing inges
   );
   await page.goto(`/app/${demo.id}/dashboards/${playground.id}`);
   for (const name of [
-    "Orbit · Daily workspace visits and completed tasks",
-    "Orbit · Feature adoption",
-    "Orbit · Pricing to paid subscription",
-    "Orbit · Workspace retention by signup cohort",
-    "Orbit · Journeys from the home page",
+    "Daily workspace visits and completed tasks",
+    "Feature adoption",
+    "Pricing to paid subscription",
+    "Workspace retention by signup cohort",
+    "Journeys from the home page",
   ])
     await expect(page.getByRole("img", { name, exact: true })).toBeVisible();
   await expect(page.getByText(/^Error:/)).toHaveCount(0);
   const trendChart = page.getByRole("img", {
-    name: "Orbit · Daily workspace visits and completed tasks",
+    name: "Daily workspace visits and completed tasks",
     exact: true,
   });
   await expect(trendChart).toContainText(/[A-Z][a-z]{2} \d{1,2}/);
@@ -225,11 +233,93 @@ test("Bun demo command provisions real chart data and supports an existing inges
   await expect(popup).toHaveCount(0);
 
   const breakdownChart = page.getByRole("img", {
-    name: "Orbit · Feature adoption",
+    name: "Feature adoption",
     exact: true,
   });
   await expect(breakdownChart).toContainText("Reports");
   const breakdownBefore = await breakdownChart.innerText();
+  const savedInsights = await (
+    await page.request.get(`/api/${demo.id}/insights`)
+  ).json();
+  const trendBefore = (await trendChart.textContent()) ?? "";
+  const override = page.getByRole("button", { name: "Adjust", exact: true });
+  await expect(
+    page.getByText("Using each insight’s timeframe and grouping."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Time grouping" }),
+  ).toHaveCount(0);
+  await override.click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(override).toBeVisible();
+  await override.click();
+  await page.getByRole("combobox", { name: "Time grouping" }).click();
+  await page.getByRole("option", { name: "Month", exact: true }).click();
+  await expect(trendChart).not.toHaveText(trendBefore);
+  await page
+    .getByRole("button", { name: "Insight timeframes", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Last 7 days", exact: true })
+    .click();
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 7);
+  const revenue = events
+    .filter(
+      (event) =>
+        event.eventType === "demo.value.invoice_paid" &&
+        event.timestamp >= start &&
+        event.timestamp < end,
+    )
+    .reduce((sum, event) => sum + z.number().parse(event.properties.amount), 0);
+  const currentValue = page
+    .getByText("Current period", { exact: true })
+    .locator("..")
+    .locator("span")
+    .last();
+  await expect(currentValue).toHaveText(revenue.toLocaleString("en-US"));
+  await expect(breakdownChart).not.toHaveText(breakdownBefore, {
+    useInnerText: true,
+  });
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(
+    await (await page.request.get(`/api/${demo.id}/insights`)).json(),
+  ).toEqual(savedInsights);
+  await page
+    .getByRole("button", { name: "Reset overrides", exact: true })
+    .click();
+  await expect(override).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Time grouping" }),
+  ).toHaveCount(0);
+  await expect(trendChart).toHaveText(trendBefore);
+  await expect(breakdownChart).toHaveText(breakdownBefore, {
+    useInnerText: true,
+  });
+  // Reload restores saved settings rather than persisting dashboard overrides.
+  await override.click();
+  await page
+    .getByRole("button", { name: "Insight timeframes", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Last 7 days", exact: true })
+    .click();
+  await page.reload();
+  await expect(override).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Insight timeframes", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Reset overrides", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    await (await page.request.get(`/api/${demo.id}/insights`)).json(),
+  ).toEqual(savedInsights);
+  await expect(breakdownChart).toHaveText(breakdownBefore, {
+    useInnerText: true,
+  });
   await page.screenshot({
     path: "test-results/minimal-dashboard.png",
     fullPage: true,

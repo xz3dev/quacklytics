@@ -1,15 +1,9 @@
 import { useContext } from "react";
 import { BreakdownInsightContext } from "@app/insights/insight-context.ts";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.tsx";
+import { InsightSettingsSection } from "../insight-editor-layout";
 import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { FieldSelector } from "@app/insights/common/field-selector.tsx";
-import { DateRangeSummary } from "@app/insights/common/date-range-summary.tsx";
 import { QueryFilterOptions } from "@app/insights/common/query-filter-options.tsx";
 import { TrendInsightSeriesAggregationSelection } from "@app/insights/trend/trend-insight-series-aggregation-selection.tsx";
 import { AggregationFunction } from "@lib/aggregations.ts";
@@ -20,10 +14,6 @@ export function BreakdownInsightOptions() {
   if (!data) return null;
 
   const config = data.config.breakdown;
-  const setDuration = (duration: string) =>
-    updateFn?.((insight) => {
-      insight.config.breakdown.duration = duration;
-    });
   const setDimension = (field: Field) =>
     updateFn?.((insight) => {
       insight.config.breakdown.dimension = field;
@@ -66,13 +56,9 @@ export function BreakdownInsightOptions() {
     });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Breakdown Settings</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <DateRangeSummary value={config.duration} onChange={setDuration} />
-        <div className="grid gap-4 md:grid-cols-[1fr_1fr_120px]">
+    <InsightSettingsSection title="Breakdown Settings">
+      <div className="grid gap-4">
+        <div className="grid gap-4">
           <div className="space-y-2">
             <Label>Dimension</Label>
             <FieldSelector value={config.dimension} onChange={setDimension} />
@@ -88,8 +74,9 @@ export function BreakdownInsightOptions() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Limit</Label>
+            <Label htmlFor="breakdown-limit">Limit</Label>
             <Input
+              id="breakdown-limit"
               type="number"
               min={1}
               max={100}
@@ -98,7 +85,7 @@ export function BreakdownInsightOptions() {
             />
           </div>
         </div>
-        <div className="rounded-md bg-muted p-2">
+        <div className="rounded-lg border bg-muted/30 p-3">
           <QueryFilterOptions
             filters={config.filters ?? []}
             onAdd={addFilter}
@@ -106,8 +93,8 @@ export function BreakdownInsightOptions() {
             onRemove={removeFilter}
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </InsightSettingsSection>
   );
 }
 

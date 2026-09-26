@@ -19,11 +19,21 @@ import { BreakdownInsightChart } from "@app/insights/breakdown/breakdown-insight
 import { RetentionInsightChart } from "@app/insights/retention/retention-insight-chart.tsx";
 import { PathInsightChart } from "@app/insights/path/path-insight-chart.tsx";
 
-interface Props {
-  insightId: number;
+import type { TimeBucket } from "@/model/insights/trend-insight";
+import { Clock } from "lucide-react";
+import { determineLabel } from "@/model/insights/insight-date-range";
+
+export interface InsightTimeOverrides {
+  duration?: string;
+  timeBucket?: TimeBucket;
 }
 
-export function InsightCard({ insightId }: Props) {
+interface Props {
+  insightId: number;
+  timeOverrides?: InsightTimeOverrides | undefined;
+}
+
+export function InsightCard({ insightId, timeOverrides }: Props) {
   const projectId = useProjectId();
   const insightData = useInsight(projectId, insightId);
 
@@ -32,20 +42,73 @@ export function InsightCard({ insightId }: Props) {
   if (insightData.status === "error")
     return emptyCard("Error", <div>Error: {insightData.error.message}</div>);
 
-  const insight = insightData.data;
+  const insight = structuredClone(insightData.data);
+  if (timeOverrides?.duration) {
+    switch (insight.type) {
+      case "Trend":
+        insight.config.trend.duration = timeOverrides.duration;
+        break;
+      case "Value":
+        insight.config.value.duration = timeOverrides.duration;
+        break;
+      case "Funnel":
+        insight.config.funnel.duration = timeOverrides.duration;
+        break;
+      case "Breakdown":
+        insight.config.breakdown.duration = timeOverrides.duration;
+        break;
+      case "Retention":
+        insight.config.retention.duration = timeOverrides.duration;
+        break;
+      case "Path":
+        insight.config.path.duration = timeOverrides.duration;
+        break;
+    }
+  }
+  if (timeOverrides?.timeBucket && insight.type === "Trend") {
+    insight.config.trend.timeBucket = timeOverrides.timeBucket;
+  }
 
   return (
-    <Card className="h-full min-w-0 border border-border/30 shadow-sm">
-      <CardHeader className="mx-5 mb-5 border-b border-border/40 px-0 py-4">
-        <CardTitle className="text-sm leading-snug">
+    <Card className="h-full min-w-0 overflow-auto border border-border/50">
+      <CardHeader className="mx-5 mb-5 flex-row items-center justify-between gap-3 space-y-0 border-b border-border/40 px-0 py-4">
+        <CardTitle className="min-w-0 text-sm leading-snug">
           <ProjectLink to={`/insights/${insight.id}`}>
             {insight.name}
           </ProjectLink>
         </CardTitle>
+        {!timeOverrides?.duration && !timeOverrides?.timeBucket && (
+          <span
+            aria-label="Insight timeframe"
+            className="ml-auto flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
+          >
+            <Clock aria-hidden="true" className="h-3.5 w-3.5" />
+            {determineLabel(insightDuration(insight))}
+          </span>
+        )}
       </CardHeader>
-      <CardContent className="px-5 pb-5">{renderInsight(insight)}</CardContent>
+      <CardContent data-insight-content className="px-5 pb-5">
+        {renderInsight(insight)}
+      </CardContent>
     </Card>
   );
+}
+
+function insightDuration(insight: Insight) {
+  switch (insight.type) {
+    case "Trend":
+      return insight.config.trend.duration;
+    case "Value":
+      return insight.config.value.duration;
+    case "Funnel":
+      return insight.config.funnel.duration;
+    case "Breakdown":
+      return insight.config.breakdown.duration;
+    case "Retention":
+      return insight.config.retention.duration;
+    case "Path":
+      return insight.config.path.duration;
+  }
 }
 
 function renderInsight(insight: Insight) {
@@ -129,11 +192,13 @@ function renderInsight(insight: Insight) {
 
 function emptyCard(title: string, children: React.ReactNode) {
   return (
-    <Card className="h-full min-w-0 border border-border/30 shadow-sm">
+    <Card className="h-full min-w-0 overflow-auto border border-border/50">
       <CardHeader className="mx-5 mb-5 border-b border-border/40 px-0 py-4">
         <CardTitle className="text-sm leading-snug">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="px-5 pb-5">{children}</CardContent>
+      <CardContent data-insight-content className="px-5 pb-5">
+        {children}
+      </CardContent>
     </Card>
   );
 }

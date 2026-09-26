@@ -29,16 +29,32 @@ export function SqlQueryResults({ data }: { data: ResultRow[] | undefined }) {
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
-  if (!data) return <p>Run a query to see results.</p>;
-  if (!data.length) return <p>Empty result set.</p>;
+  if (!data)
+    return (
+      <p className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center text-sm text-muted-foreground">
+        Run a query to see results.
+      </p>
+    );
+  if (!data.length)
+    return (
+      <p
+        role="status"
+        className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center text-sm text-muted-foreground"
+      >
+        Empty result set.
+      </p>
+    );
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto rounded-xl border border-border/50 bg-card">
       <table className="w-full text-sm">
         <thead className="bg-muted/70">
           {table.getHeaderGroups().map((group) => (
             <tr key={group.id}>
               {group.headers.map((header) => (
-                <th className="p-2 text-left" key={header.id}>
+                <th
+                  className="h-11 px-4 text-left font-medium text-muted-foreground"
+                  key={header.id}
+                >
                   {flexRender(
                     header.column.columnDef.header,
                     header.getContext(),
@@ -52,7 +68,7 @@ export function SqlQueryResults({ data }: { data: ResultRow[] | undefined }) {
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className="even:bg-muted/40">
               {row.getVisibleCells().map((cell) => (
-                <td className="px-3 py-3" key={cell.id}>
+                <td className="px-4 py-3" key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

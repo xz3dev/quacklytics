@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -94,7 +95,19 @@ export function SchemaPropValueList({
               />
             </div>
 
-            {propQuery.isLoading || propQuery.isPending ? (
+            {propQuery.error ? (
+              <div role="alert" className="space-y-3 py-10 text-center text-sm">
+                <p>Could not load property values: {propQuery.error.message}</p>
+                <Button
+                  variant="secondary"
+                  onClick={() => void propQuery.refetch()}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : propQuery.isLoading ||
+              propQuery.isPending ||
+              propQuery.isPlaceholderData ? (
               <div className="flex h-[min(52vh,430px)] items-center justify-center gap-3 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading values...

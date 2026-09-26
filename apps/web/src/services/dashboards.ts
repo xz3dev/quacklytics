@@ -344,3 +344,27 @@ export function useSetHomeDashboard(project: string) {
     },
   });
 }
+
+export function useSetDashboardLayout(project: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      dashboardId,
+      layout,
+    }: {
+      dashboardId: number;
+      layout: import("@quacklytics/contracts").DashboardGridItem[];
+    }) =>
+      http.put(
+        `${project}/dashboards/${dashboardId}/layout`,
+        { layout },
+        dashboardSchema,
+      ),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(DASHBOARD_KEY(project, updated.id), updated);
+      queryClient.setQueryData<Dashboard[]>(DASHBOARDS_KEY(project), (old) =>
+        old?.map((item) => (item.id === updated.id ? updated : item)),
+      );
+    },
+  });
+}

@@ -102,15 +102,16 @@ async function signIn(page: import("@playwright/test").Page) {
   if (authenticatedCookies.length)
     await page.context().addCookies(authenticatedCookies);
   if ((await page.request.get("/api/me")).ok()) return;
+  const setupResponse = await page.request.get("/api/setup");
   const setup = z
     .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
+    .parse(await setupResponse.json());
   const response = await page.request.post(
     setup.adminRegistered
       ? "/api/auth/sign-in/email"
       : "/api/auth/sign-up/email",
     {
-      headers: { Origin: "http://127.0.0.1:4173" },
+      headers: { Origin: new URL(setupResponse.url()).origin },
       data: { ...credentials, name: "Migration" },
     },
   );
@@ -466,7 +467,7 @@ test("all insight definitions persist and dashboards preserve ordering across re
     if (kind === "Value")
       await expect(
         page
-          .getByText("CURRENT", { exact: true })
+          .getByText("Current period", { exact: true })
           .locator("..")
           .getByText("3", { exact: true }),
       ).toBeVisible();
@@ -478,10 +479,22 @@ test("all insight definitions persist and dashboards preserve ordering across re
       await expect(
         page.getByRole("row").filter({ hasText: "purchase" }),
       ).toContainText("50.0%");
-    if (kind === "Retention")
-      await expect(
-        page.getByText("100%", { exact: true }).first(),
-      ).toBeVisible();
+    if (kind === "Retention") {
+      const chart = page.getByRole("img", {
+        name: "E2E Retention",
+        exact: true,
+      });
+      await expect(chart).toBeVisible();
+      await expect(page.getByRole("table")).toHaveCount(0);
+      await chart
+        .locator(".ts-chart__rect rect")
+        .first()
+        .hover({ position: { x: 4, y: 4 } });
+      await expect(page.getByRole("status")).toHaveAccessibleName(
+        /Retention: 100%/,
+      );
+      await expect(page.getByRole("status")).toHaveAccessibleName(/Users: 1/);
+    }
     await expect(page.getByText(/^Error:/)).toHaveCount(0);
   }
   expect(errors).toEqual([]);
@@ -629,6 +642,7 @@ test("settings and insight edits persist through the UI", async ({ page }) => {
   const trend = insights.find((i) => i.type === "Trend");
   if (!trend) throw new Error("Missing default trend");
   await page.goto(`/app/${fixture.project}/insights/${trend.id}`);
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByRole("combobox").filter({ hasText: "Day" }).click();
   await page.getByRole("option", { name: "Week", exact: true }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -758,14 +772,22 @@ test("create insight and dashboard, manage membership, then logout and login", a
     .getByRole("button", { name: "Create New Insight", exact: true })
     .click();
   await page
-    .getByPlaceholder("Insight name", { exact: true })
-    .fill("UI-created insight");
-  await page
     .getByRole("dialog")
     .getByRole("button", { name: "Create", exact: true })
     .click();
+  await page.getByRole("link", { name: "Untitled trend", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Rename Untitled trend", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Insight name", exact: true })
+    .fill("UI-created insight");
+  await page.getByRole("button", { name: "Save name", exact: true }).click();
   await expect(
-    page.getByRole("link", { name: "UI-created insight", exact: true }),
+    page.getByRole("button", {
+      name: "Rename UI-created insight",
+      exact: true,
+    }),
   ).toBeVisible();
   await page
     .getByRole("link", { name: "Dashboards", exact: true })
@@ -788,8 +810,14 @@ test("create insight and dashboard, manage membership, then logout and login", a
     .getByRole("button", { name: "Manage Insights", exact: true })
     .click();
   await page
-    .getByRole("checkbox", { name: "UI-created insight", exact: true })
-    .check();
+    .getByRole("combobox", { name: "Add a chart", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Search charts", exact: true })
+    .fill("UI-created insight");
+  await page
+    .getByRole("option", { name: "UI-created insight", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save Changes", exact: true }).click();
   await expect(
     page.getByRole("img", { name: "UI-created insight", exact: true }),
@@ -802,8 +830,8 @@ test("create insight and dashboard, manage membership, then logout and login", a
     .getByRole("button", { name: "Manage Insights", exact: true })
     .click();
   await page
-    .getByRole("checkbox", { name: "UI-created insight", exact: true })
-    .uncheck();
+    .getByRole("button", { name: "Remove UI-created insight", exact: true })
+    .click();
   await page.getByRole("button", { name: "Save Changes", exact: true }).click();
   await expect(
     page.getByRole("img", { name: "UI-created insight", exact: true }),
@@ -903,19 +931,26 @@ test("sidebar stays collapsed across navigation, reload and mobile", async ({
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(sidebar).toBeVisible();
-    await expect(sidebar.locator("..")).toHaveCSS("width", "48px");
+    await expect(sidebar).toHaveCSS("border-radius", "12px");
+    await expect(sidebar).not.toHaveCSS("box-shadow", "none");
+    await expect(sidebar).toHaveCSS("width", "48px");
+    const bounds = await sidebar.boundingBox();
+    expect(bounds?.x).toBe(8);
+    expect(bounds?.y).toBe(8);
+    expect(bounds?.height).toBe(828);
+    await expect(sidebar.locator("..")).toHaveCSS("width", "64px");
     await expect(
       page.getByRole("button", { name: "Toggle Sidebar" }),
     ).toHaveCount(0);
     await page.keyboard.press("Control+b");
     await page.keyboard.press("Meta+b");
-    await expect(sidebar.locator("..")).toHaveCSS("width", "48px");
+    await expect(sidebar.locator("..")).toHaveCSS("width", "64px");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await sidebar.getByRole("link", { name: "Events", exact: true }).click();
     await expect(page).toHaveURL(`/app/${project}/events`);
     await page.reload();
     await expect(sidebar).toBeVisible();
-    await expect(sidebar.locator("..")).toHaveCSS("width", "48px");
+    await expect(sidebar.locator("..")).toHaveCSS("width", "64px");
     await sidebar.getByRole("link", { name: "Home", exact: true }).click();
     await expect(page).toHaveURL(`/app/${project}`);
     await expect(
@@ -1088,9 +1123,11 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`/app/${fixture.project}`);
-  const currentValue = page.getByText("CURRENT", { exact: true }).locator("..");
+  const currentValue = page
+    .getByText("Current period", { exact: true })
+    .locator("..");
   const previousValue = page
-    .getByText("PREVIOUS", { exact: true })
+    .getByText("Previous period", { exact: true })
     .locator("..");
   async function expectValues(currentCount: number, previousCount: number) {
     await expect(
@@ -1102,7 +1139,7 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
     await expect(page.getByText(/^Error:/)).toHaveCount(0);
   }
   await expectValues(3, 2);
-  await expect(previousValue.getByText("+1", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Period change")).toContainText("+1 (+50%)");
   const trend = page.getByRole("img", {
     name: "Events over time",
     exact: true,
@@ -1313,4 +1350,76 @@ test("bulk batches coalesce snapshots and the final batch publishes all committe
   await expect(
     page.getByRole("cell", { name: "5", exact: true }),
   ).toBeVisible();
+});
+
+test("breakdown aligns bars beside truncated labels and exposes full labels on hover and focus", async ({
+  page,
+}) => {
+  const fixture = await projectFixture(page, "Breakdown layout");
+  const longLabel =
+    "demo.breakdown.a_very_long_event_name_that_must_remain_readable_in_a_tooltip";
+  const response = await page.request.post("/api/ingest", {
+    headers: { "X-API-KEY": fixture.key },
+    data: {
+      requestId: crypto.randomUUID(),
+      events: [longLabel, longLabel, "short"].map((name) =>
+        event(name, {
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+        }),
+      ),
+    },
+  });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  await page.goto(`/app/${fixture.project}`);
+  const chart = page.getByRole("img", { name: "Event breakdown", exact: true });
+  const label = chart.getByRole("button", { name: longLabel, exact: true });
+  await expect(label).toBeVisible();
+  await expect(chart).toContainText("2");
+  await expect(chart).toContainText("short");
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(label).toBeVisible();
+    expect(
+      await label.evaluate(
+        (element) => element.scrollWidth > element.clientWidth,
+      ),
+    ).toBeTruthy();
+    const bounds = await label.boundingBox();
+    const badge = chart.getByText("2", { exact: true }).first();
+    const valueBounds = await badge.boundingBox();
+    if (!bounds || !valueBounds) throw new Error("Missing chart bounds");
+    expect(valueBounds.x).toBeGreaterThan(bounds.x + bounds.width);
+    expect(
+      Math.abs(
+        valueBounds.y + valueBounds.height / 2 - bounds.y - bounds.height / 2,
+      ),
+    ).toBeLessThan(2);
+    expect(
+      await chart.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBeTruthy();
+    await label.hover();
+    await expect(page.getByRole("tooltip")).toHaveText(longLabel);
+    await page.mouse.move(0, 0);
+    await label.focus();
+    await expect(page.getByRole("tooltip")).toHaveText(longLabel);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toBeHidden();
+    const bar = chart.getByRole("button", {
+      name: `${longLabel}: 2`,
+      exact: true,
+    });
+    await bar.hover();
+    await expect(page.getByRole("tooltip")).toHaveText(`${longLabel}: 2`);
+    await page.mouse.move(0, 0);
+    await bar.focus();
+    await expect(page.getByRole("tooltip")).toHaveText(`${longLabel}: 2`);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toBeHidden();
+    await chart.screenshot({ path: `test-results/breakdown-${width}.png` });
+  }
+  await page.reload();
+  await expect(label).toBeVisible();
+  await expect(chart).toContainText("2");
 });

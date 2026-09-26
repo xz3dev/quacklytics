@@ -43,7 +43,7 @@ export function Home() {
     };
 
     return (
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-8">
+      <div className="flex min-w-0 flex-col gap-8">
         <div>
           <h1 className="text-2xl font-bold">Start analytics</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -51,9 +51,9 @@ export function Home() {
             inspect first.
           </p>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           <button
-            className="flex min-h-40 flex-col items-start gap-3 rounded-xl bg-card p-5 text-left transition-colors hover:bg-muted/50"
+            className="flex min-h-40 flex-col items-start gap-3 rounded-xl border border-border/50 bg-card p-4 text-left transition-colors hover:bg-muted/50"
             onClick={() => startTemplate("product_analytics")}
             disabled={createTemplateDashboard.isPending}
           >
@@ -67,7 +67,7 @@ export function Home() {
             </span>
           </button>
           <button
-            className="flex min-h-40 flex-col items-start gap-3 rounded-xl bg-card p-5 text-left transition-colors hover:bg-muted/50"
+            className="flex min-h-40 flex-col items-start gap-3 rounded-xl border border-border/50 bg-card p-4 text-left transition-colors hover:bg-muted/50"
             onClick={() => startTemplate("web_analytics")}
             disabled={createTemplateDashboard.isPending}
           >
@@ -81,7 +81,7 @@ export function Home() {
             </span>
           </button>
           <button
-            className="flex min-h-40 flex-col items-start gap-3 rounded-xl bg-card p-5 text-left transition-colors hover:bg-muted/50"
+            className="flex min-h-40 flex-col items-start gap-3 rounded-xl border border-border/50 bg-card p-4 text-left transition-colors hover:bg-muted/50"
             onClick={startBlank}
           >
             <Plus className="h-5 w-5 text-muted-foreground" />
@@ -96,13 +96,20 @@ export function Home() {
   }
   const home = dashboardsQuery.data.find((d) => d.home)?.id;
   return (
-    <div className="flex flex-col gap-4">
+    <div className="analytics-cards flex min-w-0 flex-col gap-8">
       <InsightsList
+        overview
         title={"Favorite Insights"}
         filter={(i) => i.favorite}
         createAsFavorite={true}
       />
-      {home && <DashboardView dashboardId={home} readOnly={true} />}
+      {home && (
+        <DashboardView
+          dashboardId={home}
+          readOnly={true}
+          presentation="cards"
+        />
+      )}
       {!home && (
         <Button asChild variant="outline" className="w-fit">
           <ProjectLink to="/dashboards">Create a dashboard</ProjectLink>

@@ -3,6 +3,8 @@ import type {
   ChartTheme,
   ChartAxisOptions,
   ChartValue,
+  ChartPoint,
+  ChartFocusResolveContext,
 } from "@tanstack/charts";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
 
@@ -76,3 +78,59 @@ export function formatTooltipDate(value: ChartValue, hourly: boolean) {
       : {}),
   }).format(date);
 }
+
+// Compare rendered positions so proximity stays consistent across value
+// ranges and responsive chart sizes. The hovered point is always first.
+function nearbyTooltipPoints<T extends { x: number; y: number }>(
+  points: readonly T[],
+): T[] {
+  const hovered = points[0];
+  if (!hovered) return [];
+  return points.filter(
+    (point) => Math.hypot(point.x - hovered.x, point.y - hovered.y) <= 12,
+  );
+}
+
+// Use rendered x positions to distinguish side-by-side bars, including when
+// their values are equal. Semantic category grouping alone loses that distinction.
+export const nearbyChartFocus = {
+  resolve<T extends ChartPoint>(
+    points: readonly T[],
+    { x, y, maxDistance }: ChartFocusResolveContext,
+  ): T[] {
+    let hovered: (typeof points)[number] | undefined;
+    let distanceX = maxDistance;
+    let distanceY = Number.POSITIVE_INFINITY;
+    for (const point of points) {
+      const dx = Math.abs(point.x - x);
+      const dy = Math.abs(point.y - y);
+      if (dx < distanceX || (dx === distanceX && dy < distanceY)) {
+        hovered = point;
+        distanceX = dx;
+        distanceY = dy;
+      }
+    }
+    return hovered ? this.group(points, { point: hovered }) : [];
+  },
+  group<T extends ChartPoint>(
+    points: readonly T[],
+    { point }: { point: T },
+  ): T[] {
+    return nearbyTooltipPoints([
+      point,
+      ...points.filter((candidate) => {
+        const x = candidate.xValue;
+        const hoveredX = point.xValue;
+        return (
+          candidate !== point &&
+          (x instanceof Date && hoveredX instanceof Date
+            ? x.getTime() === hoveredX.getTime()
+            : x === hoveredX)
+        );
+      }),
+    ]);
+  },
+  navigation<T extends ChartPoint>(points: readonly T[]): T[] {
+    return [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  },
+};

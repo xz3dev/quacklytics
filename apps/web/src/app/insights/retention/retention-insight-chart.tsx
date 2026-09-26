@@ -1,3 +1,8 @@
+import { formatMetricValue, insightMetricUnit } from "@/lib/metric-value";
+import { format } from "date-fns";
+import { useChartBreakdown, breakdownLabel } from "@/lib/chart-breakdown";
+import { ChartSpace } from "@/components/chart-space";
+import { ChartBreakdown } from "@/app/insights/common/chart-breakdown";
 import { Chart } from "@tanstack/charts/react";
 import { defineChart, cell } from "@tanstack/charts";
 import { scaleBand } from "@tanstack/charts/scales/band";
@@ -10,7 +15,6 @@ import { buildRetentionQuery } from "@lib/insight-queries.ts";
 import { simpleHash } from "@lib/checksums.ts";
 import { useDuckDBQuery } from "@/services/duck-db-queries.ts";
 import { Spinner } from "@/components/spinner.tsx";
-import { format } from "date-fns";
 
 interface Props {
   insight: RetentionInsight;
@@ -18,11 +22,13 @@ interface Props {
 
 interface CohortRow {
   cohortStart: string;
+  label: string;
   cohortSize: number;
   periods: Map<number, number>;
 }
 
-export function RetentionInsightChart({ insight }: Props) {
+function UngroupedRetentionInsightChart({ insight }: Props) {
+  const breakdown = useChartBreakdown();
   const projectId = useProjectId();
   const query = useMemo(
     () => ({
@@ -43,8 +49,20 @@ export function RetentionInsightChart({ insight }: Props) {
       <div className="text-sm text-red-600">Error: {result.error.message}</div>
     );
 
-  const rows = retentionRow.array().parse(result.data ?? []);
-  const cohorts = buildCohorts(rows);
+  const cohorts = (breakdown?.values ?? [null]).flatMap((value, index) =>
+    buildCohorts(
+      retentionRow
+        .array()
+        .parse(
+          (result.data ?? []).filter(
+            (row) => !breakdown || Number(row.__breakdown_index) === index,
+          ),
+        ),
+    ).map((cohort) => ({
+      ...cohort,
+      label: `${format(new Date(cohort.cohortStart), "yyyy-MM-dd")}${breakdown ? ` · ${breakdownLabel(value)}` : ""}`,
+    })),
+  );
   if (cohorts.length === 0) {
     return (
       <div className="py-6 text-sm text-muted-foreground">
@@ -63,7 +81,7 @@ export function RetentionInsightChart({ insight }: Props) {
         ? (retained / cohort.cohortSize) * 100
         : 0;
       return {
-        cohort: cohort.cohortStart.slice(0, 10),
+        cohort: cohort.label,
         period: `P${period}`,
         retained,
         percentage,
@@ -98,7 +116,10 @@ export function RetentionInsightChart({ insight }: Props) {
           },
           {
             label: "Users",
-            value: point.datum.retained.toLocaleString("en-US"),
+            value: formatMetricValue(
+              point.datum.retained,
+              insightMetricUnit(insight),
+            ),
           },
         ]),
       }),
@@ -106,59 +127,15 @@ export function RetentionInsightChart({ insight }: Props) {
   });
   return (
     <div className="overflow-x-auto">
-      <Chart
-        definition={definition}
-        height={Math.min(450, Math.max(180, cohorts.length * 32 + 48))}
-        ariaLabel={insight.name ?? "Retention"}
-      />
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className="sticky left-0 bg-card px-2 py-2 text-left font-medium">
-              Cohort
-            </th>
-            <th className="px-2 py-2 text-right font-medium">Users</th>
-            {periods.map((period) => (
-              <th
-                key={period}
-                className="min-w-20 px-2 py-2 text-right font-medium"
-              >
-                P{period}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {cohorts.map((cohort) => (
-            <tr key={cohort.cohortStart} className="even:bg-muted/40">
-              <td className="sticky left-0 bg-card px-2 py-2 font-medium">
-                {format(new Date(cohort.cohortStart), "yyyy-MM-dd")}
-              </td>
-              <td className="px-2 py-2 text-right tabular-nums">
-                {cohort.cohortSize}
-              </td>
-              {periods.map((period) => {
-                const count = cohort.periods.get(period) ?? 0;
-                const percentage =
-                  cohort.cohortSize > 0 ? (count / cohort.cohortSize) * 100 : 0;
-                return (
-                  <td key={period} className="px-1 py-1">
-                    <div
-                      className="rounded-sm px-2 py-2 text-right tabular-nums"
-                      style={{
-                        backgroundColor: `hsl(var(--chart-1) / ${Math.max(0.08, percentage / 100)})`,
-                      }}
-                      title={`${count} retained users`}
-                    >
-                      {percentage.toFixed(0)}%
-                    </div>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ChartSpace minimum={Math.max(180, cohorts.length * 32 + 48)}>
+        {(height) => (
+          <Chart
+            definition={definition}
+            height={height}
+            ariaLabel={insight.name ?? "Retention"}
+          />
+        )}
+      </ChartSpace>
     </div>
   );
 }
@@ -171,6 +148,7 @@ function buildCohorts(rows: RetentionRow[]): CohortRow[] {
     const count = Number(row.retained_count);
     const cohort = cohorts.get(cohortStart) ?? {
       cohortStart,
+      label: cohortStart,
       cohortSize: 0,
       periods: new Map<number, number>(),
     };
@@ -180,5 +158,15 @@ function buildCohorts(rows: RetentionRow[]): CohortRow[] {
   }
   return Array.from(cohorts.values()).sort((a, b) =>
     a.cohortStart.localeCompare(b.cohortStart),
+  );
+}
+
+export function RetentionInsightChart(
+  props: Parameters<typeof UngroupedRetentionInsightChart>[0],
+) {
+  return (
+    <ChartBreakdown insight={props.insight}>
+      <UngroupedRetentionInsightChart {...props} />
+    </ChartBreakdown>
   );
 }

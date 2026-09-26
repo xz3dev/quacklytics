@@ -120,4 +120,6 @@ Defaults are 250 users per chart family and 365 days of history (roughly 350 eve
 
 ### DuckDB WASM range-read patch
 
-`patches/@duckdb%2Fduckdb-wasm@1.33.1-dev53.0.patch` fixes the MVP worker's signed-URL range probe to read `Content-Range` instead of splitting `Content-Length` ([upstream issue #2228](https://github.com/duckdb/duckdb-wasm/issues/2228)). Bun applies it on install. Browser E2E coverage verifies HTTP 206 reads directly from Garage; keep that assertion when upgrading DuckDB.
+DuckDB-WASM is pinned to `1.32.0`, the latest stable version published on npm.
+
+`patches/@duckdb%2Fduckdb-wasm@1.32.0.patch` fixes the MVP worker's signed-URL range probe to read `Content-Range` instead of splitting `Content-Length` ([upstream issue #2228](https://github.com/duckdb/duckdb-wasm/issues/2228)). Bun applies it on install. Browser E2E coverage verifies HTTP 206 reads directly from Garage; keep that assertion when upgrading DuckDB.

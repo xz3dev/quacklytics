@@ -1,4 +1,4 @@
-import { createContext } from "react";
+import { createContext, type ReactNode } from "react";
 import { Insight } from "@/model/insights/insight.ts";
 import { TrendInsight } from "@/model/insights/trend-insight.ts";
 import { ValueInsight } from "@/model/insights/value-insight.ts";
@@ -44,6 +44,7 @@ export const PathInsightContext = createContext<{
 }>({});
 
 export const BaseInsightContext = createContext<{
+  chartControls?: ReactNode;
   original?: Insight;
   updateWorkingCopy?: (insight: Insight) => void;
   isChanged: boolean;

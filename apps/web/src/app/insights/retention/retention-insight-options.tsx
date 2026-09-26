@@ -1,11 +1,6 @@
 import { useContext } from "react";
 import { RetentionInsightContext } from "@app/insights/insight-context.ts";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.tsx";
+import { InsightSettingsSection } from "../insight-editor-layout";
 import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import {
@@ -15,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
-import { DateRangeSummary } from "@app/insights/common/date-range-summary.tsx";
 import { QueryFilterOptions } from "@app/insights/common/query-filter-options.tsx";
 import { FieldFilter } from "@/model/filters.ts";
 import { TimeBucket, timeBucketData } from "@/model/insights/trend-insight.ts";
@@ -42,22 +36,11 @@ export function RetentionInsightOptions() {
     });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Retention Settings</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+    <InsightSettingsSection title="Retention Settings">
+      <div className="grid gap-4">
         <div className="flex flex-wrap items-end gap-4">
-          <DateRangeSummary
-            value={config.duration}
-            onChange={(duration) =>
-              updateFn?.((insight) => {
-                insight.config.retention.duration = duration;
-              })
-            }
-          />
           <div className="space-y-2">
-            <Label>Cohort Bucket</Label>
+            <Label htmlFor="cohort-bucket">Cohort Bucket</Label>
             <Select
               value={config.cohortBucket}
               onValueChange={(bucket: TimeBucket) =>
@@ -66,7 +49,7 @@ export function RetentionInsightOptions() {
                 })
               }
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger id="cohort-bucket" className="w-[180px]">
                 <SelectValue placeholder="Bucket" />
               </SelectTrigger>
               <SelectContent>
@@ -79,8 +62,9 @@ export function RetentionInsightOptions() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Periods</Label>
+            <Label htmlFor="cohort-periods">Periods</Label>
             <Input
+              id="cohort-periods"
               className="w-28"
               type="number"
               min={1}
@@ -99,8 +83,8 @@ export function RetentionInsightOptions() {
             />
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-md bg-muted p-3">
+        <div className="grid gap-4">
+          <div className="rounded-lg border bg-muted/30 p-3">
             <div className="mb-2 text-sm font-medium">Activation Event</div>
             <QueryFilterOptions
               filters={config.activationQuery.filters ?? []}
@@ -120,7 +104,7 @@ export function RetentionInsightOptions() {
               addLabel="Add Activation Filter"
             />
           </div>
-          <div className="rounded-md bg-muted p-3">
+          <div className="rounded-lg border bg-muted/30 p-3">
             <div className="mb-2 text-sm font-medium">Return Event</div>
             <QueryFilterOptions
               filters={config.returnQuery.filters ?? []}
@@ -141,8 +125,8 @@ export function RetentionInsightOptions() {
             />
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </InsightSettingsSection>
   );
 }
 

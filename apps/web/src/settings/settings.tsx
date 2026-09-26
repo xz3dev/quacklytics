@@ -1,3 +1,4 @@
+import { PageHeader, PageTitle } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input.tsx";
 import { useProjectId } from "@/hooks/use-project-id.tsx";
@@ -57,67 +58,72 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-4xl space-y-10">
-      <section className="space-y-4 rounded-xl bg-card p-6">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Project</h2>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="project-name">Project name</Label>
-          <Input
-            className="max-w-xl"
-            type="text"
-            value={projectName}
-            id="project-name"
-            onChange={(event) => setProjectName(event.target.value)}
-          />
-        </div>
-        <Button
-          className="gap-2"
-          onClick={handleProjectNameChange}
-          disabled={updater.isPending || projectName === project.name}
-        >
-          <Save className="h-4 w-4" />
-          Save
-        </Button>
-      </section>
-
-      <section className="space-y-4 rounded-xl bg-card p-6">
-        <div className="flex items-center gap-2">
-          <Globe2 className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-xl font-semibold">Ingestion CORS</h2>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="cors-origins">Allowed origins</Label>
-          <Textarea
-            id="cors-origins"
-            className="min-h-36 max-w-2xl font-mono text-sm"
-            placeholder={"http://localhost:3002\nhttps://app.example.com"}
-            value={corsOrigins}
-            onChange={(event) => setCorsOrigins(event.target.value)}
-          />
-        </div>
-        {project.corsOrigins.length > 0 && (
-          <div className="flex max-w-2xl flex-wrap gap-2">
-            {project.corsOrigins.map((origin) => (
-              <Badge key={origin} variant="secondary" className="font-mono">
-                {origin}
-              </Badge>
-            ))}
+    <div className="min-w-0">
+      <PageHeader>
+        <PageTitle>Settings</PageTitle>
+      </PageHeader>
+      <div className="max-w-4xl space-y-4">
+        <section className="space-y-4 rounded-xl border border-border/50 bg-card p-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Project</h2>
           </div>
-        )}
-        <Button
-          className="gap-2"
-          onClick={handleCorsOriginsChange}
-          disabled={corsUpdater.isPending || corsOrigins === savedCorsOrigins}
-        >
-          <Save className="h-4 w-4" />
-          Save origins
-        </Button>
-      </section>
+          <div className="space-y-2">
+            <Label htmlFor="project-name">Project name</Label>
+            <Input
+              className="max-w-xl"
+              type="text"
+              value={projectName}
+              id="project-name"
+              onChange={(event) => setProjectName(event.target.value)}
+            />
+          </div>
+          <Button
+            className="gap-2"
+            onClick={handleProjectNameChange}
+            disabled={updater.isPending || projectName === project.name}
+          >
+            <Save className="h-4 w-4" />
+            Save
+          </Button>
+        </section>
 
-      <ApikeyManagement />
+        <section className="space-y-4 rounded-xl border border-border/50 bg-card p-4">
+          <div className="flex items-center gap-2">
+            <Globe2 className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Ingestion CORS</h2>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cors-origins">Allowed origins</Label>
+            <Textarea
+              id="cors-origins"
+              className="min-h-36 max-w-2xl font-mono text-sm"
+              placeholder={"http://localhost:3002\nhttps://app.example.com"}
+              value={corsOrigins}
+              onChange={(event) => setCorsOrigins(event.target.value)}
+            />
+          </div>
+          {project.corsOrigins.length > 0 && (
+            <div className="flex max-w-2xl flex-wrap gap-2">
+              {project.corsOrigins.map((origin) => (
+                <Badge key={origin} variant="secondary" className="font-mono">
+                  {origin}
+                </Badge>
+              ))}
+            </div>
+          )}
+          <Button
+            className="gap-2"
+            onClick={handleCorsOriginsChange}
+            disabled={corsUpdater.isPending || corsOrigins === savedCorsOrigins}
+          >
+            <Save className="h-4 w-4" />
+            Save origins
+          </Button>
+        </section>
+
+        <ApikeyManagement />
+      </div>
     </div>
   );
 }

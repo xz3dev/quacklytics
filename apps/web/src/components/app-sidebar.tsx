@@ -21,7 +21,7 @@ export function AppSidebar(
   },
 ) {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader>
         <ProjectSwitcher />
       </SidebarHeader>

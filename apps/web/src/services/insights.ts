@@ -98,9 +98,12 @@ export function useDeleteInsight(project: string) {
     mutationFn: (insightId: number) =>
       insightsApi.deleteInsight({ project, insightId }),
     onSuccess: (_, insightId) => {
-      queryClient.setQueryData<Insight[]>(
-        INSIGHT_KEY(project, insightId),
-        (old = []) => old.filter((insight) => insight.id !== insightId),
+      queryClient.removeQueries({
+        queryKey: INSIGHT_KEY(project, insightId),
+        exact: true,
+      });
+      queryClient.setQueryData<Insight[]>(INSIGHTS_KEY(project), (old = []) =>
+        old.filter((insight) => insight.id !== insightId),
       );
     },
   });

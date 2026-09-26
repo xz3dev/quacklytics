@@ -1,3 +1,5 @@
+import { dashboardLayout } from "./dashboard-layout";
+export * from "./dashboard-layout";
 import { z } from "zod";
 
 export const jsonValue = z.json();
@@ -33,7 +35,13 @@ export const query = z.object({
   offset: z.number().int().nonnegative().optional(),
 });
 export const bucket = z.enum(["Hourly", "Daily", "Weekly", "Monthly"]);
+export const funnelCountingMode = z.enum([
+  "uniqueUsers",
+  "uniqueSessions",
+  "eventCount",
+]);
 const common = {
+  breakdownBy: field.optional(),
   id: z.number().int().positive(),
   name: z.string().max(200).optional(),
   favorite: z.boolean(),
@@ -73,6 +81,7 @@ export const insight = z.discriminatedUnion("type", [
     config: z.object({
       funnel: z.object({
         duration: z.string(),
+        countingMode: funnelCountingMode.default("uniqueUsers"),
         steps: z
           .array(
             z.object({
@@ -145,6 +154,7 @@ export const dashboard = z.object({
   favorite: z.boolean(),
   home: z.boolean(),
   insights: z.array(insight),
+  layout: dashboardLayout.optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
@@ -303,7 +313,9 @@ export const defaultInsights = {
   Funnel: {
     type: "Funnel",
     favorite: false,
-    config: { funnel: { duration: "P30D", steps: [] } },
+    config: {
+      funnel: { duration: "P30D", countingMode: "uniqueUsers", steps: [] },
+    },
   },
   Retention: {
     type: "Retention",

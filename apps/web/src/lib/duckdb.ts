@@ -4,8 +4,7 @@ import duckdb_wasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import mvp_worker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
 
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-  // DuckDB 1.33.1-dev53 can fail to link the EH bundle in some browsers.
-  // The MVP bundle avoids the new EH-only filesystem imports.
+  // Use the MVP bundle, whose worker carries our signed-URL range-read patch.
   mvp: {
     mainModule: duckdb_wasm,
     mainWorker: mvp_worker,

@@ -45,13 +45,15 @@ export function QueryFilterOptions({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0">
-          <FilterSelectorCard
-            onSave={(filter) => {
-              onAdd(filter);
-              setOpen(false);
-            }}
-            onDiscard={() => setOpen(false)}
-          />
+          {open && (
+            <FilterSelectorCard
+              onSave={(filter) => {
+                onAdd(filter);
+                setOpen(false);
+              }}
+              onDiscard={() => setOpen(false)}
+            />
+          )}
         </PopoverContent>
       </Popover>
     </div>

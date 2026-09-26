@@ -2,7 +2,7 @@ import { defaultInsights } from "@quacklytics/contracts";
 import { Insight } from "@/model/insights/insight.ts";
 import { Field } from "@/model/filters.ts";
 import { determineDateRange } from "@/model/insights/insight-date-range.ts";
-import { Duration, intervalToDuration } from "date-fns";
+import { Duration, differenceInDays } from "date-fns";
 
 export type TrendInsight = Extract<Insight, { type: "Trend" }>;
 
@@ -37,11 +37,7 @@ export const requireMinDays = (
 ): ((range: string) => boolean) => {
   return (range: string) => {
     const dateRange = determineDateRange(range);
-    const duration = intervalToDuration({
-      start: dateRange.start,
-      end: dateRange.end,
-    });
-    return (duration?.days ?? 0) >= minDays;
+    return differenceInDays(dateRange.end, dateRange.start) >= minDays;
   };
 };
 
@@ -50,11 +46,7 @@ export const requireMaxDays = (
 ): ((range: string) => boolean) => {
   return (range: string) => {
     const dateRange = determineDateRange(range);
-    const duration = intervalToDuration({
-      start: dateRange.start,
-      end: dateRange.end,
-    });
-    return (duration?.days ?? 0) <= maxDays;
+    return differenceInDays(dateRange.end, dateRange.start) <= maxDays;
   };
 };
 

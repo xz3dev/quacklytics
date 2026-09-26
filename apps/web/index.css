@@ -116,3 +116,32 @@
   padding-left: 20px;
   font-weight: 600;
 }
+
+.funnel-tooltip {
+  --ts-chart-tooltip-max-width: min(440px, calc(100% - 16px));
+}
+
+.funnel-tooltip .ts-chart-tooltip__title {
+  color: hsl(var(--popover-foreground));
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.funnel-tooltip .ts-chart-tooltip__row > :last-child {
+  padding-left: 10px;
+}
+
+.analytics-cards .text-green-600,
+.analytics-cards .text-red-600 {
+  color: hsl(var(--foreground));
+}
+.analytics-overview {
+  min-width: 0;
+}
+.analytics-overview .bg-card {
+  border-color: hsl(var(--border));
+}
+
+.analytics-overview [aria-label="Time grouping"] {
+  width: 170px;
+}

@@ -1,3 +1,4 @@
+import { PageHeader, PageTitle } from "@/components/page-header";
 import { Link, useNavigate } from "@/lib/navigation";
 import { useProjects, useCreateProject } from "@/services/projects";
 import { useForm } from "@tanstack/react-form";
@@ -17,14 +18,16 @@ export function ProjectsList() {
   });
   return (
     <RequireAuth>
-      <main className="max-w-2xl mx-auto py-20 space-y-6">
-        <h1 className="text-3xl font-bold">Projects</h1>
+      <main className="max-w-2xl mx-auto p-4 md:p-6">
+        <PageHeader>
+          <PageTitle>Projects</PageTitle>
+        </PageHeader>
         {projects.data?.map((p) => (
           <Link
             key={p.id}
             to="/app/$projectid"
             params={{ projectid: p.id }}
-            className="block rounded-xl bg-card p-5 transition-colors hover:bg-muted"
+            className="mb-4 block break-words rounded-xl border border-border/50 bg-card p-4 transition-colors hover:border-foreground/25"
           >
             {p.name}
           </Link>
@@ -34,11 +37,11 @@ export function ProjectsList() {
             event.preventDefault();
             void form.handleSubmit();
           }}
-          className="space-y-3"
+          className="mt-8 space-y-4 rounded-xl border border-border/50 bg-card p-4"
         >
           <form.Field name="name">
             {(field) => (
-              <label>
+              <label className="grid gap-2 text-sm font-medium">
                 Project name
                 <Input
                   required

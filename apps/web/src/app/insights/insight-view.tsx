@@ -1,4 +1,10 @@
-import { useInsight } from "@/services/insights.ts";
+import { InsightName } from "./insight-name";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router";
+import { ChartBreakdownOptions } from "./common/chart-breakdown";
+import { InsightTimeControls } from "@/components/insight-time-controls";
+
+import { useUpdateInsight, useInsight } from "@/services/insights.ts";
 import { useProjectId } from "@/hooks/use-project-id.tsx";
 import { Spinner } from "@/components/spinner.tsx";
 import { Insight } from "@/model/insights/insight.ts";
@@ -12,7 +18,7 @@ import {
   ValueInsightContext,
 } from "@app/insights/insight-context";
 import { TrendInsightView } from "@app/insights/trend/trend-insight-view.tsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TrendInsight } from "@/model/insights/trend-insight.ts";
 import { ValueInsight } from "@/model/insights/value-insight.ts";
 import { ValueInsightView } from "@app/insights/value/value-insight-view.tsx";
@@ -28,25 +34,74 @@ import { PathInsightView } from "@app/insights/path/path-insight-view.tsx";
 interface Props {
   insightId: number;
   readOnly?: boolean;
+  mode?: "view" | "edit";
 }
 
-export function InsightView({ insightId, readOnly }: Props) {
+export function InsightView({ insightId, readOnly, mode = "view" }: Props) {
   const projectId = useProjectId();
 
-  const insightData = useInsight(projectId, insightId);
-  const [localWorkingCopy, updateWorkingCopy] = useState(insightData.data);
+  return (
+    <InsightEditor
+      key={`${projectId}:${insightId}:${mode}`}
+      insightId={insightId}
+      mode={mode}
+      readOnly={readOnly ?? false}
+    />
+  );
+}
 
-  useEffect(() => {
-    if (insightData.data && !localWorkingCopy) {
-      updateWorkingCopy(insightData.data);
-    }
-  }, [insightData.data]);
+function timeframeConfig(insight: Insight) {
+  switch (insight.type) {
+    case "Trend":
+      return insight.config.trend;
+    case "Value":
+      return insight.config.value;
+    case "Funnel":
+      return insight.config.funnel;
+    case "Breakdown":
+      return insight.config.breakdown;
+    case "Retention":
+      return insight.config.retention;
+    case "Path":
+      return insight.config.path;
+  }
+}
+
+function InsightEditor({ insightId, readOnly, mode }: Props) {
+  const projectId = useProjectId();
+  const insightData = useInsight(projectId, insightId);
+  const updater = useUpdateInsight(projectId);
+  const nameUpdater = useUpdateInsight(projectId);
+  const navigate = useNavigate();
+  const [viewCopy, setViewCopy] = useState<Insight>();
+  const [editCopy, setEditCopy] = useState<Insight>();
+  const editing = mode === "edit" && !readOnly;
+  const localWorkingCopy = editing ? editCopy : viewCopy;
+  const updateWorkingCopy = editing ? setEditCopy : setViewCopy;
 
   if (insightData.isLoading || insightData.isPending) return <Spinner />;
   if (insightData.error) return <div>Error: {insightData.error.message}</div>;
 
+  const current = localWorkingCopy ?? insightData.data;
+  const timeframeChanged =
+    timeframeConfig(current).duration !==
+    timeframeConfig(insightData.data).duration;
   const isChanged =
-    JSON.stringify(insightData.data) !== JSON.stringify(localWorkingCopy);
+    editing && JSON.stringify(insightData.data) !== JSON.stringify(current);
+  const showView = () =>
+    navigate({
+      to: "/app/$projectid/insights/$insightid",
+      params: { projectid: projectId, insightid: String(insightId) },
+      replace: true,
+    });
+  const save = () => {
+    updater.mutate(current, { onSuccess: () => void showView() });
+  };
+  const changeDuration = (duration: string) => {
+    const copy = structuredClone(current);
+    timeframeConfig(copy).duration = duration;
+    updateWorkingCopy(copy);
+  };
 
   const renderInsight = (insight: Insight) => {
     switch (insight.type) {
@@ -57,8 +112,7 @@ export function InsightView({ insightId, readOnly }: Props) {
               data: insight,
               update: updateWorkingCopy,
               updateFn: (fn: (i: TrendInsight) => void) => {
-                if (!localWorkingCopy) return;
-                const copy = structuredClone(localWorkingCopy);
+                const copy = structuredClone(insight);
                 if (copy.type === "Trend") fn(copy);
                 updateWorkingCopy(copy);
               },
@@ -74,8 +128,7 @@ export function InsightView({ insightId, readOnly }: Props) {
               data: insight,
               update: updateWorkingCopy,
               updateFn: (fn: (i: ValueInsight) => void) => {
-                if (!localWorkingCopy) return;
-                const copy = structuredClone(localWorkingCopy);
+                const copy = structuredClone(insight);
                 if (copy.type === "Value") fn(copy);
                 updateWorkingCopy(copy);
               },
@@ -91,8 +144,7 @@ export function InsightView({ insightId, readOnly }: Props) {
               data: insight,
               update: updateWorkingCopy,
               updateFn: (fn: (i: FunnelInsight) => void) => {
-                if (!localWorkingCopy) return;
-                const copy = structuredClone(localWorkingCopy);
+                const copy = structuredClone(insight);
                 if (copy.type === "Funnel") fn(copy);
                 updateWorkingCopy(copy);
               },
@@ -108,8 +160,7 @@ export function InsightView({ insightId, readOnly }: Props) {
               data: insight,
               update: updateWorkingCopy,
               updateFn: (fn: (i: BreakdownInsight) => void) => {
-                if (!localWorkingCopy) return;
-                const copy = structuredClone(localWorkingCopy);
+                const copy = structuredClone(insight);
                 if (copy.type === "Breakdown") fn(copy);
                 updateWorkingCopy(copy);
               },
@@ -125,8 +176,7 @@ export function InsightView({ insightId, readOnly }: Props) {
               data: insight,
               update: updateWorkingCopy,
               updateFn: (fn: (i: RetentionInsight) => void) => {
-                if (!localWorkingCopy) return;
-                const copy = structuredClone(localWorkingCopy);
+                const copy = structuredClone(insight);
                 if (copy.type === "Retention") fn(copy);
                 updateWorkingCopy(copy);
               },
@@ -142,8 +192,7 @@ export function InsightView({ insightId, readOnly }: Props) {
               data: insight,
               update: updateWorkingCopy,
               updateFn: (fn: (i: PathInsight) => void) => {
-                if (!localWorkingCopy) return;
-                const copy = structuredClone(localWorkingCopy);
+                const copy = structuredClone(insight);
                 if (copy.type === "Path") fn(copy);
                 updateWorkingCopy(copy);
               },
@@ -157,17 +206,118 @@ export function InsightView({ insightId, readOnly }: Props) {
     }
   };
 
+  const chartControls = !readOnly && (
+    <div
+      aria-label="Chart controls"
+      role="group"
+      className="space-y-2 rounded-xl border border-border/50 bg-card p-4"
+    >
+      <InsightTimeControls
+        duration={timeframeConfig(current).duration}
+        timeBucket={
+          current.type === "Trend" ? current.config.trend.timeBucket : undefined
+        }
+        onDurationChange={changeDuration}
+        onBucketChange={
+          current.type === "Trend"
+            ? (bucket) => {
+                const copy = structuredClone(current);
+                copy.config.trend.timeBucket = bucket;
+                updateWorkingCopy(copy);
+              }
+            : undefined
+        }
+      >
+        {editing ? (
+          <ChartBreakdownOptions
+            insight={current}
+            onChange={updateWorkingCopy}
+          />
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            breakdown by{" "}
+            <span className="font-medium text-foreground">
+              {current.breakdownBy?.name ?? "None"}
+            </span>
+          </span>
+        )}
+      </InsightTimeControls>
+      {(editing || timeframeChanged) && (
+        <p className="text-xs text-muted-foreground">
+          {editing
+            ? "Save to use this timeframe as the insight’s default."
+            : "Temporary timeframe. Edit to save as default."}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <>
       <BaseInsightContext.Provider
         value={{
+          chartControls,
           isChanged,
           original: insightData.data,
           updateWorkingCopy,
-          readOnly: readOnly ?? false,
+          readOnly: !editing,
         }}
       >
-        {renderInsight(localWorkingCopy ?? insightData.data)}
+        {!readOnly && (
+          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-4">
+            <InsightName
+              name={current.name}
+              disabled={updater.isPending || nameUpdater.isPending}
+              onRename={async (name) => {
+                await nameUpdater.mutateAsync({ ...insightData.data, name });
+                setViewCopy((copy) => (copy ? { ...copy, name } : copy));
+                setEditCopy((copy) => (copy ? { ...copy, name } : copy));
+              }}
+            />
+            <div className="flex-1" />
+            {editing ? (
+              <>
+                <Button
+                  disabled={
+                    !isChanged || updater.isPending || nameUpdater.isPending
+                  }
+                  onClick={save}
+                >
+                  {updater.isPending ? "Saving…" : "Save"}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={updater.isPending}
+                  onClick={() => void showView()}
+                >
+                  Discard Changes
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() =>
+                  void navigate({
+                    to: "/app/$projectid/insights/$insightid/edit",
+                    params: {
+                      projectid: projectId,
+                      insightid: String(insightId),
+                    },
+                  })
+                }
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+        )}
+        {updater.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            Could not save changes. Please try again.
+          </p>
+        )}
+        <fieldset disabled={updater.isPending} className="min-w-0 space-y-4">
+          {renderInsight(current)}
+        </fieldset>
       </BaseInsightContext.Provider>
     </>
   );

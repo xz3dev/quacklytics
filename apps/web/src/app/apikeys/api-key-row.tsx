@@ -63,16 +63,19 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
     : "********************";
 
   return (
-    <div className="flex items-center justify-between bg-muted p-4 rounded-lg space-x-4">
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-lg bg-muted p-4">
       <div className="flex-1">
         <div className="text-sm text-muted-foreground">
           Created at: {format(new Date(apiKey.createdAt), "PPPpp")}
         </div>
       </div>
-      <div className="flex items-center space-x-2">
-        <div className="flex items-center bg-muted font-mono text-xs px-4 rounded">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 max-w-full items-center font-mono text-xs">
           <span
-            className={cn(isKeyVisible ? "" : "text-muted-foreground", "mr-2")}
+            className={cn(
+              isKeyVisible ? "" : "text-muted-foreground",
+              "mr-2 min-w-0 break-all",
+            )}
           >
             {displayValue}
           </span>

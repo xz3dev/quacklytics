@@ -23,6 +23,7 @@ interface Props {
   onChange: (field: Field) => void;
   allowedTypes?: string[];
   placeholder?: string;
+  ariaLabel?: string;
 }
 
 const EVENT_FIELDS: Field[] = [
@@ -37,6 +38,7 @@ export function FieldSelector({
   onChange,
   allowedTypes,
   placeholder,
+  ariaLabel,
 }: Props) {
   const projectId = useProjectId();
   const schema = useSchema(projectId);
@@ -57,6 +59,7 @@ export function FieldSelector({
         <Button
           variant="outline"
           role="combobox"
+          aria-label={ariaLabel}
           className="w-full justify-between"
         >
           <span className="truncate">

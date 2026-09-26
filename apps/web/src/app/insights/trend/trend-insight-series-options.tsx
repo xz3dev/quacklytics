@@ -128,10 +128,12 @@ export function TrendInsightSeriesOptions() {
         return (
           <div
             key={seriesIndex}
-            className="flex gap-2 p-2 bg-muted rounded-md"
+            className="grid min-w-0 grid-cols-[1fr_auto_auto] gap-2 p-3 border bg-muted/30 rounded-lg"
           >
             <Button
               variant="ghost"
+              className="justify-self-start"
+              aria-label={`Toggle series ${seriesIndex + 1} visualization`}
               onClick={() => toggleVisualization(seriesIndex)}
             >
               {series.visualisation === "line" && (
@@ -141,7 +143,7 @@ export function TrendInsightSeriesOptions() {
                 <ChartNoAxesColumnIncreasing className="w-5 h-5 text-muted-foreground mx-1"></ChartNoAxesColumnIncreasing>
               )}
             </Button>
-            <div className="flex flex-wrap items-center gap-2 gap-y-1">
+            <div className="col-span-3 row-start-2 flex min-w-0 flex-wrap items-center gap-2">
               <TrendInsightSeriesAggregationSelection
                 currentFunction={
                   series.query?.aggregations?.[0]?.function ?? "COUNT"
@@ -194,15 +196,16 @@ export function TrendInsightSeriesOptions() {
               </Popover>
             </div>
 
-            <div className="flex-1"></div>
             <Button
               variant="ghost"
+              aria-label={`Duplicate series ${seriesIndex + 1}`}
               onClick={() => handleDuplicateSeries(seriesIndex)}
             >
               <Copy className="w-5 h-5 text-muted-foreground mx-1" />
             </Button>
             <Button
               variant="ghost"
+              aria-label={`Remove series ${seriesIndex + 1}`}
               onClick={() => handleRemoveSeries(seriesIndex)}
             >
               <X className="w-5 h-5" />

@@ -36,6 +36,6 @@
     "eslint-plugin-unused-imports": "4.4.1"
   },
   "patchedDependencies": {
-    "@duckdb/duckdb-wasm@1.33.1-dev53.0": "patches/@duckdb%2Fduckdb-wasm@1.33.1-dev53.0.patch"
+    "@duckdb/duckdb-wasm@1.32.0": "patches/@duckdb%2Fduckdb-wasm@1.32.0.patch"
   }
 }

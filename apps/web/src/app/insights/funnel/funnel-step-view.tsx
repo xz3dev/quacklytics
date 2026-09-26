@@ -118,22 +118,22 @@ export function FunnelStepView({ step }: FunnelStepProps) {
       <div
         ref={setNodeRef}
         style={style}
-        className="rounded-lg bg-muted flex flex-col items-start"
+        className="rounded-lg border bg-muted/30 flex min-w-0 flex-col items-start"
       >
         <div className="flex items-center pr-2 self-stretch">
           <div
-            className="cursor-grab p-4 grid place-content-center"
+            className="cursor-grab p-2 grid place-content-center"
             {...attributes}
             {...listeners}
           >
             <GripVertical className="w-5 h-5 text-muted-foreground"></GripVertical>
           </div>
           {/* Wrap step name and edit button in a flex container */}
-          <div className="text-muted-foreground text-sm flex items-center gap-1 flex-1">
+          <div className="text-muted-foreground text-sm flex min-w-0 items-center gap-1 flex-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="sm" onClick={openEditNameModal}>
-                  {step?.name && <span>{step.name}</span>}
+                  {step?.name && <span className="truncate">{step.name}</span>}
                   <Pencil className="!size-3" />
                 </Button>
               </TooltipTrigger>
@@ -184,7 +184,7 @@ export function FunnelStepView({ step }: FunnelStepProps) {
           </DialogContent>
         </Dialog>
 
-        <div className="flex items-center gap-2 px-4 pb-3">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 px-3 pb-3">
           {step?.query?.filters?.map((filter, filterIndex) => (
             <FilterSelector
               key={filterIndex}

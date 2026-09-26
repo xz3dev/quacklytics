@@ -1,14 +1,6 @@
-import { Link, Outlet, useNavigate } from "@/lib/navigation";
+import { Outlet, useNavigate } from "@/lib/navigation";
 import { AppSidebar } from "@/components/app-sidebar.tsx";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb.tsx";
 import { RequireAuth } from "@app/login/requireAuth.tsx";
 import { useAuthStore } from "@/services/auth.ts";
 import { DuckDB } from "@app/duckdb/duckdb.tsx";
@@ -43,30 +35,7 @@ export function AppFrame() {
               navMain={[...sidebarData.navMain]}
             />
             <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2 px-4 md:px-6">
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    {sidebarData.breadcrumbs.map((item, index) => (
-                      <div key={item.url} className="flex items-center gap-2">
-                        <BreadcrumbItem className="hidden md:block">
-                          {index === sidebarData.breadcrumbs.length - 1 ? (
-                            <BreadcrumbPage>{item.title}</BreadcrumbPage>
-                          ) : (
-                            <BreadcrumbLink asChild={true}>
-                              <Link to={item.url}>{item.title}</Link>
-                            </BreadcrumbLink>
-                          )}
-                        </BreadcrumbItem>
-                        {index < sidebarData.breadcrumbs.length - 1 && (
-                          <BreadcrumbSeparator />
-                        )}
-                      </div>
-                    ))}
-                  </BreadcrumbList>
-                </Breadcrumb>
-                <div className="flex-1"></div>
-              </header>
-              <div className="flex flex-1 flex-col gap-6 p-4 pt-2 md:px-6 md:pb-6">
+              <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-6">
                 <Outlet />
               </div>
             </SidebarInset>

@@ -64,8 +64,8 @@ export function ValueInsightSeriesOptions() {
 
   return (
     <div className="flex flex-col items-stretch gap-2">
-      <div className="flex gap-2 p-2 bg-muted rounded-md">
-        <div className="flex flex-wrap items-center gap-2 gap-y-1">
+      <div className="flex min-w-0 gap-2 p-3 border bg-muted/30 rounded-lg">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <TrendInsightSeriesAggregationSelection
             currentFunction={
               data?.config.value.series?.query?.aggregations?.[0]?.function ??

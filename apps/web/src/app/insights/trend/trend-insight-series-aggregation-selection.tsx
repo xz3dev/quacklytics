@@ -101,7 +101,7 @@ export function TrendInsightSeriesAggregationSelection({
     currentFunction === "COUNT" && selectedField?.name === "person_id";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -146,10 +146,12 @@ export function TrendInsightSeriesAggregationSelection({
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex min-w-0 max-w-full items-center gap-2"
               role="combobox"
             >
-              {selectedField?.name || "Select property"}
+              <span className="truncate">
+                {selectedField?.name || "Select property"}
+              </span>
               <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </Button>
           </PopoverTrigger>

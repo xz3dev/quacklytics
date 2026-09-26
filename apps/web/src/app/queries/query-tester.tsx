@@ -1,3 +1,4 @@
+import { PageHeader, PageTitle } from "@/components/page-header";
 import type { QueryParamValue } from "@/lib/queries";
 import { useDuckDBQuery } from "@/services/duck-db-queries.ts";
 import { useProjectId } from "@/hooks/use-project-id.tsx";
@@ -29,12 +30,25 @@ export function QueryTester() {
   }
 
   return (
-    <>
-      <SqlQueryForm onSubmit={handleSumbit} />
-      {(q.isLoading || q.isPending) && !qData && <div>Loading...</div>}
-      {q.isError && <div>Error: {q.error.message}</div>}
+    <div className="min-w-0">
+      <PageHeader>
+        <PageTitle>Queries</PageTitle>
+      </PageHeader>
+      <div className="space-y-4">
+        <SqlQueryForm onSubmit={handleSumbit} />
+        {q.isFetching && (
+          <p role="status" className="text-sm text-muted-foreground">
+            Running query…
+          </p>
+        )}
+        {q.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            Error: {q.error.message}
+          </p>
+        )}
 
-      <SqlQueryResults data={q.data}></SqlQueryResults>
-    </>
+        <SqlQueryResults data={q.data}></SqlQueryResults>
+      </div>
+    </div>
   );
 }

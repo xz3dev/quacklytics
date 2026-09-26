@@ -50,7 +50,7 @@ export function orbitInsights(days: number): InsightInput[] {
   const duration = `P${days}D`;
   return [
     {
-      name: "Orbit · Daily workspace visits and completed tasks",
+      name: "Daily workspace visits and completed tasks",
       favorite: true,
       type: "Trend",
       config: {
@@ -73,7 +73,7 @@ export function orbitInsights(days: number): InsightInput[] {
       },
     },
     {
-      name: "Orbit · Revenue this month (EUR)",
+      name: "Revenue this month (EUR)",
       favorite: true,
       type: "Value",
       config: {
@@ -95,7 +95,7 @@ export function orbitInsights(days: number): InsightInput[] {
       },
     },
     {
-      name: "Orbit · Feature adoption",
+      name: "Feature adoption",
       favorite: true,
       type: "Breakdown",
       config: {
@@ -113,12 +113,13 @@ export function orbitInsights(days: number): InsightInput[] {
       },
     },
     {
-      name: "Orbit · Pricing to paid subscription",
+      name: "Pricing to paid subscription",
       favorite: true,
       type: "Funnel",
       config: {
         funnel: {
           duration,
+          countingMode: "uniqueUsers",
           steps: eventNames.funnel.map((name, order) => ({
             id: `orbit-step-${order}`,
             name:
@@ -135,7 +136,7 @@ export function orbitInsights(days: number): InsightInput[] {
       },
     },
     {
-      name: "Orbit · Workspace retention by signup cohort",
+      name: "Workspace retention by signup cohort",
       favorite: true,
       type: "Retention",
       config: {
@@ -149,7 +150,7 @@ export function orbitInsights(days: number): InsightInput[] {
       },
     },
     {
-      name: "Orbit · Journeys from the home page",
+      name: "Journeys from the home page",
       favorite: true,
       type: "Path",
       config: {

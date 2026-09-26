@@ -1,89 +1,86 @@
 import {
   useApplyDashboardTemplate,
   useDashboard,
-  useSetDashboardInsights,
+  useSetDashboardLayout,
   useUpdateDashboard,
 } from "@/services/dashboards";
 import { useProjectId } from "@/hooks/use-project-id";
 import { Spinner } from "@/components/spinner";
 import { DashboardManageInsights } from "@app/dashboards/dashboard-manage-insights";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { useRef, useState } from "react";
+import { DashboardGrid } from "./dashboard-grid";
 import {
-  arrayMove,
-  rectSortingStrategy,
-  SortableContext,
-} from "@dnd-kit/sortable";
-import { SortableInsightCard } from "./sortable-insight-card";
-import { useEffect, useState } from "react";
-import { Insight } from "@/model/insights/insight.ts";
-import { useDebounce } from "@uidotdev/usehooks";
+  resolveDashboardLayout,
+  type DashboardGridItem,
+} from "@quacklytics/contracts";
 import { ProjectLink } from "@/components/project-link";
 import { Button } from "@/components/ui/button.tsx";
 import { BarChart3, Boxes, Edit, Plus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import type { DashboardTemplate } from "@/model/dashboard";
 import { Input } from "@/components/ui/input";
+
+import { InsightTimeControls } from "@/components/insight-time-controls";
+import type { InsightTimeOverrides } from "@/app/insights/insight-card";
 
 interface Props {
   dashboardId: number;
   readOnly?: boolean;
+  presentation?: "cards";
 }
 
-export function DashboardView({ dashboardId, readOnly }: Props) {
+export function DashboardView(props: Props) {
+  const projectId = useProjectId();
+  return (
+    <DashboardContent key={`${projectId}-${props.dashboardId}`} {...props} />
+  );
+}
+
+function DashboardContent({ dashboardId, readOnly, presentation }: Props) {
+  const [timeOverrides, setTimeOverrides] = useState<InsightTimeOverrides>({});
+  const [showTimeOverrides, setShowTimeOverrides] = useState(false);
   const projectId = useProjectId();
   const {
     data: dashboard,
     isLoading,
     error,
   } = useDashboard(projectId, dashboardId);
-  const [insights, setInsights] = useState<Insight[]>([]);
-  const debouncedInsights = useDebounce(insights, 1000);
-  const setDashboardInsights = useSetDashboardInsights(projectId);
+  const [layoutDraft, setLayoutDraft] = useState<DashboardGridItem[] | null>(
+    null,
+  );
+  const setDashboardLayout = useSetDashboardLayout(projectId);
+  const insights = dashboard?.insights ?? [];
+  const savedLayout = resolveDashboardLayout(
+    insights.map((item) => item.id),
+    dashboard?.layout,
+  );
+  const editing = !readOnly && layoutDraft !== null;
   const updateDashboard = useUpdateDashboard(projectId);
   const applyDashboardTemplate = useApplyDashboardTemplate(projectId);
 
-  const [dashboardName, setDashboardName] = useState(dashboard?.name ?? "");
+  const [dashboardName, setDashboardName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
-
-  useEffect(() => {
-    setDashboardName(dashboard?.name ?? "");
-  }, [dashboard]);
-
-  useEffect(() => {
-    setInsights(dashboard?.insights ?? []);
-  }, [dashboard]);
-
-  useEffect(() => {
-    if (!dashboard || !debouncedInsights.length) return;
-    void setDashboardInsights.mutateAsync({
-      dashboardId: dashboard.id,
-      insightIds: debouncedInsights.map((i) => i.id),
-    });
-  }, [debouncedInsights]);
+  const nameEditActive = useRef(false);
+  const renameButton = useRef<HTMLButtonElement>(null);
 
   if (isLoading) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
   if (!dashboard) return null;
 
-  const handleNameChange = (name: string) => {
-    const newDashboard = { ...dashboard, name };
-    void updateDashboard.mutateAsync(newDashboard);
-  };
-
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (over && active.id !== over.id) {
-      setInsights((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
+  const saveName = () => {
+    if (!nameEditActive.current) return;
+    nameEditActive.current = false;
+    setIsEditingName(false);
+    const name = dashboardName.trim();
+    if (!name || name === dashboard.name) return;
+    updateDashboard.mutate(
+      { ...dashboard, name },
+      {
+        onError: () => {
+          nameEditActive.current = true;
+          setIsEditingName(true);
+        },
+      },
+    );
   };
 
   const applyTemplate = async (template: DashboardTemplate) => {
@@ -94,61 +91,179 @@ export function DashboardView({ dashboardId, readOnly }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-4 my-4">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">
-          <ProjectLink to={`/dashboards/${dashboard.id}`}>
-            {dashboard.name}
-          </ProjectLink>
-
-          <Dialog open={isEditingName} onOpenChange={setIsEditingName}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full ml-1">
-                <Edit className="w-5 h-5 text-muted-foreground" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Rename Dashboard</DialogTitle>
-              </DialogHeader>
-              <div className="flex flex-col gap-4">
-                <Input
-                  defaultValue={dashboardName}
-                  onChange={(e) => setDashboardName(e.target.value)}
-                  placeholder="Enter dashboard name"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleNameChange(dashboardName);
-                      setIsEditingName(false);
-                    }
-                  }}
-                />
-                <div className="flex flex-row gap-2 items-center">
-                  <Button
-                    variant="secondary"
+    <div
+      className={
+        presentation === "cards"
+          ? "analytics-overview flex flex-col gap-5"
+          : "flex min-w-0 flex-col gap-4"
+      }
+    >
+      <div
+        className={
+          presentation === "cards"
+            ? "flex flex-col gap-4"
+            : "mb-4 flex flex-col gap-4"
+        }
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0 max-w-full">
+            {isEditingName ? (
+              <Input
+                autoFocus
+                aria-label="Dashboard name"
+                value={dashboardName}
+                className="h-10 text-2xl font-bold md:text-2xl"
+                onFocus={(event) => event.target.select()}
+                onChange={(event) => setDashboardName(event.target.value)}
+                onBlur={saveName}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    nameEditActive.current = false;
+                    setIsEditingName(false);
+                    updateDashboard.reset();
+                    requestAnimationFrame(() => renameButton.current?.focus());
+                  } else if (
+                    event.key === "Enter" &&
+                    !event.nativeEvent.isComposing
+                  ) {
+                    event.preventDefault();
+                    event.currentTarget.blur();
+                  }
+                }}
+              />
+            ) : (
+              <h1 aria-label={dashboard.name} className="text-2xl font-bold">
+                {readOnly ? (
+                  <ProjectLink to={`/dashboards/${dashboard.id}`}>
+                    {dashboard.name}
+                  </ProjectLink>
+                ) : (
+                  <button
+                    ref={renameButton}
+                    type="button"
+                    aria-label="Rename dashboard"
+                    disabled={updateDashboard.isPending}
+                    className="inline-flex min-h-10 max-w-full items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => {
                       setDashboardName(dashboard.name);
-                      setIsEditingName(false);
+                      updateDashboard.reset();
+                      nameEditActive.current = true;
+                      setIsEditingName(true);
                     }}
                   >
-                    Cancel
-                  </Button>
-
+                    <span className="min-w-0 break-words">
+                      {dashboard.name}
+                    </span>
+                    <Edit
+                      aria-hidden="true"
+                      className="h-5 w-5 shrink-0 text-muted-foreground"
+                    />
+                  </button>
+                )}
+              </h1>
+            )}
+            {updateDashboard.isError && (
+              <p role="alert" className="mt-2 text-sm text-destructive">
+                Could not rename dashboard. Edit the name and leave the field to
+                retry.
+              </p>
+            )}
+          </div>
+          {!readOnly && (
+            <div className="flex items-center gap-2">
+              {editing ? (
+                <>
                   <Button
+                    variant="outline"
+                    disabled={setDashboardLayout.isPending}
                     onClick={() => {
-                      handleNameChange(dashboardName);
-                      setIsEditingName(false);
+                      setLayoutDraft(null);
+                      setDashboardLayout.reset();
                     }}
                   >
-                    Save
+                    Discard changes
                   </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </h1>
-        <div className="flex-1" />
-        {!readOnly && <DashboardManageInsights dashboard={dashboard} />}
+                  <Button
+                    disabled={setDashboardLayout.isPending}
+                    onClick={async () => {
+                      if (!layoutDraft) return;
+                      try {
+                        await setDashboardLayout.mutateAsync({
+                          dashboardId,
+                          layout: layoutDraft,
+                        });
+                        setLayoutDraft(null);
+                      } catch {
+                        /* Keep the draft available to retry. */
+                      }
+                    }}
+                  >
+                    {setDashboardLayout.isPending
+                      ? "Saving layout…"
+                      : "Save layout"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {insights.length > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setDashboardLayout.reset();
+                        setLayoutDraft(savedLayout);
+                      }}
+                    >
+                      Adjust layout
+                    </Button>
+                  )}
+                  <DashboardManageInsights dashboard={dashboard} />
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {showTimeOverrides ? (
+            <>
+              <InsightTimeControls
+                {...timeOverrides}
+                onDurationChange={(duration) =>
+                  setTimeOverrides((current) => ({ ...current, duration }))
+                }
+                onBucketChange={(timeBucket) =>
+                  setTimeOverrides((current) => ({ ...current, timeBucket }))
+                }
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setTimeOverrides({});
+                  setShowTimeOverrides(false);
+                }}
+              >
+                {timeOverrides.duration || timeOverrides.timeBucket
+                  ? "Reset overrides"
+                  : "Cancel"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="text-xs text-muted-foreground">
+                Using each insight’s timeframe and grouping.
+              </span>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0"
+                onClick={() => setShowTimeOverrides(true)}
+              >
+                Adjust
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       {!readOnly && insights.length === 0 ? (
         <div className="grid gap-3 rounded-md bg-muted p-4 md:grid-cols-3">
@@ -190,15 +305,25 @@ export function DashboardView({ dashboardId, readOnly }: Props) {
           )}
         </div>
       ) : (
-        <DndContext onDragEnd={handleDragEnd}>
-          <SortableContext items={insights} strategy={rectSortingStrategy}>
-            <div className="grid gap-4 py-4 grid-cols-1 md:grid-cols-2 items-stretch">
-              {insights.map((insight) => (
-                <SortableInsightCard key={insight.id} insight={insight} />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className="flex min-w-0 flex-col gap-3">
+          {editing && (
+            <p className="text-sm text-muted-foreground">
+              Drag anywhere on an insight to move it or a border to resize it.
+            </p>
+          )}
+          {editing && setDashboardLayout.isError && (
+            <p role="alert" className="text-sm text-destructive">
+              Could not save layout. {setDashboardLayout.error.message}
+            </p>
+          )}
+          <DashboardGrid
+            insights={insights}
+            layout={editing && layoutDraft ? layoutDraft : savedLayout}
+            editing={editing && !setDashboardLayout.isPending}
+            onChange={setLayoutDraft}
+            timeOverrides={timeOverrides}
+          />
+        </div>
       )}
     </div>
   );

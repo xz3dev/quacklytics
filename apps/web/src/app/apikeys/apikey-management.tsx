@@ -18,9 +18,9 @@ export function ApikeyManagement() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <h2 className="text-2xl font-bold flex-1">Api Keys</h2>
+    <div className="space-y-4 rounded-xl border border-border/50 bg-card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold">API Keys</h2>
         <Button onClick={handleCreate}>{"Create API Key"}</Button>
       </div>
       {isLoading ? (

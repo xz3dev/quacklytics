@@ -204,7 +204,7 @@ export function SqlQueryForm({
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <CardTitle className="text-xl">SQL Query Editor</CardTitle>
             <CardDescription>
@@ -215,7 +215,7 @@ export function SqlQueryForm({
             <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" disabled={!query.trim()}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4" />
                   Save
                 </Button>
               </DialogTrigger>
@@ -254,7 +254,7 @@ export function SqlQueryForm({
               onClick={handleSubmit}
               disabled={!query.trim()}
             >
-              <PlayCircle className="h-4 w-4 mr-2" />
+              <PlayCircle className="h-4 w-4" />
               Execute
             </Button>
           </div>
@@ -262,7 +262,7 @@ export function SqlQueryForm({
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid h-auto w-full grid-cols-1 sm:grid-cols-3">
             <TabsTrigger value="editor">Query Editor</TabsTrigger>
             <TabsTrigger value="args">Query Arguments</TabsTrigger>
             <TabsTrigger value="saved">Saved Queries</TabsTrigger>

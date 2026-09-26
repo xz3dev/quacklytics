@@ -29,8 +29,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
     },
   });
   return (
-    <section className="mx-auto w-full max-w-md rounded-xl bg-card p-8">
-      <h1 className="text-2xl font-bold mb-6">
+    <section className="mx-auto w-full max-w-md rounded-xl border border-border/50 bg-card p-4 sm:p-6">
+      <h1 className="text-2xl font-bold mb-8">
         {register ? "Create an account" : "Welcome back"}
       </h1>
       <form
@@ -38,11 +38,11 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           event.preventDefault();
           void form.handleSubmit();
         }}
-        className="space-y-5"
+        className="space-y-4"
       >
         <form.Field name="email">
           {(field) => (
-            <label className="block">
+            <label className="grid gap-2 text-sm font-medium">
               Email
               <Input
                 name="email"
@@ -56,7 +56,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         </form.Field>
         <form.Field name="password">
           {(field) => (
-            <label className="block">
+            <label className="grid gap-2 text-sm font-medium">
               Password
               <Input
                 name="password"
@@ -72,7 +72,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         {register && (
           <form.Field name="confirmPassword">
             {(field) => (
-              <label className="block">
+              <label className="grid gap-2 text-sm font-medium">
                 Confirm Password
                 <Input
                   name="confirmPassword"
@@ -86,7 +86,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           </form.Field>
         )}
         {error && (
-          <p role="alert" className="text-red-500">
+          <p role="alert" className="text-sm text-destructive">
             {error}
           </p>
         )}

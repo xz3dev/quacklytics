@@ -14,7 +14,7 @@ import {
   updateSettings,
 } from "./projects";
 import { processIngestion, hash, RequestError } from "./ingestion/process";
-import { parseJson, properties } from "@quacklytics/contracts";
+import { dashboardLayout, parseJson, properties } from "@quacklytics/contracts";
 import { exportProject, eventSelect } from "./exports/export";
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 async function body(request: Request) {
@@ -234,6 +234,28 @@ export async function handleApi(request: Request): Promise<Response> {
           ),
         );
       }
+      if (action === "layout" && request.method === "PUT") {
+        const { layout } = z
+          .object({ layout: dashboardLayout })
+          .parse(await body(request));
+        const existing = listDashboards(db).find((d) => d.id === id);
+        if (!existing) throw new RequestError(404, "Dashboard not found");
+        if (
+          layout.length !== existing.insights.length ||
+          layout.some(
+            (item) =>
+              !existing.insights.some(
+                (insight) => insight.id === item.insightId,
+              ),
+          )
+        ) {
+          throw new RequestError(
+            409,
+            "Dashboard insights changed. Reload before adjusting the layout.",
+          );
+        }
+        return json(saveDashboard(db, { ...existing, layout }, id));
+      }
       if (action === "insights" || action === "home") {
         const existing = listDashboards(db).find((d) => d.id === id);
         if (!existing) throw new RequestError(404, "Dashboard not found");
@@ -253,6 +275,9 @@ export async function handleApi(request: Request): Promise<Response> {
             db,
             {
               ...existing,
+              layout: existing.layout?.filter((item) =>
+                insight_ids.includes(item.insightId),
+              ),
               insights: insight_ids.map((i) => {
                 const found = all.find((item) => item.id === i);
                 if (!found) throw new RequestError(400, "Unknown insight");

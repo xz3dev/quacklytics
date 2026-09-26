@@ -1,11 +1,6 @@
 import { useContext } from "react";
 import { PathInsightContext } from "@app/insights/insight-context.ts";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.tsx";
+import { InsightSettingsSection } from "../insight-editor-layout";
 import { Label } from "@/components/ui/label.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import {
@@ -16,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { FieldSelector } from "@app/insights/common/field-selector.tsx";
-import { DateRangeSummary } from "@app/insights/common/date-range-summary.tsx";
 import { QueryFilterOptions } from "@app/insights/common/query-filter-options.tsx";
 import { Field, FieldFilter } from "@/model/filters.ts";
 import { PathDirection } from "@/model/insights/path-insight.ts";
@@ -34,20 +28,9 @@ export function PathInsightOptions() {
     });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Path Settings</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <DateRangeSummary
-          value={config.duration}
-          onChange={(duration) =>
-            updateFn?.((insight) => {
-              insight.config.path.duration = duration;
-            })
-          }
-        />
-        <div className="grid gap-4 md:grid-cols-[1fr_180px_120px_120px]">
+    <InsightSettingsSection title="Path Settings">
+      <div className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Step Field</Label>
             <FieldSelector
@@ -61,7 +44,7 @@ export function PathInsightOptions() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Direction</Label>
+            <Label htmlFor="path-direction">Direction</Label>
             <Select
               value={config.direction}
               onValueChange={(direction: PathDirection) =>
@@ -70,7 +53,7 @@ export function PathInsightOptions() {
                 })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="path-direction">
                 <SelectValue placeholder="Direction" />
               </SelectTrigger>
               <SelectContent>
@@ -80,8 +63,9 @@ export function PathInsightOptions() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Steps</Label>
+            <Label htmlFor="path-steps">Steps</Label>
             <Input
+              id="path-steps"
               type="number"
               min={1}
               max={10}
@@ -99,8 +83,9 @@ export function PathInsightOptions() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Limit</Label>
+            <Label htmlFor="path-limit">Limit</Label>
             <Input
+              id="path-limit"
               type="number"
               min={1}
               max={100}
@@ -118,7 +103,7 @@ export function PathInsightOptions() {
             />
           </div>
         </div>
-        <div className="rounded-md bg-muted p-3">
+        <div className="rounded-lg border bg-muted/30 p-3">
           <div className="mb-2 text-sm font-medium">Anchor Event</div>
           <QueryFilterOptions
             filters={config.anchorQuery.filters ?? []}
@@ -138,8 +123,8 @@ export function PathInsightOptions() {
             addLabel="Add Anchor Filter"
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </InsightSettingsSection>
   );
 }
 

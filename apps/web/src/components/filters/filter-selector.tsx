@@ -20,7 +20,7 @@ interface Props {
 export function FilterSelector({ filter, onSave, onRemove }: Props) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="flex">
+    <div className="flex min-w-0 max-w-full">
       <Popover
         open={open}
         onOpenChange={(isOpen) => {
@@ -31,9 +31,9 @@ export function FilterSelector({ filter, onSave, onRemove }: Props) {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 mr-0 rounded-r-none pr-0"
+            className="h-auto min-h-8 min-w-0 whitespace-normal mr-0 rounded-r-none pr-0 text-left"
           >
-            <span className="mr-2">
+            <span className="mr-2 min-w-0 break-all">
               {filter.field.name} {filter.operator}{" "}
               {filter.value instanceof Date
                 ? format(filter.value, "yyyy-MM-dd HH:mm")
@@ -42,23 +42,26 @@ export function FilterSelector({ filter, onSave, onRemove }: Props) {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0">
-          <FilterSelectorCard
-            initialFilter={filter}
-            onSave={(filter) => {
-              onSave(filter);
-              setOpen(false);
-            }}
-            onDiscard={() => {
-              setOpen(false);
-            }}
-          />
+          {open && (
+            <FilterSelectorCard
+              initialFilter={filter}
+              onSave={(filter) => {
+                onSave(filter);
+                setOpen(false);
+              }}
+              onDiscard={() => {
+                setOpen(false);
+              }}
+            />
+          )}
         </PopoverContent>
       </Popover>
 
       <Button
         variant="outline"
         size="sm"
-        className="h-8 rounded-l-none pl-2 border-l-0"
+        className="h-auto min-h-8 shrink-0 rounded-l-none pl-2 border-l-0"
+        aria-label={`Remove ${filter.field.name} filter`}
         onClick={onRemove}
       >
         <X className="h-4 w-4" />

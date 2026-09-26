@@ -2,7 +2,10 @@ import { z } from "zod";
 // Assuming necessary imports are available:
 import { QueryParamValue } from "@lib/queries.ts"; // Or adjust path
 import { FieldFilter } from "@/model/filters.ts"; // Assuming Field type is available
-import { FunnelStep } from "@/model/insights/funnel-insights.ts"; // Or adjust path
+import type {
+  FunnelStep,
+  FunnelInsightConfig,
+} from "@/model/insights/funnel-insights.ts";
 // Assume getFieldExpression is available and imported, similar to its use in buildQuery
 import { getFieldExpression } from "@lib/field.ts"; // Adjust path as needed
 
@@ -170,6 +173,7 @@ export function buildFunnelQuery(
   eventsTable: string = "events",
   startDate: Date | string,
   endDate: Date | string,
+  countingMode: FunnelInsightConfig["countingMode"] = "uniqueUsers",
 ): { sql: string; params: QueryParamValue[] } {
   // Updated return type
   if (!steps || steps.length === 0) {
@@ -216,19 +220,23 @@ export function buildFunnelQuery(
     const sourceTable = isFirstStep
       ? baseCteName
       : `${baseCteName} ${tableAlias}`;
-    const actorExpression = `COALESCE(${tableAlias ? `${tableAlias}.` : ""}"person_id", ${tableAlias ? `${tableAlias}.` : ""}"session_id")`;
+    const actorExpression =
+      countingMode === "uniqueSessions"
+        ? `${tableAlias ? `${tableAlias}.` : ""}"session_id"`
+        : `COALESCE(${tableAlias ? `${tableAlias}.` : ""}"person_id", ${tableAlias ? `${tableAlias}.` : ""}"session_id")`;
 
     // --- SELECT Clause (Summary Version) ---
     const selectClause = `
       SELECT
           ${actorExpression} AS "actor_id",
-          MIN(${tableAlias ? `${tableAlias}.` : ""}"timestamp") AS ${stepTimeAlias}
+          MIN(${tableAlias ? `${tableAlias}.` : ""}"timestamp") AS ${stepTimeAlias},
+          COUNT(*) AS "event_count"
     `;
 
     // --- FROM Clause ---
     const fromClause = isFirstStep
       ? `FROM ${sourceTable}`
-      : `FROM ${sourceTable} JOIN ${prevCteName} ${prevStepAlias} ON COALESCE(${tableAlias}."person_id", ${tableAlias}."session_id") = ${prevStepAlias}."actor_id"`;
+      : `FROM ${sourceTable} JOIN ${prevCteName} ${prevStepAlias} ON ${actorExpression} = ${prevStepAlias}."actor_id"`;
 
     // --- WHERE Clause ---
     const whereConditions: string[] = [];
@@ -269,7 +277,15 @@ export function buildFunnelQuery(
     const currentAlias = stepCompletionAliases[index];
     // Use step name in alias, escape if necessary (basic escaping here)
     const safeAlias = step.name.replace(/[^a-zA-Z0-9_]/g, "_");
-    finalSelect += `    COUNT(${currentAlias}."actor_id") AS "${safeAlias}_count"`; // Use safe alias
+    const countExpression =
+      countingMode === "eventCount"
+        ? `COALESCE(SUM(${currentAlias}."event_count"), 0)`
+        : `COUNT(${currentAlias}."actor_id")`;
+    finalSelect += `    ${countExpression} AS "${safeAlias}_count"`;
+    if (index > 0) {
+      const previousAlias = stepCompletionAliases[index - 1];
+      finalSelect += `, AVG(epoch(${currentAlias}.step${index + 1}_time) - epoch(${previousAlias}.step${index}_time)) AS "__step_${index}_seconds"`;
+    }
 
     if (index < steps.length - 1) {
       finalSelect += ",\n";

@@ -118,7 +118,7 @@ async function main() {
     await api("/api/auth/sign-in/email", { email, password });
     const created = project.parse(
       await api("/api/projects", {
-        name: `Orbit · Demo ${new Date().toISOString().slice(0, 10)}`,
+        name: `Demo ${new Date().toISOString().slice(0, 10)}`,
       }),
     );
     projectId = created.id;
@@ -171,7 +171,7 @@ async function main() {
       );
     const created = dashboard.parse(
       await api(`/api/${projectId}/dashboards`, {
-        name: "Orbit · Chart playground",
+        name: "Chart playground",
         favorite: true,
       }),
     );

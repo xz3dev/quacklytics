@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { AnalyticsEvent } from "@/model/event";
+import { PageHeader, PageTitle } from "@/components/page-header";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { FieldFilter } from "@/model/filters";
+import { QueryFilterOptions } from "@/app/insights/common/query-filter-options";
+import { useProjectId } from "@/hooks/use-project-id";
+import { buildEventsQuery } from "@/lib/events-query";
 import {
   Table,
   TableBody,
@@ -10,7 +15,6 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { formatDistance } from "date-fns";
 import { JsonViewerThemed } from "@/components/json-viewer-themed.tsx";
 import {
@@ -20,109 +24,146 @@ import {
 } from "@/components/ui/tooltip";
 import { useDuckDb } from "@app/duckdb/duckdb-provider.tsx";
 
-const DEFAULT_QUERY = "SELECT * FROM events order by timestamp desc LIMIT 100 ";
-
 export function EventsList() {
-  const [events, setEvents] = useState<AnalyticsEvent[]>([]);
-  const [query, setQuery] = useState(DEFAULT_QUERY);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const projectId = useProjectId();
+  return <ProjectEventsList key={projectId} projectId={projectId} />;
+}
 
+function ProjectEventsList({ projectId }: { projectId: string }) {
+  const [filters, setFilters] = useState<FieldFilter[]>([]);
   const db = useDuckDb();
-
-  const runQuery = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const results = await db.runEventsQuery(query);
-      if (results) {
-        setEvents(results);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to run query");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    runQuery();
-  }, [db]);
+  const results = useQuery({
+    queryKey: ["duckdb", projectId, "events", filters],
+    queryFn: () => {
+      const query = buildEventsQuery(filters);
+      return db.runEventsQuery(query.sql, query.params);
+    },
+    retry: false,
+  });
+  const events = results.data ?? [];
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Textarea
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Enter your SQL query"
-          className="font-mono min-h-[100px]"
-        />
-        <div className="flex justify-between items-center">
-          <Button onClick={runQuery} disabled={isLoading}>
-            {isLoading ? "Running..." : "Run Query"}
-          </Button>
-          <Button variant="outline" onClick={() => setQuery(DEFAULT_QUERY)}>
-            Reset Query
-          </Button>
+    <div className="min-w-0">
+      <PageHeader>
+        <PageTitle>Events</PageTitle>
+      </PageHeader>
+      <div className="space-y-4">
+        <div className="space-y-4 rounded-xl border border-border/50 bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium">Filter events</h2>
+              <p className="text-sm text-muted-foreground">
+                Show the latest 100 events matching all filters.
+              </p>
+            </div>
+            {filters.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setFilters([])}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+          <QueryFilterOptions
+            filters={filters}
+            onAdd={(filter) => setFilters((current) => [...current, filter])}
+            onUpdate={(index, filter) =>
+              setFilters((current) =>
+                current.map((entry, i) => (i === index ? filter : entry)),
+              )
+            }
+            onRemove={(index) =>
+              setFilters((current) => current.filter((_, i) => i !== index))
+            }
+          />
+          {results.error && (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center gap-2 text-destructive text-sm"
+            >
+              Could not load events: {results.error.message}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void results.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
         </div>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Events</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event Type</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Person ID</TableHead>
-                <TableHead>Properties</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {events.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell className="font-medium">
-                    {event.eventType}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistance(event.timestamp, new Date(), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <span>{event.timestamp.toLocaleString()}</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-xs text-muted-foreground">
-                      {event.personId}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <pre className="max-w-md text-xs min-w-[200px]">
-                      {/*{JSON.stringify(event.properties, null, 2)}*/}
-                      <JsonViewerThemed
-                        json={event.properties}
-                        rootName="props"
-                      />
-                    </pre>
-                  </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Event Type</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Person ID</TableHead>
+                  <TableHead>Properties</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {(results.isPending ||
+                  results.isError ||
+                  events.length === 0) && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="h-24 text-center text-muted-foreground"
+                      role="status"
+                    >
+                      {results.isPending
+                        ? "Loading events…"
+                        : results.isError
+                          ? "Events could not be loaded."
+                          : filters.length
+                            ? "No events match your filters."
+                            : "No events yet."}
+                    </TableCell>
+                  </TableRow>
+                )}
+                {events.map((event) => (
+                  <TableRow key={event.id}>
+                    <TableCell className="font-medium">
+                      {event.eventType}
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistance(event.timestamp, new Date(), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span>{event.timestamp.toLocaleString()}</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs text-muted-foreground">
+                        {event.personId}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <pre className="max-w-md text-xs min-w-[200px]">
+                        <JsonViewerThemed
+                          json={event.properties}
+                          rootName="props"
+                        />
+                      </pre>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

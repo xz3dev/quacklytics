@@ -1,6 +1,6 @@
 import { operator as operatorSchema } from "@quacklytics/contracts";
 // src/components/filters/FilterSelectorCard.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Card,
@@ -61,23 +61,19 @@ export function FilterSelectorCard({
     }
   }, [initialFilter]);
 
-  if (schema.isLoading || schema.isPending || schema.error) return null;
   const availableFields = [
     { name: "event_type", type: "string" },
-    ...schema.data.uniqueProperties,
+    ...(schema.data?.uniqueProperties ?? []),
   ] satisfies Field[];
-  // const availableFields = ['a', 'b']
-
-  const eventTypes = Object.keys(schema.data.events);
-
-  const fieldId = useMemo(
-    () =>
-      schema.data.uniqueProperties.find((f) => f.name === currentField?.name)
-        ?.id ?? 0,
-    [currentField],
+  const eventTypes = Object.keys(schema.data?.events ?? {});
+  const fieldId = schema.data?.uniqueProperties.find(
+    (field) => field.name === currentField?.name && currentField.isProperty,
+  )?.id;
+  const propValuesQuery = usePropValues(
+    project,
+    fieldId ?? 0,
+    fieldId !== undefined,
   );
-  const projectId = useProjectId();
-  const propValuesQuery = usePropValues(projectId, fieldId);
 
   const propertyValues: string[] = propValuesQuery.data ?? [];
 
@@ -97,6 +93,14 @@ export function FilterSelectorCard({
         <CardTitle>{initialFilter ? "Edit Filter" : "Add Filter"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {schema.error && (
+          <div role="alert" className="text-sm text-destructive">
+            Could not load fields.
+            <Button variant="link" onClick={() => void schema.refetch()}>
+              Try again
+            </Button>
+          </div>
+        )}
         {/* Field Selector */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Field</label>
@@ -105,6 +109,8 @@ export function FilterSelectorCard({
               <Button
                 variant="outline"
                 role="combobox"
+                aria-label="Filter field"
+                aria-expanded={openField}
                 className="w-full justify-between"
               >
                 {currentField ? (
@@ -124,16 +130,14 @@ export function FilterSelectorCard({
               <PopoverContent className="p-0">
                 <Command>
                   <CommandInput placeholder="Search field..." />
-                  <CommandEmpty>
-                    No field found.
-                    {Array.isArray(availableFields)}
-                  </CommandEmpty>
+                  <CommandEmpty>No field found.</CommandEmpty>
                   <CommandList>
                     {availableFields.map((field) => (
                       <CommandItem
                         key={field.name}
                         onSelect={() => {
                           setCurrentField(field);
+                          setCurrentValue("");
                           setOpenField(false);
                         }}
                       >
@@ -166,7 +170,7 @@ export function FilterSelectorCard({
               setCurrentOperator(operatorSchema.parse(value))
             }
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full" aria-label="Filter operator">
               <SelectValue placeholder="Select operator" />
             </SelectTrigger>
             <SelectContent>
@@ -187,6 +191,9 @@ export function FilterSelectorCard({
               <Button
                 variant="outline"
                 role="combobox"
+                aria-label="Filter value"
+                aria-expanded={openValue}
+                disabled={!currentField}
                 className="w-full justify-between"
               >
                 {currentValue || "Enter value..."}
@@ -202,6 +209,19 @@ export function FilterSelectorCard({
                 />
                 <CommandEmpty>No suggestion found.</CommandEmpty>
                 <CommandList className="max-h-[300px] overflow-y-auto">
+                  {currentValue &&
+                    !(
+                      currentField?.name === "event_type"
+                        ? eventTypes
+                        : propertyValues
+                    ).includes(currentValue) && (
+                      <CommandItem
+                        value={currentValue}
+                        onSelect={() => setOpenValue(false)}
+                      >
+                        Use “{currentValue}”
+                      </CommandItem>
+                    )}
                   {currentField?.name === "event_type"
                     ? eventTypes.map((type) => (
                         <CommandItem
@@ -241,13 +261,28 @@ export function FilterSelectorCard({
               </Command>
             </PopoverContent>
           </Popover>
+          {currentOperator === "IN" && (
+            <p className="text-xs text-muted-foreground">
+              Separate values with commas.
+            </p>
+          )}
+          {currentOperator === "LIKE" && (
+            <p className="text-xs text-muted-foreground">
+              Use % to match any text.
+            </p>
+          )}
+          {propValuesQuery.error && (
+            <p role="alert" className="text-xs text-destructive">
+              Could not load suggestions. You can still enter a value.
+            </p>
+          )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
         <Button variant="outline" onClick={onDiscard}>
           {initialFilter ? "Cancel" : "Discard"}
         </Button>
-        <Button onClick={handleSave}>
+        <Button onClick={handleSave} disabled={!currentField || !currentValue}>
           {initialFilter ? "Update" : "Create"}
         </Button>
       </CardFooter>

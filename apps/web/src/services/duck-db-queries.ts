@@ -1,3 +1,8 @@
+import { useContext } from "react";
+import {
+  ChartBreakdownContext,
+  scopeBreakdownQuery,
+} from "@/lib/chart-breakdown";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import {
   useQueries,
@@ -20,7 +25,10 @@ export function useDuckDBQuery(
   options?: Partial<UseQueryOptions<ResultRow[], Error>>,
 ) {
   const db = useDuckDb();
-  const [paced] = useDebouncedValue(query, { wait: 150 });
+  const breakdown = useContext(ChartBreakdownContext);
+  const [paced] = useDebouncedValue(scopeBreakdownQuery(query, breakdown), {
+    wait: 150,
+  });
   return useQuery({
     queryKey: [
       ...DUCKDB_INSIGHT_QUERY_KEY(project, uniqId),
@@ -41,16 +49,22 @@ export function useDuckDBQueries(
   }>,
 ) {
   const db = useDuckDb();
+  const breakdown = useContext(ChartBreakdownContext);
   return useQueries({
-    queries: queries.map(({ uniqId, query, enabled = true, options }) => ({
-      queryKey: [
-        ...DUCKDB_INSIGHT_QUERY_KEY(project, uniqId),
-        query.sql,
-        query.params,
-      ],
-      queryFn: () => db.runQuery(query),
-      enabled,
-      ...options,
-    })),
+    queries: queries
+      .map((entry) => ({
+        ...entry,
+        query: scopeBreakdownQuery(entry.query, breakdown),
+      }))
+      .map(({ uniqId, query, enabled = true, options }) => ({
+        queryKey: [
+          ...DUCKDB_INSIGHT_QUERY_KEY(project, uniqId),
+          query.sql,
+          query.params,
+        ],
+        queryFn: () => db.runQuery(query),
+        enabled,
+        ...options,
+      })),
   });
 }

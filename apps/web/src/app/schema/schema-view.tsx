@@ -1,7 +1,19 @@
-// In schema-view.tsx
-import { useSchema } from "@/services/schemas.ts";
-import { useProjectId } from "@/hooks/use-project-id.tsx";
-import { Spinner } from "@/components/spinner.tsx";
+import { PageHeader, PageTitle } from "@/components/page-header";
+import { useMemo, useState } from "react";
+import { ChevronRight, Copy, Database, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useSchema, type Schema, type FieldWithId } from "@/services/schemas";
+import { useProjectId } from "@/hooks/use-project-id";
+import { Spinner } from "@/components/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -10,93 +22,280 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { SchemaPropValueList } from "@app/schema/schema-prop-value-list.tsx";
-import { useEffect, useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils/tailwind";
+import { SchemaPropValueList } from "./schema-prop-value-list";
+
+function namespaceOf(event: string) {
+  const separator = event.lastIndexOf(".");
+  return separator < 0 ? "" : event.slice(0, separator);
+}
 
 export function SchemaView() {
   const projectId = useProjectId();
-  const schemaQuery = useSchema(projectId);
-  const [selectedProp, setSelectedProp] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-  const [filter, setFilter] = useState("");
+  const query = useSchema(projectId);
 
-  if (schemaQuery.isLoading || schemaQuery.isPending) return <Spinner />;
-  if (schemaQuery.error) return <div>Error: {schemaQuery.error.message}</div>;
-
-  const schema = schemaQuery.data;
-
-  const filteredEvents = useMemo(() => {
-    const searchTerm = filter.toLowerCase();
-    return Object.entries(schema.events)
-      .filter(([eventType]) => eventType.toLowerCase().includes(searchTerm))
-      .sort(([a], [b]) => a.localeCompare(b));
-  }, [schema.events, filter]);
-
-  useEffect(() => {
-    console.log(`prop: ${selectedProp}`);
-  }, [selectedProp]);
+  if (query.isPending || query.isPlaceholderData) return <Spinner />;
+  if (query.error)
+    return (
+      <div role="alert" className="space-y-3 p-6">
+        <p>Could not load event schema: {query.error.message}</p>
+        <Button variant="secondary" onClick={() => void query.refetch()}>
+          Try again
+        </Button>
+      </div>
+    );
 
   return (
-    <div>
-      <div className="flex items-center justify-between mt-4 mb-8">
-        <h1 className="text-2xl font-bold">Event Schema</h1>
-        <Input
-          placeholder="Filter events..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="max-w-sm"
-        />
-      </div>
-      <div className="overflow-hidden rounded-xl bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[200px]">Event Type</TableHead>
-              <TableHead>Properties</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredEvents.length > 0 ? (
-              filteredEvents.map(([eventType, properties]) => (
-                <TableRow key={eventType} className="hover:bg-transparent">
-                  <TableCell className="font-medium">{eventType}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {properties
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((field) => (
-                          <Badge
-                            key={field.id}
-                            variant="secondary"
-                            className="cursor-pointer hover:bg-secondary/80"
-                            onClick={() =>
-                              setSelectedProp({
-                                id: field.id,
-                                name: field.name,
-                              })
-                            }
-                          >
-                            {field.name}
-                          </Badge>
-                        ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={2} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
+    <div className="min-w-0">
+      <PageHeader>
+        <PageTitle>Data</PageTitle>
+      </PageHeader>
+      <SchemaBrowser key={projectId} schema={query.data} />
+    </div>
+  );
+}
+
+function SchemaBrowser({ schema }: { schema: Schema }) {
+  const [filter, setFilter] = useState("");
+  const [propertyFilter, setPropertyFilter] = useState("");
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [selectedProp, setSelectedProp] = useState<FieldWithId | null>(null);
+  const events = useMemo(
+    () =>
+      Object.entries(schema.events)
+        .map(([name, properties]) => ({
+          name,
+          namespace: namespaceOf(name),
+          properties: [...properties].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          ),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [schema.events],
+  );
+  const search = filter.trim().toLowerCase();
+  const filteredEvents = events.filter((event) =>
+    event.name.toLowerCase().includes(search),
+  );
+  const selectedEvent =
+    filteredEvents.find((event) => event.name === selectedName) ??
+    filteredEvents[0];
+  const propertySearch = propertyFilter.trim().toLowerCase();
+  const filteredProperties =
+    selectedEvent?.properties.filter((field) =>
+      field.name.toLowerCase().includes(propertySearch),
+    ) ?? [];
+
+  return (
+    <div className="grid min-w-0 overflow-hidden rounded-xl border border-border/50 bg-card lg:h-[calc(100dvh-7rem)] lg:min-h-[32rem] lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
+      <section
+        aria-label="Events"
+        className="flex min-h-0 min-w-0 flex-col border-b border-border/50 lg:border-b-0 lg:border-r"
+      >
+        <div className="space-y-3 border-b border-border/50 p-4">
+          <div className="relative">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              aria-label="Search events"
+              placeholder="Search events..."
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <p role="status" className="text-xs text-muted-foreground">
+            {filteredEvents.length} of {events.length} events
+          </p>
+        </div>
+        <ul
+          aria-label="Event list"
+          className="max-h-80 flex-1 overflow-y-auto p-2 lg:max-h-none"
+        >
+          {filteredEvents.map((event) => (
+            <li key={event.name}>
+              <button
+                type="button"
+                aria-label={event.name}
+                aria-pressed={selectedEvent?.name === event.name}
+                onClick={() => setSelectedName(event.name)}
+                className={cn(
+                  "my-1 flex w-full items-center gap-3 rounded-md border-l-2 px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  selectedEvent?.name === event.name
+                    ? "border-primary bg-accent/60"
+                    : "border-transparent hover:bg-muted/60",
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                    {event.name}
+                  </p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {event.properties.length} properties
+                  </p>
+                  <div
+                    className="mt-3 flex flex-wrap gap-1.5"
+                    aria-hidden="true"
+                  >
+                    {event.properties.slice(0, 3).map((property) => (
+                      <Badge
+                        key={property.id}
+                        variant="secondary"
+                        className="max-w-full truncate px-2 font-normal"
+                      >
+                        {property.name}
+                      </Badge>
+                    ))}
+                    {event.properties.length > 3 && (
+                      <span className="py-0.5 text-xs text-muted-foreground">
+                        +{event.properties.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+        {filteredEvents.length === 0 && (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            <p>
+              {events.length === 0
+                ? "No events yet. Send your first event to explore its schema."
+                : "No events match your filters."}
+            </p>
+            {events.length > 0 && (
+              <Button
+                variant="link"
+                className="mt-2"
+                onClick={() => setFilter("")}
+              >
+                Clear filters
+              </Button>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        )}
+      </section>
+
+      <section
+        aria-label="Event inspector"
+        className="min-w-0 overflow-y-auto p-4"
+      >
+        {selectedEvent ? (
+          <>
+            <h2 className="text-xl font-semibold tracking-tight xl:text-2xl">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="group inline-flex max-w-full items-center gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(
+                            selectedEvent.name,
+                          );
+                          toast.success("Event name copied");
+                        } catch {
+                          toast.error("Could not copy event name");
+                        }
+                      }}
+                    >
+                      <span className="min-w-0 [overflow-wrap:anywhere]">
+                        {selectedEvent.name}
+                      </span>
+                      <Copy
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Copy event name</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {selectedEvent.namespace || "Ungrouped"}
+            </p>
+            <div className="relative mb-5 mt-6">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                aria-label="Search properties"
+                placeholder="Search properties..."
+                value={propertyFilter}
+                onChange={(event) => setPropertyFilter(event.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="overflow-hidden rounded-lg border border-border/50">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Values</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProperties.map((field) => (
+                    <TableRow key={field.id}>
+                      <TableCell className="max-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProp(field)}
+                          className="rounded-sm text-left text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [overflow-wrap:anywhere]"
+                        >
+                          {field.name}
+                        </button>
+                      </TableCell>
+                      <TableCell className="w-24">
+                        <Badge variant="secondary" className="font-normal">
+                          {field.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="w-10 px-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`View values for ${field.name}`}
+                          onClick={() => setSelectedProp(field)}
+                        >
+                          <ChevronRight />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {filteredProperties.length === 0 && (
+                <p role="status" className="p-6 text-sm text-muted-foreground">
+                  {selectedEvent.properties.length === 0
+                    ? "This event has no properties."
+                    : "No properties match your search."}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex min-h-48 h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+            <Database className="size-7" />
+            <p className="text-sm">
+              Select an event to inspect its properties.
+            </p>
+          </div>
+        )}
+      </section>
       {selectedProp && (
         <SchemaPropValueList
           key={selectedProp.id}

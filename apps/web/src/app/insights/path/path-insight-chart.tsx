@@ -1,3 +1,6 @@
+import { insightMetricUnit } from "@/lib/metric-value";
+import { useChartBreakdown, breakdownLabel } from "@/lib/chart-breakdown";
+import { ChartBreakdown } from "@/app/insights/common/chart-breakdown";
 import { pathRow } from "@quacklytics/contracts";
 import { AnalyticsChart } from "@/components/analytics-chart";
 import { PathInsight } from "@/model/insights/path-insight.ts";
@@ -13,7 +16,8 @@ interface Props {
   insight: PathInsight;
 }
 
-export function PathInsightChart({ insight }: Props) {
+function UngroupedPathInsightChart({ insight }: Props) {
+  const breakdown = useChartBreakdown();
   const projectId = useProjectId();
   const query = useMemo(
     () => ({
@@ -30,7 +34,10 @@ export function PathInsightChart({ insight }: Props) {
       <div className="text-sm text-red-600">Error: {result.error.message}</div>
     );
 
-  const rows = pathRow.array().parse(result.data ?? []);
+  const rows = (result.data ?? []).map((raw) => ({
+    ...pathRow.parse(raw),
+    groupIndex: Number(raw.__breakdown_index),
+  }));
   if (rows.length === 0) {
     return (
       <div className="py-6 text-sm text-muted-foreground">
@@ -40,13 +47,26 @@ export function PathInsightChart({ insight }: Props) {
   }
 
   const maxValue = Math.max(...rows.map((row) => Number(row.result_value)));
+  // The query groups by source, destination, and distance. Preserve all three
+  // in the chart category when a path visits the same destination repeatedly.
+  const points = rows.map((row) => ({
+    label: `${row.source_step} → ${row.target_step} · ${row.step_distance} ${row.step_distance === 1 ? "step" : "steps"} ${insight.config.path.direction === "backward" ? "before" : "after"}`,
+    value: row.result_value,
+    groupIndex: row.groupIndex,
+  }));
   return (
     <div className="space-y-3">
       <AnalyticsChart
-        points={rows.map((row) => ({
-          label: `${row.source_step} → ${row.target_step}`,
-          value: row.result_value,
-        }))}
+        metricUnit={insightMetricUnit(insight)}
+        points={points}
+        {...(breakdown
+          ? {
+              series: breakdown.values.map((value, index) => ({
+                name: breakdownLabel(value),
+                points: points.filter((point) => point.groupIndex === index),
+              })),
+            }
+          : {})}
         label={insight.name ?? "Paths"}
       />
       {rows.map((row) => {
@@ -55,7 +75,12 @@ export function PathInsightChart({ insight }: Props) {
         const width = maxValue > 0 ? (value / maxValue) * 100 : 0;
         return (
           <div
-            key={JSON.stringify([row.source_step, row.target_step, distance])}
+            key={JSON.stringify([
+              row.groupIndex,
+              row.source_step,
+              row.target_step,
+              distance,
+            ])}
             className="space-y-1"
           >
             <div className="flex items-center gap-2 text-sm">
@@ -65,6 +90,11 @@ export function PathInsightChart({ insight }: Props) {
               >
                 {row.source_step}
               </span>
+              {breakdown && (
+                <span>
+                  {breakdownLabel(breakdown.values[row.groupIndex] ?? null)}
+                </span>
+              )}
               <MoveRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span
                 className="max-w-[45%] truncate font-medium"
@@ -84,7 +114,7 @@ export function PathInsightChart({ insight }: Props) {
             </div>
             <div className="h-2 rounded-sm bg-muted">
               <div
-                className="h-2 rounded-sm bg-chart-2"
+                className="h-2 rounded-sm bg-chart-1"
                 style={{ width: `${width}%` }}
               />
             </div>
@@ -92,5 +122,15 @@ export function PathInsightChart({ insight }: Props) {
         );
       })}
     </div>
+  );
+}
+
+export function PathInsightChart(
+  props: Parameters<typeof UngroupedPathInsightChart>[0],
+) {
+  return (
+    <ChartBreakdown insight={props.insight}>
+      <UngroupedPathInsightChart {...props} />
+    </ChartBreakdown>
   );
 }

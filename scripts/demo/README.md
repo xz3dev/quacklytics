@@ -17,7 +17,7 @@ unset QUACKLYTICS_PASSWORD
 
 The `read` example uses zsh, the development workspace's shell. Alternatively set `QUACKLYTICS_PASSWORD` in your shell/environment before running the command.
 
-This creates a **new Orbit demo project**, sends its events, creates six configured insights, and sets the **Orbit · Chart playground** dashboard as its home. The project automatically loads all generated months into browser queries. The command prints the dashboard URL. It does not register or modify administrator accounts.
+This creates a **new Orbit demo project**, sends its events, creates six configured insights, and sets the **Chart playground** dashboard as its home. The project automatically loads all generated months into browser queries. The command prints the dashboard URL. It does not register or modify administrator accounts.
 
 ## Development dashboard template
 

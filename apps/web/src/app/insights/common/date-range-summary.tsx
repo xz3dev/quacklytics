@@ -13,7 +13,7 @@ export function DateRangeSummary({ value, onChange }: Props) {
   const { start, end } = determineDateRange(range);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <DateRangePicker
         onChange={(range) => onChange(range.value)}
         value={range}
@@ -21,8 +21,7 @@ export function DateRangeSummary({ value, onChange }: Props) {
       <div className="flex items-center gap-2 pl-2 text-xs text-muted-foreground">
         <CalendarRange className="w-4 h-4 text-muted-foreground" />
         <span>
-          {format(start, "yyyy-MM-dd HH:mm")} -{" "}
-          {format(end, "yyyy-MM-dd HH:mm")}
+          {format(start, "MMM d, yyyy")} - {format(end, "MMM d, yyyy")}
         </span>
       </div>
     </div>

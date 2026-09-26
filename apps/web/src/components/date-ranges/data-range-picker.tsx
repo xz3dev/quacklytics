@@ -18,10 +18,11 @@ import {
 
 type Props = {
   onChange: (range: InsightDateRange) => void;
-  value?: string;
+  value?: string | undefined;
+  placeholder?: string;
 };
 
-const DateRangePicker = ({ onChange, value }: Props) => {
+const DateRangePicker = ({ onChange, value, placeholder }: Props) => {
   const [selectedRange, setSelectedRange] = useState<
     InsightDateRange | undefined
   >(undefined);
@@ -52,7 +53,9 @@ const DateRangePicker = ({ onChange, value }: Props) => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
-            {selectedRange ? selectedRange?.label : "Select date range"}
+            {!value && placeholder
+              ? placeholder
+              : (selectedRange?.label ?? "Select date range")}
             <ChevronDown />
           </Button>
         </DropdownMenuTrigger>
