@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
-import { z } from "zod";
 import { dashboard, project } from "../../packages/contracts/src/index";
 
 test("dashboard chart picker searches, cancels drafts, and persists only selected charts", async ({
@@ -7,21 +7,7 @@ test("dashboard chart picker searches, cancels drafts, and persists only selecte
   baseURL,
 }) => {
   if (!baseURL) throw new Error("Missing test origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const response = await page.request.post("/api/projects", {
     data: { name: "Chart picker" },
   });
@@ -75,30 +61,28 @@ test("dashboard chart picker searches, cancels drafts, and persists only selecte
   await expect(
     page.getByText("No charts found.", { exact: true }),
   ).toBeVisible();
-  await search.fill("total");
+  await search.fill("sessions");
   await expect(page.getByRole("option")).toHaveCount(1);
   await search.press("ArrowDown");
   await search.press("Enter");
   await expect(selected.getByRole("listitem")).toHaveCount(1);
-  await expect(
-    selected.getByText("Total events", { exact: true }),
-  ).toBeVisible();
+  await expect(selected.getByText("Sessions", { exact: true })).toBeVisible();
   await modal.getByRole("button", { name: "Cancel", exact: true }).click();
   await manage.click();
   await expect(modal.getByText("No charts added yet")).toBeVisible();
   search = await openPicker();
-  await search.fill("events over time");
+  await search.fill("visitors and pageviews");
   await page
-    .getByRole("option", { name: "Events over time", exact: true })
+    .getByRole("option", { name: "Visitors and pageviews", exact: true })
     .click();
   search = await openPicker();
   await expect(
-    page.getByRole("option", { name: "Events over time", exact: true }),
+    page.getByRole("option", { name: "Visitors and pageviews", exact: true }),
   ).toHaveCount(0);
-  await search.fill("total");
-  await page.getByRole("option", { name: "Total events", exact: true }).click();
+  await search.fill("sessions");
+  await page.getByRole("option", { name: "Sessions", exact: true }).click();
   await modal
-    .getByRole("button", { name: "Remove Events over time", exact: true })
+    .getByRole("button", { name: "Remove Visitors and pageviews", exact: true })
     .click();
   await expect(selected.getByRole("listitem")).toHaveCount(1);
   const saveUrl = `${base}/${empty.id}/insights`;
@@ -122,20 +106,18 @@ test("dashboard chart picker searches, cancels drafts, and persists only selecte
   await page.reload();
   await manage.click();
   await expect(selected.getByRole("listitem")).toHaveCount(1);
-  await expect(
-    selected.getByText("Total events", { exact: true }),
-  ).toBeVisible();
+  await expect(selected.getByText("Sessions", { exact: true })).toBeVisible();
   const persisted = dashboard.parse(
     await (await page.request.get(`${base}/${empty.id}`)).json(),
   );
-  expect(persisted.insights.map((item) => item.name)).toEqual(["Total events"]);
+  expect(persisted.insights.map((item) => item.name)).toEqual(["Sessions"]);
   expect(
     dashboard.parse(
       await (await page.request.get(`${base}/${home.id}`)).json(),
     ),
   ).toEqual(home);
   await modal
-    .getByRole("button", { name: "Remove Total events", exact: true })
+    .getByRole("button", { name: "Remove Sessions", exact: true })
     .click();
   await modal.getByRole("button", { name: "Save Changes" }).click();
   await expect(modal).toBeHidden();

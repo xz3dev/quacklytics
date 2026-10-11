@@ -1,3 +1,4 @@
+import { loginAsAdmin } from "../support/auth";
 import { test, expect, type Locator } from "@playwright/test";
 import { z } from "zod";
 import {
@@ -33,21 +34,7 @@ test("all charts break down by properties, persist, and restore ungrouped result
 }) => {
   test.setTimeout(180000);
   page.setDefaultTimeout(15000);
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL ?? "" },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const createdProject = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -82,7 +69,10 @@ test("all charts break down by properties, persist, and restore ungrouped result
   const ids: number[] = [];
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  for (const definition of Object.values(defaultInsights)) {
+  // Maps are already grouped by country and offer no further breakdown.
+  for (const definition of Object.values(defaultInsights).filter(
+    (definition) => definition.type !== "Map",
+  )) {
     const configured = insight.parse({ ...definition, id: 1 });
     if (configured.type === "Trend") {
       const original = configured.config.trend.series?.[0];
@@ -333,6 +323,9 @@ test("all charts break down by properties, persist, and restore ungrouped result
     await page.getByRole("button", { name: "Save", exact: true }).click();
     const persisted = insight.parse(await (await save).json());
     expect(persisted.breakdownBy?.name).toContain("device");
+    await expect(page).toHaveURL(
+      `/app/${createdProject.id}/insights/${saved.id}`,
+    );
     await page.reload();
     await expect(chart).toBeVisible();
     await expect(plot).toHaveCount(1);

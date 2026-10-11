@@ -1,0 +1,93 @@
+---
+title: Backups
+description: Back up and restore a Quacklytics instance.
+sidebar:
+  order: 3
+---
+
+import { Aside, Steps, FileTree } from "@astrojs/starlight/components";
+
+## What to back up
+
+Everything that matters lives in the **data directory** (`/data` in Docker):
+
+<FileTree>
+
+- data/
+  - format — marks the directory as Quacklytics data
+  - app.sqlite — accounts, projects and ingestion keys
+  - app.sqlite-wal
+  - app.sqlite-shm
+  - auth-secret
+  - projects/
+    - PROJECT_ID/
+      - project.sqlite — events, insights, dashboards and allowed origins
+      - project.sqlite-wal
+      - project.sqlite-shm
+
+</FileTree>
+
+<Aside type="caution" title="Keep the files together">
+    The SQLite databases, their `-wal` files and `auth-secret` belong together. Copying only some of them, or copying while the service runs, can give you an inconsistent backup.
+</Aside>
+
+<Aside type="note" title="Backups contain secrets">
+    `app.sqlite` stores ingestion keys and `auth-secret` signs sessions. Store backups as securely as the server itself.
+</Aside>
+
+<Aside type="danger" title="The bucket is part of your data">
+    Archived months (older than a month plus seven days) exist **only** in S3. The data directory alone does **not** contain your full history. Always back up the bucket too, for example with your provider's versioning or replication, or with `aws s3 sync`.
+</Aside>
+
+<Aside type="caution" title="Restore both together">
+    The data directory and the bucket must match. If you restore an old data directory against a bucket that has moved on, cleanup deletes objects the restored catalog doesn't know about. Enable **bucket versioning**, or back up both at the same moment while the service is stopped.
+</Aside>
+
+## Create a backup
+
+<Steps>
+
+1. **Stop the service** so all writes are finished:
+
+    ```sh
+    docker compose stop analytics
+    ```
+
+2. **Copy the whole data volume:**
+
+    ```sh
+    docker run --rm -v quacklytics_analytics-data:/data -v "$PWD":/backup alpine \
+      tar czf /backup/quacklytics-$(date +%F).tar.gz -C /data .
+    ```
+
+3. **Start the service again:**
+
+    ```sh
+    docker compose start analytics
+    ```
+
+</Steps>
+
+<Aside type="tip">
+    The volume name depends on your Compose project name. Find it with `docker volume ls`.
+</Aside>
+
+## Restore
+
+<Steps>
+
+1. Stop the service.
+2. Empty the data volume and extract the archive into it:
+
+    ```sh
+    docker run --rm -v quacklytics_analytics-data:/data -v "$PWD":/backup alpine \
+      sh -c "rm -rf /data/* && tar xzf /backup/quacklytics-2026-10-10.tar.gz -C /data"
+    ```
+
+3. Start the service. Run the same app version that created the backup, or a newer one.
+
+</Steps>
+
+<Aside type="danger" title="One process per data directory">
+    Never run two Quacklytics processes against the same data directory, and keep it on a local filesystem, not a network share. This isn't enforced, so it's up to you.
+</Aside>

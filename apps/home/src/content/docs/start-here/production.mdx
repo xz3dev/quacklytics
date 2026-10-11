@@ -1,0 +1,71 @@
+---
+title: Production Deployment
+description: Deploy Quacklytics with Docker, your own S3 bucket and HTTPS.
+---
+
+import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<Aside type="tip" title="Just trying it out?">
+    The [Local Setup](/start-here/local/) runs everything on your machine with a single command.
+</Aside>
+
+## What you need
+
+- A server that can run Docker, with a **persistent volume** for the data directory
+- A **private S3-compatible bucket** (AWS S3, Cloudflare R2, MinIO, Garage, …)
+- A **domain with HTTPS**, served by a reverse proxy such as Caddy, nginx or Traefik
+
+## Deploy
+
+<Steps>
+
+1. **Set up the bucket.** Create it, create an access key and configure CORS, as described in [S3 Storage](/self-hosting/s3-storage/).
+
+2. **Run the container** with your configuration:
+
+    ```yaml title="docker-compose.yml"
+    services:
+      analytics:
+        build: https://github.com/xz3dev/quacklytics.git
+        ports:
+          - "127.0.0.1:3000:3000" # only reachable through the proxy
+        environment:
+          APP_ORIGIN: https://analytics.example.com
+          TRUSTED_PROXIES: private
+          S3_ENDPOINT: https://s3.eu-central-1.amazonaws.com
+          S3_REGION: eu-central-1
+          S3_BUCKET: quacklytics
+          S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+          S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+        volumes:
+          - analytics-data:/data
+        stop_grace_period: 20s
+        restart: unless-stopped
+    volumes:
+      analytics-data:
+    ```
+
+    ```sh
+    docker compose up -d --build
+    ```
+
+3. **Put a reverse proxy in front** that terminates HTTPS and forwards to port `3000`. See [Reverse Proxy](/self-hosting/reverse-proxy/).
+
+4. **Register the administrator** at your domain right away. Passwords need at least 12 characters.
+
+    <Aside type="caution" title="Only one account">
+        Registration closes after the first account. Whoever registers first becomes the administrator.
+    </Aside>
+
+</Steps>
+
+See [Configuration](/reference/configuration/) for every environment variable.
+
+## Keep it running
+
+<CardGrid>
+    <LinkCard title="Backups" description="What to copy and how to restore." href="/self-hosting/backups/" />
+    <LinkCard title="Upgrading" description="Update to a new version safely." href="/self-hosting/upgrading/" />
+    <LinkCard title="Database migrations" description="Inspect or roll back schema changes." href="/self-hosting/migrations/" />
+    <LinkCard title="Sending data" description="Track your first events." href="/guides/send-data/" />
+</CardGrid>

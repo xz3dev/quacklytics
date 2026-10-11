@@ -1,6 +1,6 @@
 import { project as projectSchema } from "@quacklytics/contracts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { http } from "@/lib/fetch";
+import { http } from "@/client/api/http";
 import { Project } from "@/model/project";
 
 const PROJECTS_KEY = "projects" as const;
@@ -11,8 +11,11 @@ const projectsApi = {
     return response ?? [];
   },
 
-  createProject: async (name: string): Promise<Project> => {
-    return http.post("/projects", { name }, projectSchema);
+  createProject: async (input: {
+    name: string;
+    emoji: string;
+  }): Promise<Project> => {
+    return http.post("/projects", input, projectSchema);
   },
 
   updateSetting: async (
@@ -38,37 +41,31 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (name: string) => projectsApi.createProject(name),
+    mutationFn: (input: { name: string; emoji: string }) =>
+      projectsApi.createProject(input),
     onSuccess: (newProject) => {
-      queryClient.setQueryData<Project[]>([PROJECTS_KEY], (old = []) => {
-        console.log(newProject, old);
-        return [...old, newProject];
-      });
+      queryClient.setQueryData<Project[]>(
+        [PROJECTS_KEY],
+        (old) => old && [...old, newProject],
+      );
     },
   });
 }
 
-export function useUpdateProjectName() {
+export function useUpdateProjectDetails() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: { projectId: string; value: string }) => {
-      return projectsApi.updateSetting(params.projectId, {
-        key: "name",
-        value: params.value,
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData<Project[]>([PROJECTS_KEY], (old = []) => {
-        return old.map((p) => {
-          if (p.id === variables.projectId) {
-            return {
-              ...p,
-              name: variables.value,
-            };
-          }
-          return p;
-        });
-      });
+    mutationFn: (params: { projectId: string; name: string; emoji: string }) =>
+      http.post(
+        `/${params.projectId}/settings`,
+        [
+          { key: "name", value: params.name },
+          { key: "emoji", value: params.emoji },
+        ],
+        projectSchema.array(),
+      ),
+    onSuccess: (projects) => {
+      queryClient.setQueryData<Project[]>([PROJECTS_KEY], projects);
     },
   });
 }

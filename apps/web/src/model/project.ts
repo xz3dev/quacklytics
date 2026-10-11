@@ -1,6 +1,4 @@
-export interface Project {
-  id: string;
-  name: string;
-  partition: string;
-  corsOrigins: string[];
-}
+import { z } from "zod";
+import { project } from "@quacklytics/contracts";
+
+export type Project = z.infer<typeof project>;

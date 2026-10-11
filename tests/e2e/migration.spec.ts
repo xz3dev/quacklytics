@@ -17,35 +17,45 @@ test("setup, project, durable ingestion, browser analytics and reload", async ({
   await page.getByLabel("Email", { exact: true }).fill(credentials.email);
   await page.getByLabel("Password", { exact: true }).fill(credentials.password);
   if (!setup.adminRegistered)
-    await page.getByLabel("Confirm Password").fill(credentials.password);
+    await page.getByLabel("Confirm password").fill(credentials.password);
   await page
     .getByRole("button", {
-      name: setup.adminRegistered ? "Login" : "Register",
+      name: setup.adminRegistered ? "Sign in" : "Create account",
       exact: true,
     })
     .click();
   await expect(
     page.getByRole("heading", { name: "Projects", exact: true }),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: /^(New project|Create your first project)$/ })
+    .click();
+  await expect(page).toHaveURL(/\/projects\/new$/);
   await page.getByLabel("Project name", { exact: true }).fill("Migration E2E");
   await page
     .getByRole("button", { name: "Create project", exact: true })
     .click();
+  await expect(page).toHaveURL(/\/setup$/);
+  await page.getByRole("link", { name: "Skip for now", exact: true }).click();
   await expect(page).toHaveURL(/\/app\//);
   const project = page.url().split("/app/")[1]?.split("/")[0];
   expect(project).toBeTruthy();
   if (!project) throw new Error("Missing project");
   await expect(
-    page.getByRole("img", { name: "Events over time" }),
+    page.getByRole("img", {
+      name: /^Trend chart preview\. Illustrative sample only/,
+    }),
   ).toBeVisible();
   const keyResponse = await page.request.post(`/api/${project}/apikeys`);
   expect(keyResponse.ok()).toBeTruthy();
   const keys = z
     .array(z.object({ key: z.string() }))
     .parse(await keyResponse.json());
-  const key = keys[0]?.key;
+  // Setup already created a key; only the new one carries its full value.
+  const key = keys.find((entry) => !entry.key.endsWith("…"))?.key;
   if (!key) throw new Error("Missing key");
-  const now = new Date();
+  // Default calendar charts cover complete UTC days, excluding today.
+  const now = new Date(Date.now() - 86400000);
   const payload = {
     requestId: crypto.randomUUID(),
     events: [
@@ -83,11 +93,12 @@ test("setup, project, durable ingestion, browser analytics and reload", async ({
   await expect(
     page.getByText("Web Analytics Overview", { exact: true }).first(),
   ).toBeVisible();
+  // The default dashboard reports pageviews; server events count as custom.
   await expect(
-    page.getByText("Total events", { exact: true }).first(),
+    page.getByRole("link", { name: "Custom events", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("img", { name: "Events over time" }),
+    page.getByRole("link", { name: "Visitors by country", exact: true }),
   ).toBeVisible();
   await page.goto(`/app/${project}/events`);
   await expect(page.getByText("signup", { exact: true }).first()).toBeVisible();
@@ -130,14 +141,33 @@ async function projectFixture(
         await page.request.post("/api/projects", { data: { name } })
       ).json(),
     );
-  const keys = z
-    .array(z.object({ key: z.string(), id: z.number() }))
+  // Every project starts with one key; read its full value.
+  const keyId = z
+    .array(z.object({ id: z.number() }))
+    .parse(await (await page.request.get(`/api/${project.id}/apikeys`)).json())
+    .at(-1)?.id;
+  if (keyId === undefined) throw new Error("Project has no key");
+  const key = z
+    .object({ key: z.string() })
     .parse(
-      await (await page.request.post(`/api/${project.id}/apikeys`)).json(),
-    );
-  const key = keys.at(-1);
-  if (!key) throw new Error("No key created");
-  return { project: project.id, key: key.key, keyId: key.id };
+      await (
+        await page.request.get(`/api/${project.id}/apikeys/${keyId}`)
+      ).json(),
+    ).key;
+  return { project: project.id, key, keyId };
+}
+/** Replaces the pageview-based default with event charts for server events. */
+async function eventsHome(
+  page: import("@playwright/test").Page,
+  project: string,
+) {
+  const { dashboard } = await import("../../packages/contracts/src/index");
+  const response = await page.request.post(
+    `/api/${project}/dashboards/templates/product_analytics`,
+    { data: { home: true } },
+  );
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return dashboard.parse(await response.json()).insights;
 }
 function event(eventType: string, extra: Record<string, unknown> = {}) {
   return {
@@ -167,13 +197,18 @@ test("ingestion key copy uses the complete persisted key and respects project is
     .toBe(fixture.key);
   expect(fixture.key).toHaveLength(72);
 
+  // Copying does not require revealing the key first.
   await page.reload();
-  await page
-    .getByRole("button", { name: "Reveal ingestion key", exact: true })
-    .click();
+  await page.evaluate(() => navigator.clipboard.writeText(""));
   await page
     .getByRole("button", { name: "Copy ingestion key", exact: true })
     .click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(fixture.key);
+  await expect(
+    page.getByRole("button", { name: "Reveal ingestion key", exact: true }),
+  ).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toBe(fixture.key);
   const ingested = await page.request.post("/api/ingest", {
@@ -541,17 +576,19 @@ test("all insight definitions persist and dashboards preserve ordering across re
         )
       ).json(),
     );
-  expect(remaining.insights).toHaveLength(5);
+  expect(remaining.insights).toHaveLength(ids.length - 1);
 });
 
 test("tracker retries an acknowledged request and browser SQL refreshes late data on reload", async ({
   page,
+  baseURL,
 }) => {
+  if (!baseURL) throw new Error("Missing test origin");
   const fixture = await projectFixture(page, "Tracker SQL E2E");
   const { createClient } = await import("../../packages/tracker/src/index");
   let attempts = 0;
   const client = createClient({
-    hostname: "http://127.0.0.1:4173",
+    hostname: baseURL,
     apiKey: fixture.key,
     autoTrackPageviews: false,
     fetch: async (input, init) => {
@@ -703,7 +740,7 @@ test("project rename, ingestion and insight edits persist through the UI", async
   expect(saved).toMatchObject({ config: { trend: { timeBucket: "Weekly" } } });
 });
 
-test("partition exports retain unchanged months and rebuild historical identity links", async ({
+test("partition exports retain archived months when historical identities link", async ({
   page,
 }) => {
   const fixture = await projectFixture(page, "Partition E2E");
@@ -734,10 +771,10 @@ test("partition exports retain unchanged months and rebuild historical identity 
   );
   const before = schema.parse(
     await (
-      await page.request.get(`/api/${fixture.project}/events/catalog`)
+      await page.request.post(`/api/${fixture.project}/events/catalog/gen`)
     ).json(),
   );
-  expect(before).toHaveLength(3);
+  expect(before).toHaveLength(2);
   expect(before.map((file) => file.partition)).toContain(
     old.toISOString().slice(0, 7),
   );
@@ -746,20 +783,19 @@ test("partition exports retain unchanged months and rebuild historical identity 
   ]);
   const after = schema.parse(
     await (
-      await page.request.get(`/api/${fixture.project}/events/catalog`)
+      await page.request.post(`/api/${fixture.project}/events/catalog/gen`)
     ).json(),
   );
-  for (const file of after) {
-    const previous = before.find((item) => item.partition === file.partition);
-    if (file.partition === prior.toISOString().slice(0, 7))
-      expect(file.checksum).toBe(previous?.checksum);
-    else expect(file.checksum).not.toBe(previous?.checksum);
-  }
+  // Both months are past the archive grace week: they keep the attribution
+  // they were archived with, while SQLite-held months rebuild on identity links.
+  expect(after.map((file) => [file.partition, file.checksum])).toEqual(
+    before.map((file) => [file.partition, file.checksum]),
+  );
   const original = before[0];
   if (!original) throw new Error("Missing export");
   expect((await page.request.get(original.url)).ok()).toBeTruthy();
   await page.route(
-    `**/api/${fixture.project}/events/catalog`,
+    `**/api/${fixture.project}/events/snapshot`,
     (route) =>
       route.fulfill({
         status: 503,
@@ -802,8 +838,9 @@ test("partition exports retain unchanged months and rebuild historical identity 
       "SELECT count(*) AS linked FROM events WHERE person_id='linked-person'",
     );
   await page.getByRole("button", { name: "Execute", exact: true }).click();
+  // The archived "old" event keeps its original attribution.
   await expect(
-    page.getByRole("cell", { name: "3", exact: true }),
+    page.getByRole("cell", { name: "2", exact: true }),
   ).toBeVisible();
 });
 
@@ -811,6 +848,18 @@ test("create insight and dashboard, manage membership, then logout and login", a
   page,
 }) => {
   const fixture = await projectFixture(page, "Creation E2E");
+  const ingested = await page.request.post("/api/ingest", {
+    headers: { "X-API-KEY": fixture.key },
+    data: {
+      requestId: crypto.randomUUID(),
+      events: [
+        event("membership-visible", {
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+        }),
+      ],
+    },
+  });
+  expect(ingested.ok(), await ingested.text()).toBeTruthy();
   await page.goto(`/app/${fixture.project}/insights`);
   await page
     .getByRole("button", { name: "Create New Insight", exact: true })
@@ -819,14 +868,18 @@ test("create insight and dashboard, manage membership, then logout and login", a
     .getByRole("dialog")
     .getByRole("button", { name: "Create", exact: true })
     .click();
-  await page.getByRole("link", { name: "Untitled trend", exact: true }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/app/${fixture.project}/insights/\\d+/edit$`),
+  );
   await page
     .getByRole("button", { name: "Rename Untitled trend", exact: true })
     .click();
   await page
     .getByRole("textbox", { name: "Insight name", exact: true })
     .fill("UI-created insight");
-  await page.getByRole("button", { name: "Save name", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Insight name", exact: true })
+    .press("Enter");
   await expect(
     page.getByRole("button", {
       name: "Rename UI-created insight",
@@ -886,7 +939,7 @@ test("create insight and dashboard, manage membership, then logout and login", a
   expect((await page.request.get("/api/projects")).status()).toBe(401);
   await page.getByLabel("Email", { exact: true }).fill(credentials.email);
   await page.getByLabel("Password", { exact: true }).fill(credentials.password);
-  await page.getByRole("button", { name: "Login", exact: true }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Projects", exact: true }),
   ).toBeVisible();
@@ -998,7 +1051,9 @@ test("sidebar stays collapsed across navigation, reload and mobile", async ({
     await sidebar.getByRole("link", { name: "Home", exact: true }).click();
     await expect(page).toHaveURL(`/app/${project}`);
     await expect(
-      page.getByRole("img", { name: "Events over time" }),
+      page.getByRole("img", {
+        name: /^Trend chart preview\. Illustrative sample only/,
+      }),
     ).toBeVisible();
   }
 });
@@ -1006,10 +1061,13 @@ test("sidebar stays collapsed across navigation, reload and mobile", async ({
 test("S3 analytics use private range reads, refresh revisions, and isolate projects", async ({
   page,
   context,
+  baseURL,
 }) => {
+  if (!baseURL) throw new Error("Missing test origin");
   const fixture = await projectFixture(page, "S3 range reads");
   const events = Array.from({ length: 500 }, () =>
     event("range-event", {
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
       properties: {
         payload: Array.from({ length: 45 }, () => crypto.randomUUID()).join(""),
       },
@@ -1031,7 +1089,7 @@ test("S3 analytics use private range reads, refresh revisions, and isolate proje
   );
   const catalog = catalogSchema.parse(
     await (
-      await page.request.get(`/api/${fixture.project}/events/catalog`)
+      await page.request.post(`/api/${fixture.project}/events/catalog/gen`)
     ).json(),
   );
   const file = catalog[0];
@@ -1058,7 +1116,7 @@ test("S3 analytics use private range reads, refresh revisions, and isolate proje
     expect(
       (
         await unauthenticated.request.get(
-          `http://127.0.0.1:4173/api/${fixture.project}/events/catalog`,
+          `${baseURL}/api/${fixture.project}/events/catalog`,
         )
       ).status(),
     ).toBe(401);
@@ -1102,16 +1160,19 @@ test("S3 analytics use private range reads, refresh revisions, and isolate proje
     data: { requestId: crypto.randomUUID(), events: [event("late-event")] },
   });
   expect(update.ok()).toBeTruthy();
-  let catalogRequests = 0;
+  let statusRequests = 0;
   page.on("request", (request) => {
-    if (request.url().endsWith(`/api/${fixture.project}/events/catalog`))
-      catalogRequests++;
+    if (request.url().endsWith(`/api/${fixture.project}/events/snapshot`))
+      statusRequests++;
   });
-  await page.clock.fastForward(30_000);
+  await page.clock.fastForward(15_000);
+  // Wait for the export publication, then exercise the next scheduled refresh.
+  await page.request.post(`/api/${fixture.project}/events/catalog/gen`);
+  await page.clock.fastForward(15_000);
   await expect(
-    page.getByRole("cell", { name: "500", exact: true }),
+    page.getByRole("cell", { name: "501", exact: true }),
   ).toBeVisible();
-  expect(catalogRequests).toBe(0);
+  expect(statusRequests).toBeGreaterThan(0);
   await page.reload();
   await page
     .locator(".cm-content")
@@ -1136,6 +1197,9 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
 }, testInfo) => {
   const { insight } = await import("../../packages/contracts/src/index");
   const fixture = await projectFixture(page, "Date boundaries E2E");
+  const totalEvents = (await eventsHome(page, fixture.project)).find(
+    (item) => item.type === "Value",
+  );
   const other = await projectFixture(page, "Date boundaries isolated");
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
@@ -1202,6 +1266,10 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
   await expectValues(3, 2);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByText(name, { exact: true })).toBeVisible();
+  // Charts resize a frame after the viewport changes; measure settled bounds.
+  await expect
+    .poll(async () => (await trend.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(240);
   const chartBounds = await trend.boundingBox();
   const valueBounds = await currentValue.boundingBox();
   if (!chartBounds || !valueBounds) throw new Error("Missing dashboard cards");
@@ -1218,7 +1286,7 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
     .parse(
       await (await page.request.get(`/api/${fixture.project}/insights`)).json(),
     );
-  const value = definitions.find((item) => item.type === "Value");
+  const value = definitions.find((item) => item.id === totalEvents?.id);
   if (!value || value.type !== "Value")
     throw new Error("Missing value insight");
   for (const [duration, currentCount, previousCount] of [
@@ -1347,11 +1415,13 @@ test("bulk ingestion preserves schema promotion, sample limits, retries and roll
 
 test("bulk batches coalesce snapshots and the final batch publishes all committed events", async ({
   page,
+  baseURL,
 }) => {
+  if (!baseURL) throw new Error("Missing test origin");
   const fixture = await projectFixture(page, "Bulk exports E2E");
   const { createClient } = await import("../../packages/tracker/src/index");
   const client = createClient({
-    hostname: "http://127.0.0.1:4173",
+    hostname: baseURL,
     apiKey: fixture.key,
     autoTrackPageviews: false,
   });
@@ -1360,17 +1430,40 @@ test("bulk batches coalesce snapshots and the final batch publishes all committe
       .array(z.object({ name: z.string(), eventCount: z.number() }))
       .parse(
         await (
-          await page.request.get(`/api/${fixture.project}/events/catalog`)
+          await page.request.post(`/api/${fixture.project}/events/catalog/gen`)
         ).json(),
       );
-  await client.send({ eventType: "before" });
+  await client.send({
+    eventType: "before",
+    timestamp: new Date(Date.now() - 86400000).toISOString(),
+  });
   const before = await catalog();
   expect(before.reduce((sum, file) => sum + file.eventCount, 0)).toBe(1);
-  await client.sendBatch([{ eventType: "bulk" }, { eventType: "bulk" }], {
-    deferExport: true,
-  });
+  await client.sendBatch(
+    [
+      {
+        eventType: "bulk",
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        eventType: "bulk",
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
+      },
+    ],
+    {
+      deferExport: true,
+    },
+  );
   expect(await catalog()).toEqual(before);
-  await client.sendBatch([{ eventType: "bulk" }], { deferExport: true });
+  await client.sendBatch(
+    [
+      {
+        eventType: "bulk",
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
+      },
+    ],
+    { deferExport: true },
+  );
   expect(await catalog()).toEqual(before);
   expect(
     z
@@ -1379,7 +1472,10 @@ test("bulk batches coalesce snapshots and the final batch publishes all committe
         await (await page.request.get(`/api/${fixture.project}/events`)).json(),
       ),
   ).toHaveLength(4);
-  await client.send({ eventType: "final" });
+  await client.send({
+    eventType: "final",
+    timestamp: new Date(Date.now() - 86400000).toISOString(),
+  });
   const after = await catalog();
   expect(after.reduce((sum, file) => sum + file.eventCount, 0)).toBe(5);
   expect(after.map((file) => file.name)).not.toEqual(
@@ -1400,6 +1496,7 @@ test("breakdown aligns bars beside truncated labels and exposes full labels on h
   page,
 }) => {
   const fixture = await projectFixture(page, "Breakdown layout");
+  await eventsHome(page, fixture.project);
   const longLabel =
     "demo.breakdown.a_very_long_event_name_that_must_remain_readable_in_a_tooltip";
   const response = await page.request.post("/api/ingest", {
@@ -1428,16 +1525,22 @@ test("breakdown aligns bars beside truncated labels and exposes full labels on h
         (element) => element.scrollWidth > element.clientWidth,
       ),
     ).toBeTruthy();
-    const bounds = await label.boundingBox();
     const badge = chart.getByText("2", { exact: true }).first();
+    // Rows resize a frame after the viewport changes; compare settled positions.
+    await expect
+      .poll(async () => {
+        const bounds = await label.boundingBox();
+        const valueBounds = await badge.boundingBox();
+        if (!bounds || !valueBounds) return Infinity;
+        return Math.abs(
+          valueBounds.y + valueBounds.height / 2 - bounds.y - bounds.height / 2,
+        );
+      })
+      .toBeLessThan(2);
+    const bounds = await label.boundingBox();
     const valueBounds = await badge.boundingBox();
     if (!bounds || !valueBounds) throw new Error("Missing chart bounds");
     expect(valueBounds.x).toBeGreaterThan(bounds.x + bounds.width);
-    expect(
-      Math.abs(
-        valueBounds.y + valueBounds.height / 2 - bounds.y - bounds.height / 2,
-      ),
-    ).toBeLessThan(2);
     expect(
       await chart.evaluate(
         (element) => element.scrollWidth <= element.clientWidth,
@@ -1451,14 +1554,18 @@ test("breakdown aligns bars beside truncated labels and exposes full labels on h
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toBeHidden();
     const bar = chart.getByRole("button", {
-      name: `${longLabel}: 2`,
+      name: `${longLabel}: 2 events`,
       exact: true,
     });
     await bar.hover();
-    await expect(page.getByRole("tooltip")).toHaveText(`${longLabel}: 2`);
+    await expect(page.getByRole("tooltip")).toHaveText(
+      `${longLabel}: 2 events`,
+    );
     await page.mouse.move(0, 0);
     await bar.focus();
-    await expect(page.getByRole("tooltip")).toHaveText(`${longLabel}: 2`);
+    await expect(page.getByRole("tooltip")).toHaveText(
+      `${longLabel}: 2 events`,
+    );
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toBeHidden();
     await chart.screenshot({ path: `test-results/breakdown-${width}.png` });

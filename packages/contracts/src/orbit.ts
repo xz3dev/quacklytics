@@ -1,38 +1,42 @@
 import type { InsightInput, filter } from "./index";
 import type { z } from "zod";
 
-export const eventNames = {
-  trend: ["demo.trend.workspace_opened", "demo.trend.task_completed"],
-  value: ["demo.value.invoice_paid"],
-  breakdown: ["demo.breakdown.feature_used"],
-  funnel: [
-    "demo.funnel.pricing_viewed",
-    "demo.funnel.trial_started",
-    "demo.funnel.teammate_invited",
-    "demo.funnel.subscription_started",
-  ],
-  retention: [
-    "demo.retention.workspace_created",
-    "demo.retention.workspace_active",
-  ],
-  path: [
-    "demo.path.home",
-    "demo.path.project_list",
-    "demo.path.board",
-    "demo.path.task_detail",
-    "demo.path.reports",
-    "demo.path.export",
-    "demo.path.settings",
-    "demo.path.help",
-  ],
+/**
+ * Orbit is the fictional project-management product the development seed
+ * tracks with the browser and server SDKs: automatic `$pageview`/`$click`
+ * events plus the custom events below.
+ */
+export const orbitEvents = {
+  signedUp: "signed_up",
+  workspaceCreated: "workspace_created",
+  teammateInvited: "teammate_invited",
+  taskCreated: "task_created",
+  taskCompleted: "task_completed",
+  featureUsed: "feature_used",
+  subscriptionStarted: "subscription_started",
+  invoicePaid: "invoice_paid",
 } as const;
+/** Page paths, as the SDK records them in `$context.page.path`. */
+export const orbitPaths = { home: "/", pricing: "/pricing", app: "/app" };
+export const pagePathField = {
+  name: '$."$context".page.path',
+  type: "string",
+  isProperty: true,
+} satisfies z.infer<typeof filter>["field"];
 
-function eventFilter(name: string): z.infer<typeof filter> {
+type Filter = z.infer<typeof filter>;
+function eventFilter(name: string): Filter {
   return {
     field: { name: "event_type", type: "string" },
     operator: "=",
     value: name,
   };
+}
+function pageviewOf(path: string, operator: Filter["operator"] = "=") {
+  return [
+    eventFilter("$pageview"),
+    { field: pagePathField, operator, value: path },
+  ];
 }
 function queryFor(name: string) {
   return {
@@ -50,7 +54,7 @@ export function orbitInsights(days: number): InsightInput[] {
   const duration = `P${days}D`;
   return [
     {
-      name: "Daily workspace visits and completed tasks",
+      name: "Daily pageviews and completed tasks",
       favorite: true,
       type: "Trend",
       config: {
@@ -59,14 +63,14 @@ export function orbitInsights(days: number): InsightInput[] {
           timeBucket: "Daily",
           series: [
             {
-              name: "Workspace visits",
+              name: "Pageviews",
               visualisation: "line",
-              query: queryFor(eventNames.trend[0]),
+              query: queryFor("$pageview"),
             },
             {
               name: "Tasks completed",
               visualisation: "bar",
-              query: queryFor(eventNames.trend[1]),
+              query: queryFor(orbitEvents.taskCompleted),
             },
           ],
         },
@@ -81,7 +85,7 @@ export function orbitInsights(days: number): InsightInput[] {
           duration: "P30D",
           series: {
             query: {
-              filters: [eventFilter(eventNames.value[0])],
+              filters: [eventFilter(orbitEvents.invoicePaid)],
               aggregations: [
                 {
                   function: "SUM",
@@ -107,7 +111,7 @@ export function orbitInsights(days: number): InsightInput[] {
             field: { name: "id", type: "string" },
             alias: "result_value",
           },
-          filters: [eventFilter(eventNames.breakdown[0])],
+          filters: [eventFilter(orbitEvents.featureUsed)],
           limit: 10,
         },
       },
@@ -120,17 +124,25 @@ export function orbitInsights(days: number): InsightInput[] {
         funnel: {
           duration,
           countingMode: "uniqueUsers",
-          steps: eventNames.funnel.map((name, order) => ({
+          steps: [
+            { name: "Viewed pricing", filters: pageviewOf(orbitPaths.pricing) },
+            {
+              name: "Signed up",
+              filters: [eventFilter(orbitEvents.signedUp)],
+            },
+            {
+              name: "Invited teammate",
+              filters: [eventFilter(orbitEvents.teammateInvited)],
+            },
+            {
+              name: "Subscribed",
+              filters: [eventFilter(orbitEvents.subscriptionStarted)],
+            },
+          ].map((step, order) => ({
             id: `orbit-step-${order}`,
-            name:
-              [
-                "Viewed pricing",
-                "Started trial",
-                "Invited teammate",
-                "Subscribed",
-              ][order] ?? name,
+            name: step.name,
             order,
-            query: { filters: [eventFilter(name)] },
+            query: { filters: step.filters },
           })),
         },
       },
@@ -143,8 +155,10 @@ export function orbitInsights(days: number): InsightInput[] {
         retention: {
           duration,
           cohortBucket: "Daily",
-          activationQuery: { filters: [eventFilter(eventNames.retention[0])] },
-          returnQuery: { filters: [eventFilter(eventNames.retention[1])] },
+          activationQuery: {
+            filters: [eventFilter(orbitEvents.workspaceCreated)],
+          },
+          returnQuery: { filters: pageviewOf(`${orbitPaths.app}%`, "LIKE") },
           maxPeriods: 14,
         },
       },
@@ -156,9 +170,9 @@ export function orbitInsights(days: number): InsightInput[] {
       config: {
         path: {
           duration,
-          anchorQuery: { filters: [eventFilter(eventNames.path[0])] },
+          anchorQuery: { filters: pageviewOf(orbitPaths.home) },
           direction: "forward",
-          stepField: { name: "event_type", type: "string" },
+          stepField: pagePathField,
           maxSteps: 5,
           limit: 15,
         },

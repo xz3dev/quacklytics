@@ -19,6 +19,8 @@ COPY --from=build /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=build /app/apps/web/dist ./apps/web/dist
 COPY --from=build /app/apps/web/src/server/gateway.ts ./apps/web/src/server/gateway.ts
 COPY --from=build /app/apps/web/src/server/worker-protocol.ts ./apps/web/src/server/worker-protocol.ts
+COPY --from=build /app/apps/web/src/server/client-address.ts ./apps/web/src/server/client-address.ts
+COPY --from=build /app/apps/web/src/server/geoip.ts ./apps/web/src/server/geoip.ts
 COPY --from=build /app/apps/web/server.ts ./apps/web/server.ts
 COPY --from=build /app/apps/web/package.json ./apps/web/package.json
 ENV NODE_ENV=production PORT=3000 DATA_DIR=/data

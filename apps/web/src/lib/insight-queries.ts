@@ -1,10 +1,12 @@
-import { Field, FieldFilter } from "@/model/filters.ts";
-import { getFieldExpression } from "@lib/field.ts";
+import { FieldFilter } from "@/model/filters.ts";
+import { fieldExpression, buildWhereClause } from "./sql/compiler";
 import { QueryParamValue } from "@lib/queries.ts";
 import { Aggregation } from "@lib/aggregations.ts";
 import { BreakdownInsightConfig } from "@/model/insights/breakdown-insight.ts";
 import { RetentionInsightConfig } from "@/model/insights/retention-insight.ts";
 import { PathInsightConfig } from "@/model/insights/path-insight.ts";
+import { MapInsightConfig } from "@/model/insights/map-insight.ts";
+import { countryField } from "@quacklytics/contracts";
 import { determineDateRange } from "@/model/insights/insight-date-range.ts";
 
 type BuiltQuery = {
@@ -18,7 +20,7 @@ export function buildBreakdownQuery(
   const { start, end } = determineDateRange(config.duration);
   const params: QueryParamValue[] = [];
   const dimensionExpr = nullableLabelExpression(
-    getAliasedFieldExpression(config.dimension),
+    fieldExpression(config.dimension),
   );
   const aggregationExpr = buildAggregationExpression(config.aggregation);
   const where = buildWhereClause(
@@ -37,6 +39,31 @@ export function buildBreakdownQuery(
             GROUP BY dimension_value
             ORDER BY result_value DESC
             LIMIT ${limit}
+        `.trim(),
+    params,
+  };
+}
+
+// Every country is returned: a map has no meaningful top-N cut-off.
+export function buildMapQuery(config: MapInsightConfig): BuiltQuery {
+  const { start, end } = determineDateRange(config.duration);
+  const params: QueryParamValue[] = [];
+  const countryExpr = nullableLabelExpression(fieldExpression(countryField));
+  const aggregationExpr = buildAggregationExpression(config.aggregation);
+  const where = buildWhereClause(
+    [dateFilter(">=", start), dateFilter("<=", end), ...(config.filters ?? [])],
+    params,
+  );
+
+  return {
+    sql: `
+            SELECT
+                ${countryExpr} AS dimension_value,
+                ${aggregationExpr} AS result_value
+            FROM events
+            ${where ? `WHERE ${where}` : ""}
+            GROUP BY dimension_value
+            ORDER BY result_value DESC
         `.trim(),
     params,
   };
@@ -137,9 +164,7 @@ export function buildRetentionQuery(
 export function buildPathQuery(config: PathInsightConfig): BuiltQuery {
   const { start, end } = determineDateRange(config.duration);
   const params: QueryParamValue[] = [];
-  const stepExpr = nullableLabelExpression(
-    getAliasedFieldExpression(config.stepField),
-  );
+  const stepExpr = nullableLabelExpression(fieldExpression(config.stepField));
   // The anchor predicate appears before the date predicates in the SQL.
   const anchorWhere = buildWhereClause(
     config.anchorQuery.filters ?? [],
@@ -203,39 +228,9 @@ export function buildPathQuery(config: PathInsightConfig): BuiltQuery {
 
 function buildAggregationExpression(aggregation: Aggregation): string {
   const castType = aggregation.function === "COUNT" ? undefined : "FLOAT";
-  const fieldExpr = getFieldExpression(aggregation.field, castType);
+  const fieldExpr = fieldExpression(aggregation.field, castType);
   const distinct = aggregation.distinct ? "DISTINCT " : "";
   return `${aggregation.function}(${distinct}${fieldExpr})`;
-}
-
-function buildWhereClause(
-  filters: FieldFilter[],
-  params: QueryParamValue[],
-  tableAlias?: string,
-): string {
-  const clauses: string[] = [];
-
-  for (const filter of filters) {
-    const fieldExpr = getAliasedFieldExpression(
-      filter.field,
-      undefined,
-      tableAlias,
-    );
-    let placeholder = "?";
-    if (filter.value instanceof Date) {
-      placeholder = "epoch_ms(?::BIGINT)";
-      params.push(filter.value.getTime());
-    } else if (typeof filter.value === "number") {
-      placeholder = "?::DOUBLE";
-      params.push(filter.value);
-    } else {
-      params.push(filter.value);
-    }
-
-    clauses.push(`${fieldExpr} ${filter.operator} ${placeholder}`);
-  }
-
-  return clauses.join(" AND ");
 }
 
 function dateFilter(operator: ">=" | "<=", value: Date): FieldFilter {
@@ -247,27 +242,6 @@ function dateFilter(operator: ">=" | "<=", value: Date): FieldFilter {
     operator,
     value,
   };
-}
-
-function getAliasedFieldExpression(
-  field: Field,
-  castType?: string,
-  tableAlias?: string,
-): string {
-  const prefix = tableAlias ? `${tableAlias}.` : "";
-  const isJsonField = field.name.startsWith("$.") || field.isProperty;
-  if (isJsonField) {
-    const jsonPath = field.name.startsWith("$.")
-      ? field.name
-      : `$.${field.name}`;
-    return `CAST(COALESCE(json_extract_string(${prefix}properties, '${jsonPath}'), json_extract_string(json_extract_string(${prefix}properties, '$'), '${jsonPath}')) AS ${castType ?? "VARCHAR"})`;
-  }
-  if (field.name.includes("(")) {
-    return field.name;
-  }
-  return castType
-    ? `CAST(${prefix}${field.name} AS ${castType})`
-    : `${prefix}${field.name}`;
 }
 
 function nullableLabelExpression(expression: string): string {

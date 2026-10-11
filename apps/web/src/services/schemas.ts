@@ -2,7 +2,7 @@ import { z } from "zod";
 import { schemaResponse } from "@quacklytics/contracts";
 // src/services/schema.ts
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import { http } from "@/lib/fetch";
+import { http } from "@/client/api/http";
 
 export interface Field {
   name: string;
@@ -39,9 +39,13 @@ const schemaApi = {
     const response = await http.get(`${project}/schema`, schemaResponse);
     return parseSchema(response ?? {});
   },
-  getPropValues: async (project: string, id: number): Promise<string[]> => {
+  getPropValues: async (
+    project: string,
+    id: number,
+    scope: "event" | "project",
+  ): Promise<string[]> => {
     const response = await http.get(
-      `${project}/schema/prop/${id}`,
+      `${project}/schema/prop/${id}${scope === "project" ? "?scope=project" : ""}`,
       z.array(z.string()),
     );
     return response ?? [];
@@ -98,10 +102,11 @@ export function usePropValues(
   project: string,
   id: number,
   enabled: boolean = true,
+  scope: "event" | "project" = "event",
 ) {
   return useQuery<string[], Error>({
-    queryKey: SCHEMA_PROP_KEY(project, id),
-    queryFn: () => schemaApi.getPropValues(project, id),
+    queryKey: [...SCHEMA_PROP_KEY(project, id), scope],
+    queryFn: () => schemaApi.getPropValues(project, id, scope),
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false, // Schema doesn't change often
     placeholderData: [],

@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import { insightMetricUnit } from "@/lib/metric-value";
 import { useChartBreakdown, breakdownLabel } from "@/lib/chart-breakdown";
 import { ChartBreakdown } from "@/app/insights/common/chart-breakdown";
@@ -38,13 +39,7 @@ function UngroupedPathInsightChart({ insight }: Props) {
     ...pathRow.parse(raw),
     groupIndex: Number(raw.__breakdown_index),
   }));
-  if (rows.length === 0) {
-    return (
-      <div className="py-6 text-sm text-muted-foreground">
-        No paths found for actors in this range.
-      </div>
-    );
-  }
+  if (rows.length === 0) return <ChartEmptyState insight={insight} />;
 
   const maxValue = Math.max(...rows.map((row) => Number(row.result_value)));
   // The query groups by source, destination, and distance. Preserve all three

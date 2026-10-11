@@ -12,6 +12,8 @@ node_modules/
 apps/web/src/routeTree.gen.ts
 playwright-report/
 test-results/
+test-results*/
 
 .env.local
 output
+

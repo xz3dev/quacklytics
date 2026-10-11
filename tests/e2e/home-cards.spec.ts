@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
-import { z } from "zod";
 import {
   defaultInsights,
   insight,
@@ -11,21 +11,7 @@ test("favorite cards support persistent actions, errors, navigation and responsi
   baseURL,
 }, testInfo) => {
   if (!baseURL) throw new Error("Missing origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const auth = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(auth.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", { data: { name: "Cards" } })
@@ -98,7 +84,7 @@ test("favorite cards support persistent actions, errors, navigation and responsi
     .parse(await (await page.request.get(api)).json());
   expect(originalNames.some((item) => item.name === names[0])).toBe(true);
   await expect(
-    page.getByRole("link", { name: "Events over time", exact: true }),
+    page.getByRole("link", { name: "Visitors and pageviews", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Adjust", exact: true }).click();
   await page.getByRole("combobox", { name: "Time grouping" }).click();
@@ -120,6 +106,11 @@ test("favorite cards support persistent actions, errors, navigation and responsi
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Create", exact: true }).click();
   await expect(dialog).toBeHidden();
+  // New insights open in the editor; the favorite appears back on Home.
+  await expect(page).toHaveURL(
+    new RegExp(`/app/${created.id}/insights/\\d+/edit$`),
+  );
+  await page.goto(`/app/${created.id}`);
   await expect(favorites.getByRole("listitem")).toHaveCount(6);
   const viewFavorites = page.getByRole("link", {
     name: "View all favorite insights",
@@ -137,7 +128,7 @@ test("favorite cards support persistent actions, errors, navigation and responsi
       .getByRole("listitem"),
   ).toHaveCount(7);
   await expect(
-    page.getByRole("link", { name: "Events over time", exact: true }),
+    page.getByRole("link", { name: "Visitors and pageviews", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Untitled trend", exact: true }),
@@ -239,9 +230,13 @@ test("favorite cards support persistent actions, errors, navigation and responsi
     page.getByRole("link", { name: "Renamed · card", exact: true }),
   ).toBeVisible();
   const allCards = page.getByRole("region", { name: "Insights", exact: true });
-  await expect(allCards.getByRole("listitem")).toHaveCount(9);
+  // Every insight of the project, including the default dashboard's.
+  const total = insight
+    .array()
+    .parse(await (await page.request.get(api)).json()).length;
+  await expect(allCards.getByRole("listitem")).toHaveCount(total);
   await page.goto(`/app/${created.id}/insights?favorites=false`);
-  await expect(allCards.getByRole("listitem")).toHaveCount(9);
+  await expect(allCards.getByRole("listitem")).toHaveCount(total);
   await expect(page.getByRole("table")).toHaveCount(0);
   await page
     .getByRole("button", {

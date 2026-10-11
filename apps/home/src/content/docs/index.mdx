@@ -1,6 +1,6 @@
 ---
 title: Simple, self-hostable analytics.
-description: Your minimal analytics stack is waiting or you
+description: Self-hosted product and web analytics that runs its queries in your browser with DuckDB.
 template: splash
 hero:
   tagline: Harness your own computing power to unlock high-performance analytics — without the cloud overhead.
@@ -10,36 +10,55 @@ hero:
     - text: Getting Started
       link: /start-here/introduction/
       icon: right-arrow
-    - text: Deploy using Docker
-      link: /start-here/docker
+    - text: Try it locally
+      link: /start-here/local/
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
-## How It Works
+## How it works
 
-Quacklytics is designed to run analytical queries using the power of **DuckDB** and **SQLite** by pulling data straight from simple files on your system. This means no complicated backend infrastructure, making analytics not only efficient but also budget-friendly.
+Quacklytics stores recent events in **SQLite** on your server and moves history into **Parquet** files in an S3 bucket. When you open a dashboard, your browser loads that data into **DuckDB** and runs the queries itself. The server stays small and cheap, and charts stay fast.
 
 <CardGrid>
-    <Card title="Browser-Powered Analytics" icon="laptop">
-        Run high-performance queries directly in your browser.
+    <Card title="Browser-powered analytics" icon="laptop">
+        Queries run in DuckDB-WASM on your machine, not on a cloud warehouse.
     </Card>
-    <Card title="Effortless Deployment" icon="rocket">
-        One Docker image, one binary. Get up and running in minutes.
+    <Card title="Effortless deployment" icon="rocket">
+        One container plus any S3-compatible bucket. Running in minutes.
     </Card>
-    <Card title="Open Source Freedom" icon="open-book">
+    <Card title="Privacy-friendly tracking" icon="approve-check">
+        Consent-aware SDK with an anonymous, cookieless mode.
+    </Card>
+    <Card title="Open source" icon="open-book">
         Customize and extend Quacklytics to fit your needs.
-    </Card>
-    <Card title="Cost-Efficient" icon="approve-check">
-        Reduce expenses by leveraging your existing hardware, not costly cloud VMs.
     </Card>
 </CardGrid>
 
-## Getting Started
+## Up and running in three steps
 
-Deploy with ease using our [Docker deployment guide](/start-here/docker) and integrate Quacklytics into your workflow.
+<Steps>
 
-Explore our [documentation](/start-here/introduction) to learn more about contributing, fine-tuning configurations, and maximizing your analytics potential.
+1. **Start the server** locally with the [Local Setup](/start-here/local/), or [deploy to production](/start-here/production/).
 
-Happy Quacking!
+    ```sh
+    docker compose up --build
+    ```
+
+2. **Create a project** at `http://localhost:3000`, then copy its ingestion key from the **Ingestion** page.
+
+3. **Send your first event** with the [TypeScript client](/guides/send-data/) or plain HTTP.
+
+    ```ts
+    await client.track("signup", { plan: "pro" });
+    ```
+
+</Steps>
+
+<CardGrid>
+    <LinkCard title="Introduction" description="What Quacklytics is and how it works." href="/start-here/introduction/" />
+    <LinkCard title="Sending data" description="Browser SDK, server client and HTTP API." href="/guides/send-data/" />
+</CardGrid>
+
+Happy Quacking! 🦆

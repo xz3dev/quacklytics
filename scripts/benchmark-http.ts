@@ -67,7 +67,7 @@ try {
   const keys = z
     .array(z.object({ key: z.string() }))
     .parse(await api(`/api/${project.id}/apikeys`, {}));
-  const key = keys[0]?.key;
+  const key = keys.at(-1)?.key;
   if (!key) throw new Error("No ingestion key");
   const latencies: number[] = [],
     readLatencies: number[] = [];

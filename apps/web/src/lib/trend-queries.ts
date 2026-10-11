@@ -1,6 +1,10 @@
 import { Field } from "@/model/filters";
 import { Aggregation } from "@lib/aggregations.ts";
-import { getFieldExpression } from "@lib/field.ts";
+import {
+  fieldExpression,
+  buildWhereClause,
+  quoteIdentifier,
+} from "./sql/compiler";
 import { QueryParamValue } from "@lib/queries.ts";
 
 export type SortDirection = "ASC" | "DESC";
@@ -59,16 +63,16 @@ export function buildQuery(query: Query): {
       const fieldExpr =
         agg.field.name === "COALESCE(person_id, session_id)"
           ? "actor_id"
-          : getFieldExpression(agg.field, castType);
+          : fieldExpression(agg.field, castType);
       const optionalDistinct = agg.distinct ? "distinct " : "";
-      const aggExpr = `${agg.function}(${optionalDistinct}${fieldExpr})${agg.alias ? ` AS ${agg.alias}` : ""}`;
+      const aggExpr = `${agg.function}(${optionalDistinct}${fieldExpr})${agg.alias ? ` AS ${quoteIdentifier(agg.alias)}` : ""}`;
       selectParts.push(aggExpr);
     }
   }
 
   if (query.select && query.select.length > 0) {
     for (const field of query.select) {
-      const fieldExpr = getFieldExpression(field);
+      const fieldExpr = fieldExpression(field);
       selectParts.push(fieldExpr);
     }
   }
@@ -77,7 +81,7 @@ export function buildQuery(query: Query): {
   if (query.groupBy && query.groupBy.length > 0) {
     const groupByParts = query.groupBy.map(
       (field, index) =>
-        `${getFieldExpression(field)} as ${field.alias ?? `bucket_${index}`}`,
+        `${fieldExpression(field)} as ${quoteIdentifier(field.alias ?? `bucket_${index}`)}`,
     );
     selectParts.push(...groupByParts);
   }
@@ -93,29 +97,13 @@ export function buildQuery(query: Query): {
 
   // Construct WHERE clause
   if (query.filters && query.filters.length > 0) {
-    const whereClauses: string[] = [];
-
-    for (const filter of query.filters) {
-      const fieldExpr = getFieldExpression(filter.field);
-      let valuePlaceholder = "?";
-      if (typeof filter.value === "number") {
-        valuePlaceholder = "?::double";
-      } else if (filter.value instanceof Date) {
-        valuePlaceholder = "epoch_ms(?::BIGINT)";
-      }
-      whereClauses.push(`${fieldExpr} ${filter.operator} ${valuePlaceholder}`);
-      params.push(
-        filter.value instanceof Date ? filter.value.getTime() : filter.value,
-      );
-    }
-
-    sql += ` WHERE ${whereClauses.join(" AND ")}`;
+    sql += ` WHERE ${buildWhereClause(query.filters, params)}`;
   }
 
   // Construct GROUP BY clause
   if (query.groupBy && query.groupBy.length > 0) {
-    const groupByParts = query.groupBy.map(
-      (f, index) => f.alias ?? `bucket_${index}`,
+    const groupByParts = query.groupBy.map((f, index) =>
+      quoteIdentifier(f.alias ?? `bucket_${index}`),
     );
     sql += ` GROUP BY ${groupByParts.join(", ")}`;
   }
@@ -123,7 +111,7 @@ export function buildQuery(query: Query): {
   // Construct ORDER BY clause
   if (query.orderBy && query.orderBy.length > 0) {
     const orderByParts = query.orderBy.map((order) => {
-      const fieldExpr = getFieldExpression(order.field);
+      const fieldExpr = fieldExpression(order.field);
       return `${fieldExpr} ${order.direction}`;
     });
     sql += ` ORDER BY ${orderByParts.join(", ")}`;

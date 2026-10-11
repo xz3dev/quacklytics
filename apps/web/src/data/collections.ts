@@ -3,26 +3,25 @@ import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { insight, dashboard } from "@quacklytics/contracts";
-import { http } from "@/lib/fetch";
+import { insightList } from "./insights";
+import { dashboardList } from "./dashboards";
 function makeCollections(client: QueryClient, id: string) {
   return {
     insights: createCollection(
       queryCollectionOptions({
         id: `insights-${id}`,
-        queryKey: ["insights", id],
+        ...insightList(id),
         queryClient: client,
         schema: insight,
-        queryFn: () => http.get(`${id}/insights`, insight.array()),
         getKey: (row) => row.id,
       }),
     ),
     dashboards: createCollection(
       queryCollectionOptions({
         id: `dashboards-${id}`,
-        queryKey: ["dashboards", id],
+        ...dashboardList(id),
         queryClient: client,
         schema: dashboard,
-        queryFn: () => http.get(`${id}/dashboards`, dashboard.array()),
         getKey: (row) => row.id,
       }),
     ),

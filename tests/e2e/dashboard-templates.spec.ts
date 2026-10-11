@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { test, expect } from "@playwright/test";
-import { z } from "zod";
 import {
   dashboard,
   insight,
@@ -11,21 +11,7 @@ test("chart playground is dev-only and saves isolated, editable chart configurat
   baseURL,
 }) => {
   if (!baseURL) throw new Error("Missing test origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const createProject = async (name: string) => {
     const response = await page.request.post("/api/projects", {
       data: { name },
@@ -42,8 +28,16 @@ test("chart playground is dev-only and saves isolated, editable chart configurat
   const isolated = await getDashboards(`/api/${other.id}/dashboards`);
   expect(original).toHaveLength(1);
   expect(original[0]?.insights.map((item) => item.type)).toEqual([
-    "Trend",
     "Value",
+    "Value",
+    "Value",
+    "Trend",
+    "Map",
+    "Breakdown",
+    "Breakdown",
+    "Breakdown",
+    "Breakdown",
+    "Breakdown",
     "Breakdown",
   ]);
   const initialInsights = insight

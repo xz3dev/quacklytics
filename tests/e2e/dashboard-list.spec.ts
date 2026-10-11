@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { test, expect } from "@playwright/test";
-import { z } from "zod";
 import { dashboard, project } from "../../packages/contracts/src/index";
 
 test("dashboard cards search and actions persist across reload", async ({
@@ -7,21 +7,7 @@ test("dashboard cards search and actions persist across reload", async ({
   baseURL,
 }) => {
   if (!baseURL) throw new Error("Missing test origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const response = await page.request.post("/api/projects", {
     data: { name: "Dashboard cards" },
   });
@@ -104,16 +90,26 @@ test("dashboard cards search and actions persist across reload", async ({
     renamedCard.getByText("Home dashboard", { exact: true }),
   ).toBeVisible();
   const open = renamedCard.getByRole("link", {
-    name: "Open dashboard: Renamed list flow",
+    name: "Renamed list flow",
     exact: true,
   });
   const destination = await open.getAttribute("href");
   if (!destination) throw new Error("Missing dashboard destination");
-  await open.click();
+  await expect(
+    renamedCard.getByText("Open dashboard", { exact: true }),
+  ).toHaveCount(0);
+  // The padding is part of the link target, away from the title and actions.
+  await renamedCard.click({ position: { x: 6, y: 6 } });
   await expect(page).toHaveURL(new RegExp(`${destination}$`));
   await expect(
     page.getByRole("button", { name: "Apply web analytics template" }),
   ).toBeVisible();
+  await page.goto(`/app/${createdProject.id}/dashboards`);
+  await renamedCard
+    .getByRole("link", { name: "Renamed list flow", exact: true })
+    .focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`${destination}$`));
   await page.goto(`/app/${createdProject.id}/dashboards`);
   const additional = await page.request.post(
     `/api/${createdProject.id}/dashboards`,
@@ -184,26 +180,12 @@ test("dashboard cards search and actions persist across reload", async ({
   ).toBeVisible();
 });
 
-test("dashboard mosaics show included types, empty slots, and overflow after reload", async ({
+test("dashboard mosaics show only included types and overflow after reload", async ({
   page,
   baseURL,
 }) => {
   if (!baseURL) throw new Error("Missing test origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const response = await page.request.post("/api/projects", {
     data: { name: "Dashboard cards" },
   });
@@ -238,10 +220,10 @@ test("dashboard mosaics show included types, empty slots, and overflow after rel
     });
     expect(saved.ok()).toBeTruthy();
     await page.reload();
-    await expect(mosaic.getByRole("img")).toHaveCount(4);
+    await expect(mosaic.getByRole("img")).toHaveCount(Math.min(4, count));
     await expect(
       mosaic.getByRole("img", { name: "Empty insight slot", exact: true }),
-    ).toHaveCount(Math.max(0, 4 - count));
+    ).toHaveCount(0);
     for (const insight of included.slice(0, count > 4 ? 3 : 4)) {
       await expect(
         mosaic.getByRole("img", {

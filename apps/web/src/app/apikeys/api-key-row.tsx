@@ -2,7 +2,7 @@ import { ApiKey, useApiKey, useDeleteApiKey } from "@/services/apikeys.ts";
 import React from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button.tsx";
-import { Eye, EyeOff, Copy } from "lucide-react";
+import { Eye, EyeOff, Copy, Trash2 } from "lucide-react";
 import { cn } from "@lib/utils/tailwind.ts";
 import { toast } from "sonner";
 
@@ -29,15 +29,16 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
     }
   };
 
+  // Copying works on a hidden key too: the full value is fetched first.
   const handleCopy = async () => {
-    if (data?.key && !isFetching) {
-      try {
-        await navigator.clipboard.writeText(data.key);
-        toast.success("ingestion key copied to clipboard!");
-      } catch (error) {
-        console.error("Failed to copy ingestion key:", error);
-        toast.error("Failed to copy ingestion key");
-      }
+    const key = data?.key ?? (await refetch()).data?.key;
+    if (!key) return;
+    try {
+      await navigator.clipboard.writeText(key);
+      toast.success("Ingestion key copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy ingestion key:", error);
+      toast.error("Failed to copy ingestion key");
     }
   };
 
@@ -53,67 +54,72 @@ export function ApiKeyRow({ projectId, apiKey }: ApiKeyRowProps) {
     }
   };
 
-  // Determine what to display.
-  const displayValue = isKeyVisible
-    ? isFetching
-      ? "Loading..."
-      : error
-        ? error.message
-        : data?.key || ""
-    : "********************";
+  const revealed =
+    isKeyVisible && !isFetching && !error ? data?.key : undefined;
+  // Masked keys keep their prefix so several keys stay distinguishable.
+  const displayValue = revealed
+    ? revealed
+    : isKeyVisible && isFetching
+      ? "Loading…"
+      : `${apiKey.key.slice(0, 8)}${"•".repeat(24)}`;
 
   return (
-    <div className="flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-lg bg-muted p-4">
-      <div className="flex-1">
-        <div className="text-sm text-muted-foreground">
-          Created at: {format(new Date(apiKey.createdAt), "PPPpp")}
-        </div>
-      </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <div className="flex min-w-0 max-w-full items-center font-mono text-xs">
-          <span
+    <div className="space-y-2 rounded-lg border border-border/50 p-3">
+      <div className="flex items-center gap-1">
+        <div className="relative min-w-0 flex-1">
+          <code
             className={cn(
-              isKeyVisible ? "" : "text-muted-foreground",
-              "mr-2 min-w-0 break-all",
+              "block break-all rounded-md bg-muted py-2 pl-3 pr-10 font-mono text-xs",
+              !revealed && "text-muted-foreground",
             )}
           >
             {displayValue}
-          </span>
-          {isKeyVisible && !isFetching && data?.key && (
-            <>
-              <Button
-                variant="ghost"
-                aria-label="Copy ingestion key"
-                onClick={handleCopy}
-                className="ml-2 p-1 w-6"
-              >
-                <Copy size={16} />
-              </Button>
-              <Button
-                variant="ghost"
-                aria-label="Hide ingestion key"
-                onClick={handleToggleKey}
-                className="ml-2 p-1 w-6"
-              >
-                <EyeOff size={16} />
-              </Button>
-            </>
-          )}
-          {!isKeyVisible && (
+          </code>
+          {/* Unrecoverable keys offer no copy rather than a truncated one. */}
+          {!error && (
             <Button
               variant="ghost"
-              aria-label="Reveal ingestion key"
-              onClick={handleToggleKey}
-              className="ml-2 p-1 w-6"
+              size="icon"
+              aria-label="Copy ingestion key"
+              className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
+              disabled={isFetching}
+              onClick={handleCopy}
             >
-              <Eye size={16} />
+              <Copy className="size-3.5" />
             </Button>
           )}
         </div>
-        <Button variant="destructive" onClick={handleDelete}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={
+            isKeyVisible ? "Hide ingestion key" : "Reveal ingestion key"
+          }
+          onClick={handleToggleKey}
+        >
+          {isKeyVisible ? <EyeOff /> : <Eye />}
+        </Button>
+      </div>
+      <div className="flex items-center justify-between gap-2 pl-1">
+        <span className="text-xs text-muted-foreground">
+          Created {format(new Date(apiKey.createdAt), "PP 'at' p")}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          disabled={deleteMutation.isPending}
+          onClick={handleDelete}
+        >
+          <Trash2 />
           Delete
         </Button>
       </div>
+      {error && (
+        <p role="alert" className="pl-1 text-xs text-destructive">
+          {error.message}
+        </p>
+      )}
     </div>
   );
 }

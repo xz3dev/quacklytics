@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test, type Locator } from "@playwright/test";
-import { z } from "zod";
 import {
   DASHBOARD_GRID,
   dashboard,
@@ -11,21 +11,7 @@ test("dashboard layout gates movement, snaps resizing, saves drafts and isolates
   baseURL,
 }, testInfo) => {
   if (!baseURL) throw new Error("Missing origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const auth = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(auth.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -41,7 +27,7 @@ test("dashboard layout gates movement, snaps resizing, saves drafts and isolates
   if (!home) throw new Error("Missing home dashboard");
   const target = dashboard.parse(
     await (
-      await page.request.post(`${api}/templates/web_analytics`, {
+      await page.request.post(`${api}/templates/product_analytics`, {
         data: { name: "Editable grid" },
       })
     ).json(),
@@ -294,7 +280,11 @@ test("dashboard layout gates movement, snaps resizing, saves drafts and isolates
   ).toEqual(home);
   // Removing a chart preserves remaining placements; re-adding it gets a free slot.
   await page.request.put(`${url}/insights`, {
-    data: { insight_ids: [first.id, second.id] },
+    data: {
+      insight_ids: target.insights
+        .filter((item) => item.id !== third.id)
+        .map((item) => item.id),
+    },
   });
   expect((await read()).layout).toEqual(
     saved.layout?.filter((item) => item.insightId !== third.id),

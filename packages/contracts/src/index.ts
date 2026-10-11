@@ -1,3 +1,10 @@
+export {
+  sdkRequest,
+  sdkEvent,
+  sdkOperation,
+  identifyOperation,
+  ingestAcknowledgment,
+} from "@quacklytics/client/protocol";
 import { dashboardLayout } from "./dashboard-layout";
 export * from "./dashboard-layout";
 import { z } from "zod";
@@ -42,13 +49,12 @@ export const funnelCountingMode = z.enum([
 ]);
 const common = {
   breakdownBy: field.optional(),
-  id: z.number().int().positive(),
   name: z.string().max(200).optional(),
   favorite: z.boolean(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 };
-export const insight = z.discriminatedUnion("type", [
+export const insightInput = z.discriminatedUnion("type", [
   z.object({
     ...common,
     type: z.literal("Trend"),
@@ -135,16 +141,51 @@ export const insight = z.discriminatedUnion("type", [
       }),
     }),
   }),
+  z.object({
+    ...common,
+    type: z.literal("Map"),
+    config: z.object({
+      // Groups by the visitor country that ingestion adds as `$country`.
+      map: z.object({
+        duration: z.string(),
+        aggregation,
+        filters: z.array(filter).optional(),
+      }),
+    }),
+  }),
+]);
+const insightId = { id: z.number().int().positive() };
+export const insight = z.discriminatedUnion("type", [
+  insightInput.options[0].extend(insightId),
+  insightInput.options[1].extend(insightId),
+  insightInput.options[2].extend(insightId),
+  insightInput.options[3].extend(insightId),
+  insightInput.options[4].extend(insightId),
+  insightInput.options[5].extend(insightId),
+  insightInput.options[6].extend(insightId),
 ]);
 export type Insight = z.infer<typeof insight>;
-export type InsightInput = Insight extends infer I
-  ? I extends { id: number }
-    ? Omit<I, "id">
-    : never
-  : never;
+export type InsightInput = z.infer<typeof insightInput>;
+export const insightUpdate = insightInput;
+export const projectEmoji = z
+  .string()
+  .trim()
+  .max(64)
+  .refine(
+    (value) =>
+      value === "" ||
+      (z.string().emoji().safeParse(value).success &&
+        [
+          ...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(
+            value,
+          ),
+        ].length === 1),
+    "Choose a single emoji",
+  );
 export const project = z.object({
   id: z.string(),
   name: z.string(),
+  emoji: projectEmoji.default(""),
   partition: z.string(),
   corsOrigins: z.array(z.string()),
 });
@@ -158,6 +199,41 @@ export const dashboard = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
+// Commands accept references; responses expand them with the current insight records.
+export const insightReference = z.object({ id: z.number().int().positive() });
+export const dashboardInput = dashboard.omit({ id: true }).extend({
+  favorite: z.boolean().default(false),
+  home: z.boolean().default(false),
+  insights: z.array(insightReference).default([]),
+});
+export const dashboardUpdate = dashboardInput;
+export const dashboardCreate = dashboardInput;
+export const dashboardMetadata = dashboard.omit({
+  id: true,
+  insights: true,
+  layout: true,
+});
+export const dashboardMembership = z.object({
+  insightId: z.number().int().positive(),
+  position: z.number().int().nonnegative(),
+  layout: dashboardLayout.element.optional(),
+});
+export const dashboardTemplate = z.enum([
+  "web_analytics",
+  "product_analytics",
+  "chart_playground",
+  "website_traffic",
+]);
+export const dashboardTemplateInput = z.object({
+  name: z.string().optional(),
+  home: z.boolean().optional(),
+});
+export const dashboardInsightIds = z.object({
+  insight_ids: z
+    .array(z.number().int().positive())
+    .refine((ids) => new Set(ids).size === ids.length, "Duplicate insight"),
+});
+export const dashboardLayoutInput = z.object({ layout: dashboardLayout });
 export const apiKey = z.object({
   id: z.number(),
   createdAt: z.number(),
@@ -204,6 +280,31 @@ export const catalogAccess = catalogFile.extend({
   url: z.url(),
   expiresAt: z.iso.datetime(),
 });
+export const analyticsStatus = z.object({
+  files: catalogAccess.array(),
+  committedRevision: z.number().int().nonnegative(),
+  exportedRevision: z.number().int().nonnegative(),
+  exportedAt: z.string().nullable(),
+  pending: z.boolean(),
+  exportError: z.string().nullable(),
+});
+
+// One response pins remote coverage and SQLite rows to the same read transaction.
+export const analyticsRow = z.object({
+  id: z.string(),
+  timestamp: z.number().int(),
+  event_type: z.string(),
+  session_id: z.string().nullable(),
+  person_id: z.string().nullable(),
+  properties,
+});
+export const analyticsSnapshot = analyticsStatus.extend({
+  dayStart: z.iso.datetime(),
+  liveEvents: analyticsRow.array(),
+  availableStart: z.iso.datetime().nullable(),
+  availableEnd: z.iso.datetime().nullable(),
+});
+
 export const schemaResponse = z.record(
   z.string(),
   z.record(
@@ -264,6 +365,12 @@ export type TrendRow = z.infer<typeof trendRow>;
 export type RetentionRow = z.infer<typeof retentionRow>;
 export type PathRow = z.infer<typeof pathRow>;
 export type BreakdownRow = z.infer<typeof breakdownRow>;
+/** ISO 3166-1 alpha-2 visitor country, added to browser SDK events at ingestion. */
+export const countryField = {
+  name: "$country",
+  type: "string",
+  isProperty: true,
+} satisfies z.infer<typeof field>;
 export const defaultQuery = {
   filters: [],
   aggregations: [
@@ -344,6 +451,66 @@ export const defaultInsights = {
       },
     },
   },
+  Map: {
+    type: "Map",
+    favorite: false,
+    config: {
+      map: {
+        duration: "P30D",
+        aggregation: {
+          function: "COUNT",
+          field: { name: "person_id", type: "string" },
+          alias: "result_value",
+          distinct: true,
+        },
+        filters: [],
+      },
+    },
+  },
 } satisfies {
   [K in Insight["type"]]: Omit<Extract<Insight, { type: K }>, "id">;
 };
+/**
+ * Whether the server sees real client addresses. `direct` and `ok` are healthy;
+ * the rest mean visitors would be attributed to a proxy.
+ */
+export const proxyCheck = z.object({
+  status: z.enum(["direct", "ok", "untrusted", "partial", "missing-header"]),
+  clientIp: z.string(),
+  socketIp: z.string(),
+  forwardedFor: z.string().nullable(),
+  trustedProxies: z.string().nullable(),
+  /** Value to set `TRUSTED_PROXIES` to, when a change would fix the setup. */
+  suggestion: z.string().nullable(),
+});
+export type ProxyCheck = z.infer<typeof proxyCheck>;
+/** The most recent accepted ingestion request, as the server received it. */
+export const ingestDiagnostic = z.object({
+  receivedAt: z.number(),
+  origin: z.string().nullable(),
+  /** `sdk` for the versioned client protocol, `http` for raw events. */
+  client: z.enum(["sdk", "http"]),
+  committed: z.number(),
+  duplicates: z.number(),
+  rejected: z.number(),
+  proxy: proxyCheck,
+});
+export type IngestDiagnostic = z.infer<typeof ingestDiagnostic>;
+export const projectSetup = z.object({
+  latestEvent: z
+    .object({
+      id: z.string(),
+      eventType: z.string(),
+      timestamp: z.number(),
+      sessionId: z.string().nullable(),
+      personId: z.string().nullable(),
+      sdk: z.object({ name: z.string(), version: z.string() }).nullable(),
+    })
+    .nullable(),
+  lastIngest: ingestDiagnostic.nullable(),
+  /** Recent browser origins refused by ingestion, newest first. */
+  rejectedOrigins: z.array(z.object({ origin: z.string(), at: z.number() })),
+  /** When a request last carried an ingestion key that matches no project. */
+  invalidKeyAt: z.number().nullable(),
+});
+export type ProjectSetup = z.infer<typeof projectSetup>;

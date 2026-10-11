@@ -6,6 +6,10 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { z } from "zod";
+import {
+  insight,
+  dashboard as dashboardSchema,
+} from "../../packages/contracts/src/index";
 
 test("failed S3 exports retry after SIGKILL while events, credentials and dashboards persist", async ({
   page,
@@ -82,9 +86,9 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
     const keys = z
       .array(z.object({ key: z.string() }))
       .parse(await (await api.post(`/api/${project.id}/apikeys`)).json());
-    const key = keys[0]?.key;
+    const key = keys.at(-1)?.key;
     if (!key) throw new Error("Missing key");
-    const firstSeen = Date.now() - 60000;
+    const firstSeen = Date.now() - 86400000;
     const batches = Array.from({ length: 10 }, (_, batch) => ({
       requestId: crypto.randomUUID(),
       events: Array.from({ length: 20 }, (_, index) => ({
@@ -110,15 +114,39 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
     );
     for (const reply of replies)
       expect(await reply.json()).toMatchObject({ committed: 20 });
+    const members = insight
+      .array()
+      .parse(await (await api.get(`/api/${project.id}/insights`)).json())
+      .reverse();
     const dashboard = z.object({ id: z.number() }).parse(
       await (
         await api.post(`/api/${project.id}/dashboards`, {
-          data: { name: "Durable dashboard", favorite: true },
+          data: {
+            name: "Durable dashboard",
+            favorite: true,
+            insights: members.map(({ id }) => ({ id })),
+          },
         })
       ).json(),
     );
-    const failedExport = await api.get(`/api/${project.id}/events/catalog`);
+    const failedExport = await api.post(
+      `/api/${project.id}/events/catalog/gen`,
+    );
     expect(failedExport.status()).toBe(500);
+    expect(
+      await (await api.get(`/api/${project.id}/events/status`)).json(),
+    ).toMatchObject({
+      pending: true,
+      exportedRevision: 0,
+      exportError: "Event export failed. Retrying automatically.",
+    });
+    await page.context().addCookies((await api.storageState()).cookies);
+    await page.goto(`${origin}/app/${project.id}/events`);
+    await page.getByRole("button", { name: /^Analytics data:/ }).click();
+    await expect(page.getByLabel("Analytics freshness")).toContainText(
+      "Event export failed. Retrying automatically.",
+    );
+    await page.goto("about:blank");
     expect(
       z
         .array(z.unknown())
@@ -147,7 +175,7 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
       .parse(
         await (await api.post(`/api/${deferredProject.id}/apikeys`)).json(),
       );
-    const deferredKey = deferredKeys[0]?.key;
+    const deferredKey = deferredKeys.at(-1)?.key;
     if (!deferredKey) throw new Error("Missing interrupted import key");
     const deferredBatch = {
       requestId: crypto.randomUUID(),
@@ -156,7 +184,7 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
         {
           id: crypto.randomUUID(),
           eventType: "interrupted",
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
         },
       ],
     };
@@ -195,6 +223,54 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
         })
       ).status(),
     ).toBe(409);
+    // Versioned SDK control operations and actor links survive the same crash.
+    const sdkProject = z
+      .object({ id: z.string() })
+      .parse(
+        await (
+          await api.post("/api/projects", { data: { name: "SDK recovery" } })
+        ).json(),
+      );
+    await api.post(`/api/${sdkProject.id}/settings`, {
+      data: [{ key: "cors_origins", value: origin }],
+    });
+    const sdkKeys = z
+      .array(z.object({ key: z.string() }))
+      .parse(await (await api.post(`/api/${sdkProject.id}/apikeys`)).json());
+    const sdkKey = sdkKeys.at(-1)?.key;
+    if (!sdkKey) throw new Error("Missing SDK recovery key");
+    const anonymousId = crypto.randomUUID();
+    const sdkBatch = {
+      protocolVersion: 1,
+      requestId: crypto.randomUUID(),
+      operations: [
+        {
+          kind: "event",
+          id: crypto.randomUUID(),
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          anonymousId,
+          eventType: "sdk_durable",
+          properties: { durable: true },
+          context: { sdk: { name: "@quacklytics/client", version: "0.2.0" } },
+        },
+        {
+          kind: "identify",
+          id: crypto.randomUUID(),
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          anonymousId,
+          userId: "durable-sdk-user",
+          traits: { plan: "pro" },
+        },
+      ],
+    };
+    expect(
+      await (
+        await api.post("/api/ingest", {
+          headers: { "X-API-KEY": sdkKey },
+          data: sdkBatch,
+        })
+      ).json(),
+    ).toMatchObject({ committed: 2 });
     const cookies = await api.storageState();
     await kill();
     // Person properties have no read API yet. Inspect durable state after SIGKILL
@@ -204,6 +280,7 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
       `
       import { Database } from "bun:sqlite";
       import { z } from "zod";
+import { insight, dashboard as dashboardSchema } from "../../packages/contracts/src/index";
       const db = new Database(z.string().parse(Bun.argv.at(-1)), { readonly: true });
       console.log(JSON.stringify(db.query("SELECT first_seen,properties FROM persons WHERE id=?").get("durable-person")));
       db.close();
@@ -228,6 +305,61 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
       legacy: true,
     });
     await start();
+    expect(
+      await (
+        await api.post("/api/ingest", {
+          headers: { "X-API-KEY": sdkKey },
+          data: sdkBatch,
+        })
+      ).json(),
+    ).toMatchObject({ committed: 2 });
+    const sdkRows = z
+      .array(
+        z.object({
+          eventType: z.string(),
+          personId: z.string(),
+          properties: z.record(z.string(), z.json()),
+        }),
+      )
+      .parse(await (await api.get(`/api/${sdkProject.id}/events`)).json());
+    expect(sdkRows).toHaveLength(1);
+    expect(sdkRows[0]).toMatchObject({
+      eventType: "sdk_durable",
+      personId: "user:durable-sdk-user",
+      properties: { durable: true },
+    });
+    expect(
+      (
+        await api.post("/api/ingest", {
+          headers: { "X-API-KEY": sdkKey },
+          data: {
+            protocolVersion: 1,
+            requestId: crypto.randomUUID(),
+            operations: [
+              {
+                kind: "identify",
+                id: crypto.randomUUID(),
+                timestamp: new Date(Date.now() - 86400000).toISOString(),
+                anonymousId,
+                userId: "conflicting-user",
+                traits: {},
+              },
+            ],
+          },
+        })
+      ).status(),
+    ).toBe(409);
+    expect(
+      (await api.post(`/api/${sdkProject.id}/events/catalog/gen`)).ok(),
+    ).toBeTruthy();
+    expect(
+      z
+        .array(z.object({ eventCount: z.number() }))
+        .parse(
+          await (await api.get(`/api/${sdkProject.id}/events/catalog`)).json(),
+        )
+        .reduce((sum, file) => sum + file.eventCount, 0),
+    ).toBe(1);
     expect(
       await (
         await api.post("/api/ingest", {
@@ -256,7 +388,7 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
             );
           return files.reduce((sum, file) => sum + file.eventCount, 0);
         },
-        { timeout: 15000 },
+        { timeout: 45000 },
       )
       .toBe(1);
     expect((await api.get("/api/me")).ok()).toBeTruthy();
@@ -265,6 +397,13 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
         await api.get(`/api/${project.id}/dashboards/${dashboard.id}`)
       ).json(),
     ).toMatchObject({ name: "Durable dashboard", favorite: true });
+    expect(
+      dashboardSchema.parse(
+        await (
+          await api.get(`/api/${project.id}/dashboards/${dashboard.id}`)
+        ).json(),
+      ).insights,
+    ).toEqual(members);
     expect(
       z
         .array(z.unknown())

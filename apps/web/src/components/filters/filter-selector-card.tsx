@@ -73,6 +73,7 @@ export function FilterSelectorCard({
     project,
     fieldId ?? 0,
     fieldId !== undefined,
+    "project",
   );
 
   const propertyValues: string[] = propValuesQuery.data ?? [];

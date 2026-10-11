@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { loadEnvFile } from "node:process";
 import { defineConfig } from "@playwright/test";
 if (existsSync("apps/web/.env.local")) loadEnvFile("apps/web/.env.local");
+// Test servers, including spawned ones, must not download the GeoIP database.
+process.env.GEOIP ??= "off";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,

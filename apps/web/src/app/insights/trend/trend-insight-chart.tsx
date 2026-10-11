@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import { formatMetricValue, insightMetricUnit } from "@/lib/metric-value";
 import {
   useChartBreakdown,
@@ -82,6 +83,8 @@ function UngroupedTrendInsightChart({ insight }: { insight: TrendInsight }) {
   if (results.some((r) => r.isPending)) return <p>Loading chart…</p>;
   const error = results.find((r) => r.error)?.error;
   if (error) return <p role="alert">{error.message}</p>;
+  if (chartSeries.every((series) => series.rows.length === 0))
+    return <ChartEmptyState insight={insight} />;
   return (
     <div className="min-w-0 space-y-4">
       <ChartSpace minimum={240}>

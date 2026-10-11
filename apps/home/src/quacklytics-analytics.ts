@@ -1,58 +1,71 @@
-import { createClient } from "@quacklytics/client";
-import { enableClickAutotracking } from "@quacklytics/client/autotrack";
+import { createClient, type AnalyticsClient } from "@quacklytics/client";
 import { createCookieConsent } from "@quacklytics/client/consent";
 
+declare global {
+  interface Window {
+    quacklytics?: AnalyticsClient;
+  }
+}
+// Starlight's theme variables flip with its theme picker, so the banner follows it.
+const STARLIGHT_BANNER_CSS = `
+[data-quacklytics-cookie-banner] .ql-banner {
+  color: var(--sl-color-white);
+  background: var(--sl-color-bg-nav);
+  border-color: var(--sl-color-gray-5);
+  box-shadow: var(--sl-shadow-lg);
+  font-family: var(--__sl-font);
+  font-size: var(--sl-text-sm);
+}
+[data-quacklytics-cookie-banner] .ql-text a {
+  color: var(--sl-color-text-accent);
+}
+[data-quacklytics-cookie-banner] button {
+  border-radius: 999rem;
+  padding: 0.4375rem 1.125rem;
+}
+[data-quacklytics-cookie-banner] .ql-primary {
+  color: var(--sl-color-black);
+  background: var(--sl-color-text-accent);
+  border-color: var(--sl-color-text-accent);
+}
+[data-quacklytics-cookie-banner] .ql-secondary {
+  color: var(--sl-color-white);
+  background: transparent;
+  border-color: var(--sl-color-gray-4);
+}
+`;
 const apiKey = import.meta.env.PUBLIC_QUACKLYTICS_API_KEY;
-const hostname = import.meta.env.PUBLIC_QUACKLYTICS_HOST ?? "localhost";
-const port = parsePort(import.meta.env.PUBLIC_QUACKLYTICS_PORT, hostname);
-const protocol = parseProtocol(import.meta.env.PUBLIC_QUACKLYTICS_PROTOCOL);
+const hostname =
+  import.meta.env.PUBLIC_QUACKLYTICS_HOST ?? "http://localhost:3000";
 
-if (typeof document !== "undefined" && apiKey) {
+if (typeof document !== "undefined" && apiKey && !window.quacklytics) {
   const client = createClient({
     apiKey,
     hostname,
-    port,
-    protocol,
-    autoTrackPageviews: false,
+    ...(import.meta.env.PUBLIC_QUACKLYTICS_PROTOCOL === "http"
+      ? { protocol: "http" }
+      : {}),
+    ...(import.meta.env.PUBLIC_QUACKLYTICS_PORT
+      ? { port: Number(import.meta.env.PUBLIC_QUACKLYTICS_PORT) }
+      : {}),
+    consent:
+      import.meta.env.PUBLIC_QUACKLYTICS_COOKIE_BANNER === "false"
+        ? "granted"
+        : "required",
+    autocapture: true,
+    onError(error) {
+      console.warn("Quacklytics collection failed", error);
+    },
   });
-
-  console.log("Quacklytics homepage tracking enabled");
+  window.quacklytics = client;
   const consent = createCookieConsent({
     client,
-    enabled: import.meta.env.PUBLIC_QUACKLYTICS_COOKIE_BANNER !== "false",
     banner: {
-      textHtml:
-        import.meta.env.PUBLIC_QUACKLYTICS_COOKIE_TEXT ??
-        "We use Quacklytics to understand which parts of this site are useful. Accept to persist a visitor id, or continue with session-only analytics.",
-    },
-    onError(error) {
-      console.warn("Quacklytics homepage tracking failed", error);
+      css: STARLIGHT_BANNER_CSS,
+      ...(import.meta.env.PUBLIC_QUACKLYTICS_COOKIE_TEXT
+        ? { textHtml: import.meta.env.PUBLIC_QUACKLYTICS_COOKIE_TEXT }
+        : {}),
     },
   });
-
-  enableClickAutotracking({
-    client: consent.client,
-    includeText: true,
-    onError(error) {
-      console.warn("Quacklytics click autotracking failed", error);
-    },
-  });
-
-  void consent.client.trackPageview().catch((error) => {
-    console.warn("Quacklytics pageview tracking failed", error);
-  });
-
   queueMicrotask(() => consent.showBanner());
-}
-
-function parsePort(value: string | undefined, hostname: string): number | undefined {
-  if (value) {
-    const port = Number(value);
-    return Number.isFinite(port) ? port : undefined;
-  }
-  return hostname === "localhost" ? 3000 : undefined;
-}
-
-function parseProtocol(value: string | undefined): "http" | "https" {
-  return value === "https" ? "https" : "http";
 }

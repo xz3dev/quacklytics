@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
-import { z } from "zod";
 import { project } from "../../packages/contracts/src/index";
 
 test("project pages share insight spacing in both themes and remain usable on mobile", async ({
@@ -7,21 +7,7 @@ test("project pages share insight spacing in both themes and remain usable on mo
   baseURL,
 }, testInfo) => {
   if (!baseURL) throw new Error("Missing origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const auth = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(auth.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -32,7 +18,7 @@ test("project pages share insight spacing in both themes and remain usable on mo
   const routes = [
     ["insights", "Insights"],
     ["dashboards", "Dashboards"],
-    ["data", "Data"],
+    ["schema", "Event Schema"],
     ["events", "Events"],
     ["queries", "Queries"],
     ["ingestion", "Ingestion"],

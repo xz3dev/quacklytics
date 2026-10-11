@@ -12,6 +12,7 @@ import {
   BaseInsightContext,
   BreakdownInsightContext,
   FunnelInsightContext,
+  MapInsightContext,
   PathInsightContext,
   RetentionInsightContext,
   TrendInsightContext,
@@ -30,6 +31,8 @@ import { RetentionInsight } from "@/model/insights/retention-insight.ts";
 import { RetentionInsightView } from "@app/insights/retention/retention-insight-view.tsx";
 import { PathInsight } from "@/model/insights/path-insight.ts";
 import { PathInsightView } from "@app/insights/path/path-insight-view.tsx";
+import { MapInsight } from "@/model/insights/map-insight.ts";
+import { MapInsightView } from "@app/insights/map/map-insight-view.tsx";
 
 interface Props {
   insightId: number;
@@ -64,6 +67,8 @@ function timeframeConfig(insight: Insight) {
       return insight.config.retention;
     case "Path":
       return insight.config.path;
+    case "Map":
+      return insight.config.map;
   }
 }
 
@@ -201,6 +206,22 @@ function InsightEditor({ insightId, readOnly, mode }: Props) {
             <PathInsightView />
           </PathInsightContext.Provider>
         );
+      case "Map":
+        return (
+          <MapInsightContext.Provider
+            value={{
+              data: insight,
+              update: updateWorkingCopy,
+              updateFn: (fn: (i: MapInsight) => void) => {
+                const copy = structuredClone(insight);
+                if (copy.type === "Map") fn(copy);
+                updateWorkingCopy(copy);
+              },
+            }}
+          >
+            <MapInsightView />
+          </MapInsightContext.Provider>
+        );
       default:
         return <div>Unknown insight type</div>;
     }
@@ -228,7 +249,7 @@ function InsightEditor({ insightId, readOnly, mode }: Props) {
             : undefined
         }
       >
-        {editing ? (
+        {current.type === "Map" ? null : editing ? (
           <ChartBreakdownOptions
             insight={current}
             onChange={updateWorkingCopy}

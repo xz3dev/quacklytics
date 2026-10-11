@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "compilerOptions": { "types": ["bun"] },
+  "include": ["tests/unit/**/*.ts", "tests/fixtures/**/*.ts"],
+  "exclude": []
+}

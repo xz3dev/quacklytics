@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import { insightMetricUnit } from "@/lib/metric-value";
 import { useChartBreakdown, breakdownLabel } from "@/lib/chart-breakdown";
 import { AnalyticsChart } from "@/components/analytics-chart";
@@ -32,6 +33,13 @@ function UngroupedValueInsightChart({ insight }: Props) {
     const series = insight?.config.value.series;
     const query = mergeQueries(series?.query ?? {}, {
       filters: [...dateRangeFilter],
+      aggregations: [
+        {
+          function: "COUNT",
+          field: { name: "id", type: "string" },
+          alias: "__matching_events",
+        },
+      ],
     });
     const hash = simpleHash(
       JSON.stringify(series) + JSON.stringify(insight.config),
@@ -43,6 +51,13 @@ function UngroupedValueInsightChart({ insight }: Props) {
     const series = insight?.config.value.series;
     const query = mergeQueries(series?.query ?? {}, {
       filters: [...previousDateRangeFilter],
+      aggregations: [
+        {
+          function: "COUNT",
+          field: { name: "id", type: "string" },
+          alias: "__matching_events",
+        },
+      ],
     });
     const hash = simpleHash(
       JSON.stringify(series) + JSON.stringify(insight.config),
@@ -77,6 +92,13 @@ function UngroupedValueInsightChart({ insight }: Props) {
     );
   const data = queryResult.data;
   const dataPrev = queryResultPrev.data;
+
+  if (
+    [...(data ?? []), ...(dataPrev ?? [])].every(
+      (row) => numericResult.parse(row.__matching_events ?? 0) === 0,
+    )
+  )
+    return <ChartEmptyState insight={insight} />;
 
   if (breakdown) {
     const series = breakdown.values.map((value, index) => {
@@ -193,7 +215,10 @@ function UngroupedValueInsightChart({ insight }: Props) {
                     {amount?.toLocaleString("en-US") ?? "—"}
                   </span>
                 </div>
-                <div className="relative h-3 w-full" aria-hidden="true">
+                <div
+                  className="relative h-3 w-full rounded-full bg-muted"
+                  aria-hidden="true"
+                >
                   {minimum < 0 && (
                     <span
                       className="absolute -top-1 h-5 w-px bg-border"

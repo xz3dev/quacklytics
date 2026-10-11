@@ -1,5 +1,4 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { getMigrations } from "better-auth/db/migration";
 import { APIError } from "better-auth/api";
 import { appDb, dataRoot } from "./db/database";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -28,11 +27,6 @@ const options = {
     },
   },
 } satisfies BetterAuthOptions;
-export const authReady = (async () => {
-  const migrations = await getMigrations(options);
-  await migrations.runMigrations();
-  appDb.exec("CREATE UNIQUE INDEX IF NOT EXISTS single_admin ON user ((1))");
-})();
+export const authReady = Promise.resolve();
 
-await authReady;
 export const auth = betterAuth(options);

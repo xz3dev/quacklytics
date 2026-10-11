@@ -25,11 +25,6 @@ import {
 import { cn } from "@/lib/utils/tailwind";
 import { SchemaPropValueList } from "./schema-prop-value-list";
 
-function namespaceOf(event: string) {
-  const separator = event.lastIndexOf(".");
-  return separator < 0 ? "" : event.slice(0, separator);
-}
-
 export function SchemaView() {
   const projectId = useProjectId();
   const query = useSchema(projectId);
@@ -48,7 +43,7 @@ export function SchemaView() {
   return (
     <div className="min-w-0">
       <PageHeader>
-        <PageTitle>Data</PageTitle>
+        <PageTitle>Event Schema</PageTitle>
       </PageHeader>
       <SchemaBrowser key={projectId} schema={query.data} />
     </div>
@@ -65,7 +60,6 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
       Object.entries(schema.events)
         .map(([name, properties]) => ({
           name,
-          namespace: namespaceOf(name),
           properties: [...properties].sort((a, b) =>
             a.name.localeCompare(b.name),
           ),
@@ -92,7 +86,7 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
         aria-label="Events"
         className="flex min-h-0 min-w-0 flex-col border-b border-border/50 lg:border-b-0 lg:border-r"
       >
-        <div className="space-y-3 border-b border-border/50 p-4">
+        <div className="p-4">
           <div className="relative">
             <Search
               aria-hidden="true"
@@ -106,9 +100,6 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
               className="pl-9"
             />
           </div>
-          <p role="status" className="text-xs text-muted-foreground">
-            {filteredEvents.length} of {events.length} events
-          </p>
         </div>
         <ul
           aria-label="Event list"
@@ -122,10 +113,10 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                 aria-pressed={selectedEvent?.name === event.name}
                 onClick={() => setSelectedName(event.name)}
                 className={cn(
-                  "my-1 flex w-full items-center gap-3 rounded-md border-l-2 px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  "my-1 flex w-full items-center gap-3 rounded-md px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   selectedEvent?.name === event.name
-                    ? "border-primary bg-accent/60"
-                    : "border-transparent hover:bg-muted/60",
+                    ? "bg-accent"
+                    : "hover:bg-muted",
                 )}
               >
                 <div className="min-w-0 flex-1">
@@ -220,9 +211,6 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                 </Tooltip>
               </TooltipProvider>
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {selectedEvent.namespace || "Ungrouped"}
-            </p>
             <div className="relative mb-5 mt-6">
               <Search
                 aria-hidden="true"
@@ -249,12 +237,15 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                 </TableHeader>
                 <TableBody>
                   {filteredProperties.map((field) => (
-                    <TableRow key={field.id}>
+                    <TableRow
+                      key={field.id}
+                      onClick={() => setSelectedProp(field)}
+                      className="cursor-pointer"
+                    >
                       <TableCell className="max-w-0">
                         <button
                           type="button"
-                          onClick={() => setSelectedProp(field)}
-                          className="rounded-sm text-left text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [overflow-wrap:anywhere]"
+                          className="rounded-sm text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [overflow-wrap:anywhere]"
                         >
                           {field.name}
                         </button>
@@ -269,7 +260,6 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                           variant="ghost"
                           size="icon"
                           aria-label={`View values for ${field.name}`}
-                          onClick={() => setSelectedProp(field)}
                         >
                           <ChevronRight />
                         </Button>

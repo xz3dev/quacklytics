@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { useProjectId } from "@/hooks/use-project-id.tsx";
 import { ProjectLink } from "@/components/project-link.tsx";
-import { Link } from "@/lib/navigation";
+import { Link, useNavigate } from "@/lib/navigation";
 import { cn } from "@lib/utils/tailwind.ts";
 const insightTypeDescriptions: Record<InsightType, string> = {
   Trend: "Track changes over time",
@@ -45,6 +45,7 @@ const insightTypeDescriptions: Record<InsightType, string> = {
   Breakdown: "Compare categories",
   Retention: "See who comes back",
   Path: "Discover the routes users take",
+  Map: "See where visitors come from",
 };
 
 interface Props {
@@ -71,6 +72,7 @@ export function InsightsList({
   const createInsightMutation = useCreateInsight(projectId);
   const updateInsightMutation = useUpdateInsight(projectId);
   const deleteInsightMutation = useDeleteInsight(projectId);
+  const navigate = useNavigate();
 
   const [actionError, setActionError] = useState<string | null>(null);
   const busy =
@@ -109,12 +111,13 @@ export function InsightsList({
 
   const handleCreate = async () => {
     const defaults = defaultInsights[selectedType];
-    await createInsightMutation.mutateAsync({
+    const created = await createInsightMutation.mutateAsync({
       ...defaults,
       name: `Untitled ${selectedType.toLowerCase()}`,
       favorite: createAsFavorite ?? false,
     });
     setIsCreateOpen(false);
+    await navigate(`/app/${projectId}/insights/${created.id}/edit`);
   };
 
   const handleStartEdit = (insight: Insight) => {

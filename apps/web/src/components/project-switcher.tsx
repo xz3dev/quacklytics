@@ -1,12 +1,6 @@
 import { RenameProjectDialog } from "./rename-project-dialog";
 import * as React from "react";
-import { ChevronsUpDown, Pencil, Plus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ChevronsUpDown, LayoutGrid, Pencil, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,9 +15,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useCreateProject, useProjects } from "@/services/projects";
+import { useProjects } from "@/services/projects";
+import { Link } from "@/lib/navigation";
 import { useProjectSwitch } from "@/hooks/use-project-switch.tsx";
 import { Project } from "@/model/project.ts";
 import { useProjectId } from "@/hooks/use-project-id.tsx";
@@ -34,7 +27,6 @@ export function ProjectSwitcher() {
 
   const { data: projects = [] } = useProjects();
   const activeProjectId = useProjectId();
-  const createProject = useCreateProject();
 
   const activeProject = projects.find(
     (project) => project.id === activeProjectId,
@@ -42,40 +34,6 @@ export function ProjectSwitcher() {
   const [editingProject, setEditingProject] = React.useState<Project | null>(
     null,
   );
-  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [newProjectName, setNewProjectName] = React.useState("");
-  const [errorMessage, setErrorMessage] = React.useState("");
-
-  const handleCreateProject = async () => {
-    const trimmedName = newProjectName.trim();
-    const namePattern = /^[a-zA-Z0-9](?:[a-zA-Z0-9_-]*[a-zA-Z0-9])?$/;
-
-    // Clear any previous error message
-    setErrorMessage("");
-
-    if (!trimmedName) {
-      setErrorMessage("Project name cannot be empty.");
-      return;
-    }
-
-    if (!namePattern.test(trimmedName)) {
-      setErrorMessage(
-        "Invalid project name. Only letters, numbers, underscores, and hyphens are allowed. Hyphens and underscores cannot be at the start or end of the name.",
-      );
-      return;
-    }
-
-    try {
-      await createProject.mutateAsync(trimmedName);
-      setNewProjectName("");
-      setIsCreateOpen(false);
-      projectSwitch(trimmedName);
-    } catch (error) {
-      console.error("Failed to create project:", error);
-      setErrorMessage("Failed to create project. Please try again later.");
-    }
-  };
-
   const navigateToProject = async (project: Project) => {
     projectSwitch(project.id);
   };
@@ -92,8 +50,8 @@ export function ProjectSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                {activeProject.name?.[0]?.toUpperCase()}
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg border border-border/50 bg-muted text-lg font-semibold text-foreground">
+                {activeProject.emoji || activeProject.name?.[0]?.toUpperCase()}
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
@@ -104,7 +62,7 @@ export function ProjectSwitcher() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-[--radix-dropdown-menu-trigger-width] min-w-56 overflow-y-auto overscroll-contain rounded-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
@@ -119,7 +77,7 @@ export function ProjectSwitcher() {
                   className="min-w-0 flex-1 gap-2 p-2"
                 >
                   <div className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-muted">
-                    {project.name?.[0]?.toUpperCase()}
+                    {project.emoji || project.name?.[0]?.toUpperCase()}
                   </div>
                   <span className="truncate">{project.name}</span>
                 </DropdownMenuItem>
@@ -131,7 +89,7 @@ export function ProjectSwitcher() {
                     type="button"
                     aria-label={`Rename ${project.name}`}
                     title="Rename project"
-                    className="justify-center p-2"
+                    className="size-10 shrink-0 justify-center p-0"
                   >
                     <Pencil className="size-4" />
                   </button>
@@ -139,12 +97,17 @@ export function ProjectSwitcher() {
               </div>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="flex items-center gap-2 p-2"
-              onClick={() => setIsCreateOpen(true)}
-            >
-              <Plus size={16} />
-              Create new project
+            <DropdownMenuItem asChild className="flex items-center gap-2 p-2">
+              <Link to="/projects">
+                <LayoutGrid size={16} />
+                All projects
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="flex items-center gap-2 p-2">
+              <Link to="/projects/new">
+                <Plus size={16} />
+                Create new project
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -155,44 +118,6 @@ export function ProjectSwitcher() {
           project={editingProject}
           onClose={() => setEditingProject(null)}
         />
-      )}
-
-      {/* Project creation dialog */}
-      {isCreateOpen && (
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
-            </DialogHeader>
-            {errorMessage && (
-              <div
-                className="mb-2 rounded bg-red-100 p-2 text-red-800"
-                role="alert"
-              >
-                {errorMessage}
-              </div>
-            )}
-            <div className="mt-4">
-              <Input
-                placeholder="Enter project name"
-                value={newProjectName}
-                onChange={(e) => {
-                  setNewProjectName(e.target.value);
-                  setErrorMessage(""); // clear error on change
-                }}
-              />
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleCreateProject}>Create</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       )}
     </SidebarMenu>
   );

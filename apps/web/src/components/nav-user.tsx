@@ -25,7 +25,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip.tsx";
-import { useAuthStore } from "@/services/auth.ts";
+import { useAuth } from "@/services/auth.ts";
+
+function getInitials(nameOrEmail: string) {
+  const [localPart = ""] = nameOrEmail.split("@");
+  const letters = localPart
+    .split(/[\s._+-]+/)
+    .filter((word) => word.length > 0)
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join("");
+  return letters.toUpperCase() || "?";
+}
 
 export function NavUser({
   user,
@@ -38,7 +49,8 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
-  const { logout } = useAuthStore();
+  const { logout } = useAuth();
+  const initials = getInitials(user.name || user.email);
 
   async function handleLogout() {
     await logout();
@@ -55,7 +67,9 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
@@ -74,7 +88,9 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>

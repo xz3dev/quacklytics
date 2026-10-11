@@ -1,0 +1,116 @@
+---
+title: S3 Storage
+description: Set up the private S3-compatible bucket that holds Quacklytics' Parquet files.
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Quacklytics publishes each project's event history as monthly Parquet files to an S3-compatible bucket. Browsers then read those files directly through short-lived signed URLs.
+
+<Aside type="danger" title="The bucket holds your history">
+    Seven days after a month ends, it is **archived**: its events are deleted from SQLite and exist **only** in the bucket. Losing the bucket means losing every archived month. Don't add lifecycle rules that expire objects, and back the bucket up. See [Backups](/self-hosting/backups/).
+</Aside>
+
+## Set up the bucket
+
+<Steps>
+
+1. **Create a private bucket.** Don't enable public access, because browsers only use signed URLs.
+
+2. **Create an access key** that can list the bucket and read, write and delete its objects (on AWS: `s3:ListBucket`, `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`). Only the server uses it.
+
+3. **Configure CORS** so browsers on your app origin can make range requests:
+
+    ```json title="cors.json"
+    {
+      "CORSRules": [
+        {
+          "AllowedOrigins": ["https://analytics.example.com"],
+          "AllowedMethods": ["GET", "HEAD"],
+          "AllowedHeaders": ["Range"],
+          "ExposeHeaders": ["Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"],
+          "MaxAgeSeconds": 3600
+        }
+      ]
+    }
+    ```
+
+    ```sh
+    aws s3api put-bucket-cors --bucket quacklytics --cors-configuration file://cors.json
+    ```
+
+    Add `--endpoint-url https://…` for providers other than AWS.
+
+4. **Set the environment variables** on the Quacklytics container.
+
+</Steps>
+
+<Aside type="caution" title="Missing CORS headers">
+    If `Content-Range` isn't listed under `ExposeHeaders`, DuckDB in the browser can't read the files, and dashboards fail to load even though uploads work.
+</Aside>
+
+## Provider examples
+
+<Tabs>
+<TabItem label="AWS S3">
+
+```sh
+S3_ENDPOINT=https://s3.eu-central-1.amazonaws.com
+S3_REGION=eu-central-1
+S3_BUCKET=quacklytics
+S3_ACCESS_KEY_ID=AKIA...
+S3_SECRET_ACCESS_KEY=...
+```
+
+</TabItem>
+<TabItem label="Cloudflare R2">
+
+```sh
+S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=quacklytics
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+```
+
+</TabItem>
+<TabItem label="Self-hosted (MinIO, Garage)">
+
+When the app reaches the bucket over an internal address, tell browsers where to find it:
+
+```sh
+S3_ENDPOINT=http://minio:9000                     # used by the server
+S3_PUBLIC_ENDPOINT=https://s3.analytics.example.com # used by browsers
+S3_REGION=us-east-1
+S3_BUCKET=quacklytics
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="tip">
+    `S3_PUBLIC_ENDPOINT` must be reachable by everyone who views dashboards. Use HTTPS when the app is served over HTTPS, or browsers block the requests as mixed content.
+</Aside>
+
+## Changing the bucket
+
+Quacklytics remembers which `S3_ENDPOINT` and `S3_BUCKET` each project was exported to. Changing `S3_PUBLIC_ENDPOINT`, the region or the keys doesn't count as a new destination.
+
+- **Before any month is archived**, switching is safe. Everything is re-exported from SQLite to the new bucket.
+- **After a month is archived**, the archived months exist only in the old bucket. Exports stop with the error *"S3 destination changed but archived months exist only in the previous destination"*, and dashboards show no published history at all. Switch `S3_ENDPOINT` and `S3_BUCKET` back to fix both. The error also appears in `GET /api/:project/events/status`.
+
+<Aside type="caution">
+    Changing `S3_ENDPOINT` counts as a new destination, even if it points to the same bucket. Moving an instance with archived months to another bucket isn't supported automatically yet.
+</Aside>
+
+## How exports work
+
+- Once a day, newly completed UTC days are exported as ZSTD-compressed Parquet, one file per month.
+- Changes to past days (late events, identity changes, backfills) are re-exported within about a minute.
+- Today's events are never uploaded. Browsers get them directly from the server.
+- A background job checks every 30 seconds for new work and retries failed exports.
+- Replaced files are kept for at least an hour, so open dashboards keep working. Hourly cleanup then deletes them, along with any unreferenced objects under the project's prefix.

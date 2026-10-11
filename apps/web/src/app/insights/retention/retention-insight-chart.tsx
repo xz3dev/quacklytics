@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import { formatMetricValue, insightMetricUnit } from "@/lib/metric-value";
 import { format } from "date-fns";
 import { useChartBreakdown, breakdownLabel } from "@/lib/chart-breakdown";
@@ -63,13 +64,7 @@ function UngroupedRetentionInsightChart({ insight }: Props) {
       label: `${format(new Date(cohort.cohortStart), "yyyy-MM-dd")}${breakdown ? ` · ${breakdownLabel(value)}` : ""}`,
     })),
   );
-  if (cohorts.length === 0) {
-    return (
-      <div className="py-6 text-sm text-muted-foreground">
-        No actors with retention data.
-      </div>
-    );
-  }
+  if (cohorts.length === 0) return <ChartEmptyState insight={insight} />;
 
   const maxPeriods = Math.max(0, insight.config.retention.maxPeriods ?? 14);
   const periods = Array.from({ length: maxPeriods + 1 }, (_, index) => index);

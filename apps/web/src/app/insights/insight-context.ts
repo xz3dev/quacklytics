@@ -6,6 +6,7 @@ import { FunnelInsight } from "@/model/insights/funnel-insights.ts";
 import { BreakdownInsight } from "@/model/insights/breakdown-insight.ts";
 import { RetentionInsight } from "@/model/insights/retention-insight.ts";
 import { PathInsight } from "@/model/insights/path-insight.ts";
+import { MapInsight } from "@/model/insights/map-insight.ts";
 
 export const TrendInsightContext = createContext<{
   data?: TrendInsight;
@@ -41,6 +42,12 @@ export const PathInsightContext = createContext<{
   data?: PathInsight;
   updateFn?: (fn: (insight: PathInsight) => void) => void;
   update?: (insight: PathInsight) => void;
+}>({});
+
+export const MapInsightContext = createContext<{
+  data?: MapInsight;
+  updateFn?: (fn: (insight: MapInsight) => void) => void;
+  update?: (insight: MapInsight) => void;
 }>({});
 
 export const BaseInsightContext = createContext<{

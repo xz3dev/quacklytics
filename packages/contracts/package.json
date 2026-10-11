@@ -4,9 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./orbit": "./src/orbit.ts"
+    "./orbit": "./src/orbit.ts",
+    "./website": "./src/website.ts"
   },
   "dependencies": {
-    "zod": "latest"
+    "zod": "latest",
+    "@quacklytics/client": "workspace:*"
   }
 }

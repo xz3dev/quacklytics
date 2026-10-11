@@ -1,6 +1,7 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
 import { z } from "zod";
-import { project } from "../../packages/contracts/src/index";
+import { project, schemaResponse } from "../../packages/contracts/src/index";
 
 test("event filters search, combine, edit, clear, and isolate persisted events", async ({
   page,
@@ -9,21 +10,7 @@ test("event filters search, combine, edit, clear, and isolate persisted events",
   if (!baseURL) throw new Error("Missing test origin");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const createProject = async (name: string) => {
     const response = await page.request.post("/api/projects", {
       data: { name },
@@ -82,9 +69,32 @@ test("event filters search, combine, edit, clear, and isolate persisted events",
     },
   });
   expect(ingest.ok(), await ingest.text()).toBeTruthy();
+  const schema = schemaResponse.parse(
+    await (await page.request.get(`/api/${created.id}/schema`)).json(),
+  );
+  const browserId = schema["demo.funnel.pricing_viewed"]?.browser?.id;
+  if (browserId === undefined) throw new Error("Missing browser schema");
+  const valuesUrl = `/api/${created.id}/schema/prop/${browserId}`;
+  expect(
+    z
+      .string()
+      .array()
+      .parse(await (await page.request.get(valuesUrl)).json()),
+  ).toEqual(["Firefox"]);
+  expect(
+    z
+      .string()
+      .array()
+      .parse(
+        await (await page.request.get(`${valuesUrl}?scope=project`)).json(),
+      ),
+  ).toEqual(["Firefox", "Safari"]);
   await page.goto(`/app/${created.id}/events`);
   const rows = page.locator("tbody tr");
   await expect(rows).toHaveCount(5);
+  await expect(
+    page.getByRole("status", { name: "Event data: Live" }),
+  ).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Events query" })).toHaveCount(
     0,
   );

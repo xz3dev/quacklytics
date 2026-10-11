@@ -28,7 +28,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowRight,
   BarChart3,
   Boxes,
   Home,
@@ -260,7 +259,7 @@ export function DashboardList({ filter, sort, title }: Props) {
             <article
               key={dashboard.id}
               aria-label={dashboard.name}
-              className="flex min-w-0 gap-3 rounded-xl border border-border/50 bg-card p-3 text-card-foreground transition-colors hover:border-foreground/25"
+              className="relative isolate flex min-w-0 gap-3 rounded-xl border border-border/50 bg-card p-3 text-card-foreground transition-colors hover:border-foreground/25"
             >
               <DashboardMosaic insights={dashboard.insights} />
               <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -281,14 +280,14 @@ export function DashboardList({ filter, sort, title }: Props) {
                             projectid: projectId,
                             dashboardid: String(dashboard.id),
                           }}
-                          className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="after:absolute after:inset-0 after:rounded-xl hover:underline focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
                         >
                           {dashboard.name}
                         </Link>
                       </h3>
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="relative z-10 flex shrink-0 items-center gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -366,43 +365,27 @@ export function DashboardList({ filter, sort, title }: Props) {
                     </span>
                   )}
                 </div>
-                <div className="mt-auto">
-                  {editingId === dashboard.id ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSaveEdit(dashboard)}
-                        disabled={
-                          !editingName.trim() ||
-                          updateDashboardMutation.isPending
-                        }
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingId(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <Link
-                      to="/app/$projectid/dashboards/$dashboardid"
-                      params={{
-                        projectid: projectId,
-                        dashboardid: String(dashboard.id),
-                      }}
-                      aria-label={`Open dashboard: ${dashboard.name}`}
-                      className="inline-flex items-center gap-3 rounded-sm text-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {editingId === dashboard.id && (
+                  <div className="mt-auto flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSaveEdit(dashboard)}
+                      disabled={
+                        !editingName.trim() || updateDashboardMutation.isPending
+                      }
                     >
-                      Open dashboard{" "}
-                      <ArrowRight aria-hidden="true" className="h-4 w-4" />
-                    </Link>
-                  )}
-                </div>
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingId(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             </article>
           ))}

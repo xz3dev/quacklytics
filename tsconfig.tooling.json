@@ -18,6 +18,7 @@
       "node"
     ]
   },
+  "exclude": ["tests/unit", "tests/fixtures"],
   "include": [
     "tests/**/*.ts",
     "playwright.config.ts",

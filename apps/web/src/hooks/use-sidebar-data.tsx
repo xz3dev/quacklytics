@@ -19,8 +19,7 @@ export function useSidebarData(): SidebarData {
   const isDashboards = useMatch("/app/:projectid/dashboards");
   const isDashboard = useMatch("/app/:projectid/dashboards/:dashboardid");
   const isEvents = useMatch("/app/:projectid/events");
-  const isData = useMatch("/app/:projectid/data");
-  // const isRealTimeEvents = useMatch('/app/:projectid/data/realtime')
+  const isSchema = useMatch("/app/:projectid/schema");
   const isIngestion = useMatch("/app/:projectid/ingestion");
   const isQueryTester = useMatch("/app/:projectid/queries");
   const projectUrl = `/app/${projectId}`;
@@ -56,27 +55,11 @@ export function useSidebarData(): SidebarData {
         items: [],
       },
       {
-        title: "Data Management",
-        url: `${projectUrl}/data`,
+        title: "Event Schema",
+        url: `${projectUrl}/schema`,
         icon: Database,
-        isActive: !!isData,
-        items: [
-          // {
-          //     title: "Overview & Statistics",
-          //     url: `${projectUrl}/data`,
-          //     isActive: !!isData,
-          // },
-          // {
-          //     title: "Real Time",
-          //     url: `${projectUrl}/data/realtime`,
-          //     isActive: !!isRealTimeEvents,
-          // },
-          // {
-          //     title: "Schema",
-          //     url: `${projectUrl}/data/schema`,
-          //     isActive: !!isSchema,
-          // },
-        ],
+        isActive: !!isSchema,
+        items: [],
       },
       {
         title: "Ingestion",

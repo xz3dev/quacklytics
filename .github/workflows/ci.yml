@@ -1,5 +1,8 @@
 name: Validate application
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -15,6 +18,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run check:boundaries
+      - run: bun run test:unit
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
       - uses: actions/upload-artifact@v4

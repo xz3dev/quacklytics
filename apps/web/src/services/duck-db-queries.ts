@@ -35,7 +35,7 @@ export function useDuckDBQuery(
       paced.sql,
       paced.params,
     ],
-    queryFn: () => db.runQuery(paced),
+    queryFn: ({ signal }) => db.runQuery(paced, signal),
     ...options,
   });
 }
@@ -62,7 +62,7 @@ export function useDuckDBQueries(
           query.sql,
           query.params,
         ],
-        queryFn: () => db.runQuery(query),
+        queryFn: ({ signal }) => db.runQuery(query, signal),
         enabled,
         ...options,
       })),

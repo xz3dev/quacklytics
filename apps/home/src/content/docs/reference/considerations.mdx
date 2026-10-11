@@ -1,0 +1,47 @@
+---
+title: Considerations & Limitations
+description: Running queries inside the browser has some limits. Find out how they apply and how to set up your environment so they don't affect you.
+sidebar:
+  order: 3
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Running analytical queries inside the browser has some limits. Here's how they apply and how to stay clear of them.
+
+## Browser memory limit
+
+DuckDB-WASM runs as **32-bit WebAssembly**, so a browser tab can use at most **4 GB** of memory for it, and often less on mobile devices.
+
+This doesn't cap your total dataset. It caps the data a query has to load at once, minus some headroom for the query itself. Parquet files are read with HTTP range requests, so DuckDB fetches only the columns and row groups a query needs.
+
+<Aside type="tip">
+    Most projects never come close to this limit. Narrower date ranges and fewer properties keep queries light. If you do hit it, let me know on [GitHub](https://github.com/xz3dev/quacklytics/issues).
+</Aside>
+
+64-bit WebAssembly memory ([Memory64](https://github.com/WebAssembly/memory64)) is now standardized and ships in Chrome (133+), Edge, and Firefox (134+). There, a tab can address up to **16 GB**. Safari doesn't support it yet. Quacklytics currently loads the 32-bit DuckDB-WASM build in every browser. Once it uses a 64-bit build, Chrome, Edge, and Firefox will get the higher limit, and Safari will keep the 4 GB limit.
+
+## Network and devices
+
+Every viewer's browser downloads the data it queries. On slow connections or low-end phones, dashboards over long time ranges take longer to load.
+
+## Server limits
+
+| Limit | Value |
+| --- | --- |
+| Events per ingestion request | 1–1,000 |
+| Request body size | 2 MB |
+| Ingestion requests per project | 600 / minute (`INGEST_REQUESTS_PER_MINUTE`) |
+| Late events via `/api/ingest` | Until 7 days after the month ends. Older events need [backfill](/guides/import/). |
+| Administrator accounts | 1 |
+
+<Aside type="caution" title="One process per data directory">
+    Run exactly one Quacklytics process per data directory, on a local filesystem. Network filesystems and multiple replicas sharing a volume aren't supported. This isn't enforced, so make sure of it yourself.
+</Aside>
+
+## Data freshness
+
+- Events show up in dashboards right after they're committed. Browsers refresh every 15 seconds while the tab is visible.
+- New completed UTC days are published to S3 once a day. Until then, the server provides those events directly, so results stay complete.
+- Backfilled events for archived months appear once their merge into S3 succeeds.
+- After an identity change (for example `identify`), affected historical months are republished. Older reports can take a moment to reflect it.

@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
-import { z } from "zod";
 import {
   defaultInsights,
   insight,
@@ -11,21 +11,7 @@ test("visual insight picker supports keyboard selection, retry, and persists eve
   baseURL,
 }) => {
   if (!baseURL) throw new Error("Missing origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const auth = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(auth.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -41,7 +27,9 @@ test("visual insight picker supports keyboard selection, retry, and persists eve
   const dialog = page.getByRole("dialog", { name: "Create New Insight" });
   for (const definition of Object.values(defaultInsights)) {
     await page.getByRole("button", { name: "Create New Insight" }).click();
-    await expect(dialog.getByRole("radio")).toHaveCount(6);
+    await expect(dialog.getByRole("radio")).toHaveCount(
+      Object.keys(defaultInsights).length,
+    );
     for (const option of await dialog.locator("label").all()) {
       await expect(option.locator("svg").first()).toBeVisible();
     }
@@ -103,12 +91,9 @@ test("visual insight picker supports keyboard selection, retry, and persists eve
     }
     await dialog.getByRole("button", { name: "Create", exact: true }).click();
     await expect(dialog).not.toBeVisible();
-    await expect(
-      page.getByRole("link", {
-        name: `Untitled ${definition.type.toLowerCase()}`,
-        exact: true,
-      }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(
+      new RegExp(`/app/${created.id}/insights/\\d+/edit$`),
+    );
     const saved = (await read()).find(
       (item) => item.name === `Untitled ${definition.type.toLowerCase()}`,
     );
@@ -116,6 +101,23 @@ test("visual insight picker supports keyboard selection, retry, and persists eve
       type: definition.type,
       config: definition.config,
     });
+    if (!saved) throw new Error("Missing created insight");
+    await expect(page).toHaveURL(
+      `/app/${created.id}/insights/${saved.id}/edit`,
+    );
+    await expect(
+      page.getByRole("button", {
+        name: `Rename Untitled ${definition.type.toLowerCase()}`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.goto(`/app/${created.id}/insights`);
+    await expect(
+      page.getByRole("link", {
+        name: `Untitled ${definition.type.toLowerCase()}`,
+        exact: true,
+      }),
+    ).toBeVisible();
   }
   await page.reload();
   for (const definition of Object.values(defaultInsights)) {
@@ -127,7 +129,9 @@ test("visual insight picker supports keyboard selection, retry, and persists eve
     ).toBeVisible();
   }
   const all = await read();
-  expect(all).toHaveLength(originals.length + 6);
+  expect(all).toHaveLength(
+    originals.length + Object.keys(defaultInsights).length,
+  );
   expect(
     all.filter((item) => originals.some((original) => original.id === item.id)),
   ).toEqual(originals);
@@ -138,21 +142,7 @@ test("inline names save in both modes without saving temporary or draft chart se
   baseURL,
 }) => {
   if (!baseURL) throw new Error("Missing origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const auth = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(auth.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {

@@ -1,0 +1,121 @@
+---
+title: Importing Data
+description: Import historical events into Quacklytics with the backfill endpoint.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Aside type="tip" title="Which endpoint do I need?">
+    - **Recent data** (this month, and last month until it's archived, normally on the 8th): use the regular [`POST /api/ingest`](/guides/send-data/#http-api).
+    - **Older data**: use `POST /api/backfill`, described below.
+</Aside>
+
+## How old data is stored
+
+Quacklytics keeps recent events in its database and publishes each month to S3 as a Parquet file. A month becomes eligible for **archiving** seven days after it ends. The next export then downloads and verifies the stored copy, deletes the month's events from the database, and from then on serves them only from S3.
+
+Months are UTC calendar months. The export runs every 30 seconds, so archiving normally happens just after midnight:
+
+| Month | Archived (UTC) | Late events via `/api/ingest` accepted through |
+| --- | --- | --- |
+| September | Just after 00:00, October 8 | October 7 |
+| October | Just after 00:00, November 8 | November 7 |
+
+<Aside type="note">
+    What counts is whether a month **has actually been archived**, not the calendar. If exports fail, for example because S3 is unreachable, the month stays open and late events are still accepted.
+</Aside>
+
+The regular endpoint drops events for archived months. The rest of the batch still commits, and the response reports the dropped events in `rejected`:
+
+```json
+{ "committed": 998, "duplicates": 0, "rejected": 2, "revision": 41 }
+```
+
+## Backfill endpoint
+
+```
+POST /api/backfill
+```
+
+The backfill endpoint uses the same headers, body, limits and ingestion key as [`/api/ingest`](/guides/send-data/#http-api), but accepts events for **any** month. For each affected archived month, it:
+
+<Steps>
+
+1. downloads the stored Parquet file and verifies it,
+2. merges in the new events,
+3. uploads the replacement and verifies it.
+
+</Steps>
+
+The request returns only after the merge has finished, unless the batch sets `deferExport`.
+
+## Example import
+
+<Aside type="caution" title="Give every event a stable ID">
+    `sendBatch` generates a random `id` for events that don't have one. If an import runs twice, those events are stored twice. Derive each `id` deterministically (for example a UUIDv5 of the source record) so re-runs are skipped as duplicates.
+</Aside>
+
+<Tabs>
+<TabItem label="TypeScript">
+
+Use the server client's `sendBatch` with `backfill: true`:
+
+```ts
+import { createServerClient } from "@quacklytics/client/server";
+
+const client = createServerClient({ apiKey, hostname: "https://analytics.example.com" });
+
+for (let offset = 0; offset < events.length; offset += 1000) {
+  const isLast = offset + 1000 >= events.length;
+  await client.sendBatch(events.slice(offset, offset + 1000), {
+    backfill: true,
+    // Merge once at the end instead of after every batch.
+    deferExport: !isLast,
+  });
+}
+```
+
+</TabItem>
+<TabItem label="HTTP">
+
+Add `"deferExport": true` to every batch except the last:
+
+```sh
+curl -X POST https://analytics.example.com/api/backfill \
+  -H "Content-Type: application/json" \
+  -H "X-API-KEY: your-project-key" \
+  -d '{
+    "requestId": "6a1f1c1e-4b55-4a43-9c1e-2a7f3b0c9d11",
+    "deferExport": true,
+    "events": [{
+      "id": "0f9c2b4e-1d3a-4e5f-8a6b-7c8d9e0f1a2b",
+      "eventType": "purchase",
+      "timestamp": "2024-03-14T09:30:00Z",
+      "personId": "person_123",
+      "properties": { "amount": 42 }
+    }]
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="caution" title="Batch large imports">
+    Each merge rewrites a whole month in S3. Send large imports with `deferExport: true` on every batch except the last, so archived months are merged at the end rather than after every batch.
+
+    Each deferred batch pauses exports for only **10 seconds**, so send batches back to back. Any other ingestion on the project, including live traffic, ends the pause early. In that case months are merged sooner, which is slower but still correct.
+</Aside>
+
+## Caveats
+
+<Aside type="note" title="Archived events win">
+    If an event ID already exists in an archived month, the stored event is kept and the new one is skipped during the merge. The response still counts it as `committed`. Unlike the regular endpoint, reusing an ID with different content in an archived month does **not** return `409`.
+</Aside>
+
+- **Identities in archived months are frozen.** Archived events keep the person they were attributed to when archived. A later `identify`, or a session that gains a `personId`, doesn't re-attribute them. Backfilled events are attributed using the identities known at merge time.
+- **Results appear after the merge.** Backfilled events for an archived month show up in analytics once the merge succeeds.
+- **Retry with the same request ID.** If the merge fails (`5xx`), the events are still stored durably. Retrying with the same `requestId` replays the acknowledgment and requests the merge again. Background exports also retry it automatically.
+- **Server client retries are short.** `sendBatch` tries 3 times with a short backoff and ignores `Retry-After`. Keep large imports below the [rate limit](/guides/send-data/#rate-limits), or retry failed batches yourself with the same events.
+- **The raw event list is incomplete.** `GET /api/:project/events` (admin session, up to 10,000 rows per call, page with `timestamp__gt`) only lists events still in the database, including backfilled events waiting to be merged. Analytics in the app read archived months from S3.
+
+If you need more help, open an issue on [GitHub](https://github.com/xz3dev/quacklytics/issues).

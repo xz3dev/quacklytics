@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import type { ReactNode } from "react";
 import { z } from "zod";
 import type { Insight } from "@/model/insights/insight";
@@ -99,7 +100,7 @@ function GroupedChart({
   const rows = z
     .array(z.object({ breakdown_value: z.string().nullable() }))
     .parse(result.data);
-  if (!rows.length) return <p>No data for this breakdown.</p>;
+  if (!rows.length) return <ChartEmptyState insight={insight} />;
   return (
     <div className="space-y-6">
       {rows.length > 20 && (
@@ -133,5 +134,7 @@ function insightDuration(insight: Insight): string {
       return insight.config.retention.duration;
     case "Path":
       return insight.config.path.duration;
+    case "Map":
+      return insight.config.map.duration;
   }
 }

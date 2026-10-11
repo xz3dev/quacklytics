@@ -1,0 +1,13 @@
+DROP TABLE jobs;
+DROP TABLE export_manifest;
+DROP TABLE dirty_partitions;
+DROP TABLE catalog;
+DROP TABLE requests;
+DROP TABLE dashboards;
+DROP TABLE insights;
+DROP TABLE schema_values;
+DROP TABLE schemas;
+DROP TABLE sessions;
+DROP TABLE persons;
+DROP TABLE events;
+DROP TABLE settings;

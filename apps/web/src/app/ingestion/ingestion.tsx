@@ -9,6 +9,57 @@ import { useProjects, useUpdateProjectCorsOrigins } from "@/services/projects";
 import { Spinner } from "@/components/spinner";
 import { ApikeyManagement } from "@app/apikeys/apikey-management";
 import { Project } from "@/model/project";
+import { originError } from "@/lib/origins";
+import { Link } from "@/lib/navigation";
+import { IngestionKey } from "@app/projects/setup/ingestion-key";
+import { SendData } from "@app/projects/setup/send-data";
+
+function SendDataSection({ project }: { project: Project }) {
+  return (
+    <section
+      aria-labelledby="send-data-heading"
+      className="space-y-4 rounded-xl border border-border/50 bg-card p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 id="send-data-heading" className="text-xl font-semibold">
+          Send data
+        </h2>
+        <Button asChild variant="secondary" size="sm">
+          <Link
+            to="/projects/$projectid/setup"
+            params={{ projectid: project.id }}
+          >
+            Setup guide
+          </Link>
+        </Button>
+      </div>
+      <IngestionKey projectId={project.id}>
+        {(apiKey) => (
+          <SendData
+            project={project}
+            apiKey={apiKey}
+            host={window.location.origin}
+            originStep={
+              <p>
+                {project.corsOrigins.length
+                  ? `Allowed: ${project.corsOrigins.join(", ")}. `
+                  : "No origins allowed yet. "}
+                Manage them under{" "}
+                <a
+                  href="#allowed-origins-heading"
+                  className="underline underline-offset-4"
+                >
+                  Allowed origins
+                </a>
+                .
+              </p>
+            }
+          />
+        )}
+      </IngestionKey>
+    </section>
+  );
+}
 
 function AllowedOrigins({ project }: { project: Project }) {
   const updater = useUpdateProjectCorsOrigins();
@@ -36,23 +87,9 @@ function AllowedOrigins({ project }: { project: Project }) {
   const addOrigin = async () => {
     if (updater.isPending) return;
     const origin = newOrigin.trim();
-    try {
-      if (origin !== "*") {
-        const url = new URL(origin);
-        if (
-          !["http:", "https:"].includes(url.protocol) ||
-          url.origin !== origin
-        )
-          throw new Error("Invalid origin");
-      }
-    } catch {
-      setError(
-        "Enter an origin with a scheme and host, such as https://app.example.com, without a path or trailing slash.",
-      );
-      return;
-    }
-    if (project.corsOrigins.includes(origin)) {
-      setError("This origin is already allowed.");
+    const error = originError(origin, project.corsOrigins);
+    if (error) {
+      setError(error);
       return;
     }
     if (await save([...project.corsOrigins, origin])) setNewOrigin("");
@@ -152,8 +189,9 @@ export default function Ingestion() {
       <PageHeader>
         <PageTitle>Ingestion</PageTitle>
       </PageHeader>
-      <div className="max-w-4xl space-y-4">
+      <div className="mx-auto w-full max-w-5xl space-y-4">
         <ApikeyManagement />
+        <SendDataSection project={project} />
         <AllowedOrigins key={project.id} project={project} />
       </div>
     </div>

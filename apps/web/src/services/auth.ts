@@ -1,46 +1,49 @@
-import { create } from "@/lib/store";
-import { request } from "@/lib/fetch";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { request, HttpError } from "@/client/api/http";
 import { user as userSchema } from "@quacklytics/contracts";
-import type { User } from "@/model/user";
-interface AuthState {
-  loading: boolean;
-  user: User | null;
-  login: (email: string, password: string) => Promise<string>;
-  register: (email: string, password: string) => Promise<string>;
-  logout: () => Promise<void>;
-  checkAuth: () => Promise<User | null>;
-  setUser: (user: User | null) => void;
-}
-export const useAuthStore = create<AuthState>((set, get) => ({
-  loading: true,
-  user: null,
-  setUser: (user) => set({ user }),
-  checkAuth: async () => {
+export const sessionQuery = queryOptions({
+  queryKey: ["session"],
+  queryFn: async ({ signal }) => {
     try {
-      const user = userSchema.parse(await request("GET", "me"));
-      set({ user, loading: false });
-      return user;
-    } catch {
-      set({ user: null, loading: false });
-      return null;
+      return userSchema.parse(await request("GET", "me", undefined, signal));
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 401) return null;
+      throw error;
     }
   },
-  login: async (email, password) => {
-    await request("POST", "auth/sign-in/email", { email, password });
-    await get().checkAuth();
-    return "/projects";
-  },
-  register: async (email, password) => {
-    await request("POST", "auth/sign-up/email", {
-      email,
-      password,
-      name: email,
+  staleTime: 30000,
+  retry: false,
+});
+export function useAuth() {
+  const client = useQueryClient();
+  const session = useQuery(sessionQuery);
+  async function authenticate(path: string, body: unknown) {
+    await request("POST", path, body);
+    await client.cancelQueries({ queryKey: sessionQuery.queryKey });
+    await client.invalidateQueries({
+      queryKey: sessionQuery.queryKey,
+      refetchType: "none",
     });
-    await get().checkAuth();
-    return "/projects";
-  },
-  logout: async () => {
-    await request("POST", "auth/sign-out", {});
-    window.location.replace("/login");
-  },
-}));
+    const user = await client.fetchQuery(sessionQuery);
+    if (!user)
+      throw new Error(
+        "Unable to establish your session. Please sign in again.",
+      );
+  }
+  return {
+    user: session.data,
+    loading: session.isPending,
+    error: session.error,
+    retry: () => session.refetch(),
+    login: (email: string, password: string) =>
+      authenticate("auth/sign-in/email", { email, password }),
+    register: (email: string, password: string) =>
+      authenticate("auth/sign-up/email", { email, password, name: email }),
+    logout: async () => {
+      await request("POST", "auth/sign-out", {});
+      await client.cancelQueries();
+      client.clear();
+      window.location.replace("/login");
+    },
+  };
+}

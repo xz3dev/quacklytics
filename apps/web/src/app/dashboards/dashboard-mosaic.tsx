@@ -9,8 +9,7 @@ export function DashboardMosaic({ insights }: Pick<Dashboard, "insights">) {
       aria-label="Included insights"
       className="grid h-20 w-20 shrink-0 grid-cols-2 grid-rows-2 gap-1 self-center sm:h-24 sm:w-24"
     >
-      {[0, 1, 2, 3].map((index) => {
-        const insight = insights[index];
+      {insights.slice(0, 4).map((insight, index) => {
         if (index === 3 && insights.length > 4) {
           const remaining = insights.length - 3;
           return (
@@ -26,7 +25,7 @@ export function DashboardMosaic({ insights }: Pick<Dashboard, "insights">) {
             </div>
           );
         }
-        return insight ? (
+        return (
           <div
             key={index}
             role="img"
@@ -35,13 +34,6 @@ export function DashboardMosaic({ insights }: Pick<Dashboard, "insights">) {
           >
             <InsightGlyph type={insight.type} compact />
           </div>
-        ) : (
-          <div
-            key={index}
-            role="img"
-            aria-label="Empty insight slot"
-            className="rounded-md border border-dashed border-border/60 bg-muted/30"
-          />
         );
       })}
     </div>

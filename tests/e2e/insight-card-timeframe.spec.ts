@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
-import { z } from "zod";
 import {
   dashboard,
   defaultInsights,
@@ -12,21 +12,7 @@ test("card timeframes follow saved insights and hide only while dashboard overri
   baseURL,
 }, testInfo) => {
   if (!baseURL) throw new Error("Missing origin");
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const auth = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(auth.ok()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -88,21 +74,22 @@ test("card timeframes follow saved insights and hide only while dashboard overri
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 });
     const label = labels.first();
-    const header = label.locator("..");
-    const title = header.locator("a");
-    const labelBounds = await label.boundingBox();
-    const titleBounds = await title.boundingBox();
-    const headerBounds = await header.boundingBox();
-    if (!labelBounds || !titleBounds || !headerBounds)
-      throw new Error("Missing header bounds");
-    expect(labelBounds.x).toBeGreaterThanOrEqual(
-      titleBounds.x + titleBounds.width,
-    );
-    expect(
-      Math.abs(
-        labelBounds.x + labelBounds.width - headerBounds.x - headerBounds.width,
-      ),
-    ).toBeLessThan(2);
+    await expect
+      .poll(() =>
+        label.evaluate((element) => {
+          const header = element.parentElement;
+          const title = header?.querySelector("a");
+          if (!header || !title) return false;
+          const labelBounds = element.getBoundingClientRect();
+          const titleBounds = title.getBoundingClientRect();
+          const headerBounds = header.getBoundingClientRect();
+          return (
+            labelBounds.left >= titleBounds.right &&
+            Math.abs(labelBounds.right - headerBounds.right) < 2
+          );
+        }),
+      )
+      .toBe(true);
     await page.screenshot({
       path: testInfo.outputPath(`timeframes-${width}.png`),
       fullPage: true,

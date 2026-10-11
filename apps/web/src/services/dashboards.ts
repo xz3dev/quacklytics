@@ -1,370 +1,98 @@
-import { dashboard as dashboardSchema } from "@quacklytics/contracts";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  type UseQueryOptions,
-} from "@tanstack/react-query";
-import { http } from "@/lib/fetch";
-import {
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { dashboardsApi } from "@/client/api/dashboards";
+import { dashboardList } from "@/data/dashboards";
+import { refreshProjectEntities } from "@/data/synchronize";
+import type {
   Dashboard,
   DashboardInput,
   DashboardTemplate,
   DashboardTemplateInput,
-} from "@/model/dashboard.ts";
-import { INSIGHTS_KEY } from "@/services/insights.ts";
+} from "@/model/dashboard";
+import type { DashboardGridItem } from "@quacklytics/contracts";
 
-export const DASHBOARDS_KEY = (project: string) =>
-  ["dashboards", project] as const;
-export const DASHBOARD_KEY = (project: string, id: number) =>
-  [...DASHBOARDS_KEY(project), id] as const;
-
-const dashboardsApi = {
-  getDashboards: async (project: string): Promise<Dashboard[]> => {
-    const response = await http.get(
-      `${project}/dashboards`,
-      dashboardSchema.array(),
-    );
-    return response ?? [];
-  },
-
-  createDashboard: async (params: {
-    project: string;
-    data: DashboardInput;
-  }): Promise<Dashboard> => {
-    return http.post(
-      `${params.project}/dashboards`,
-      params.data,
-      dashboardSchema,
-    );
-  },
-
-  restoreDefaultDashboard: async (project: string): Promise<Dashboard> => {
-    return http.post(
-      `${project}/dashboards/default`,
-      undefined,
-      dashboardSchema,
-    );
-  },
-
-  createTemplateDashboard: async (params: {
-    project: string;
-    template: DashboardTemplate;
-    data?: DashboardTemplateInput;
-  }): Promise<Dashboard> => {
-    return http.post(
-      `${params.project}/dashboards/templates/${params.template}`,
-      params.data ?? {},
-      dashboardSchema,
-    );
-  },
-
-  applyTemplateToDashboard: async (params: {
-    project: string;
-    dashboardId: number;
-    template: DashboardTemplate;
-  }): Promise<Dashboard> => {
-    return http.post(
-      `${params.project}/dashboards/${params.dashboardId}/templates/${params.template}`,
-      {},
-      dashboardSchema,
-    );
-  },
-
-  deleteDashboard: async (params: {
-    project: string;
-    dashboardId: number;
-  }): Promise<void> => {
-    await http.del(`${params.project}/dashboards/${params.dashboardId}`);
-  },
-
-  updateDashboard: async (params: {
-    project: string;
-    dashboard: Dashboard;
-  }): Promise<Dashboard> => {
-    return http.put(
-      `${params.project}/dashboards/${params.dashboard.id}`,
-      params.dashboard,
-      dashboardSchema,
-    );
-  },
-
-  getDashboard: async (params: {
-    project: string | number;
-    id: number;
-  }): Promise<Dashboard> => {
-    return http.get(
-      `${params.project}/dashboards/${params.id}`,
-      dashboardSchema,
-    );
-  },
-
-  setDashboardInsights: async (params: {
-    project: string;
-    dashboardId: number;
-    insightIds: number[];
-  }): Promise<Dashboard> => {
-    return http.put(
-      `${params.project}/dashboards/${params.dashboardId}/insights`,
-      { insight_ids: params.insightIds },
-      dashboardSchema,
-    );
-  },
-
-  setHomeDashboard: async (params: {
-    project: string;
-    dashboardId: number;
-  }): Promise<Dashboard> => {
-    return http.put(
-      `${params.project}/dashboards/${params.dashboardId}/home`,
-      undefined,
-      dashboardSchema,
-    );
-  },
-};
-
-// Query hook with options
-export function useDashboards(
-  project: string,
-  options?: Partial<UseQueryOptions<Dashboard[], Error>>,
-) {
-  return useQuery<Dashboard[], Error>({
-    queryKey: DASHBOARDS_KEY(project),
-    queryFn: () => dashboardsApi.getDashboards(project),
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: true,
-    ...options,
+export function useDashboards(project: string) {
+  return useQuery(dashboardList(project));
+}
+export function useDashboard(project: string, id: number) {
+  return useQuery({
+    ...dashboardList(project),
+    select: (items) => {
+      const value = items.find((item) => item.id === id);
+      if (!value) throw new Error("Dashboard not found");
+      return value;
+    },
   });
 }
-
-// Mutation hooks
+function useDashboardMutation<T, R>(
+  project: string,
+  mutationFn: (input: T) => Promise<R>,
+  insightsChanged = false,
+) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => refreshProjectEntities(client, project, insightsChanged),
+  });
+}
 export function useCreateDashboard(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: DashboardInput) =>
-      dashboardsApi.createDashboard({ project, data }),
-    onSuccess: (newDashboard) => {
-      queryClient.setQueryData<Dashboard[]>(
-        DASHBOARDS_KEY(project),
-        (old = []) => [...old, newDashboard],
-      );
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, newDashboard.id),
-        () => newDashboard,
-      );
-    },
-  });
+  return useDashboardMutation(project, (data: DashboardInput) =>
+    dashboardsApi.createDashboard({ project, data }),
+  );
 }
-
 export function useDeleteDashboard(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (dashboardId: number) =>
-      dashboardsApi.deleteDashboard({ project, dashboardId }),
-    onSuccess: (_, dashboardId) => {
-      queryClient.setQueryData<Dashboard[]>(
-        DASHBOARDS_KEY(project),
-        (old = []) => old.filter((dashboard) => dashboard.id !== dashboardId),
-      );
-      queryClient.removeQueries({
-        queryKey: DASHBOARD_KEY(project, dashboardId),
-      });
-    },
-  });
+  return useDashboardMutation(project, (dashboardId: number) =>
+    dashboardsApi.deleteDashboard({ project, dashboardId }),
+  );
 }
-
 export function useRestoreDefaultDashboard(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => dashboardsApi.restoreDefaultDashboard(project),
-    onSuccess: (dashboard) => {
-      queryClient.setQueryData<Dashboard[]>(DASHBOARDS_KEY(project), () => [
-        dashboard,
-      ]);
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, dashboard.id),
-        () => dashboard,
-      );
-      void queryClient.invalidateQueries({ queryKey: INSIGHTS_KEY(project) });
-    },
-  });
+  return useDashboardMutation(
+    project,
+    () => dashboardsApi.restoreDefaultDashboard(project),
+    true,
+  );
 }
-
 export function useCreateTemplateDashboard(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (params: {
-      template: DashboardTemplate;
-      data?: DashboardTemplateInput;
-    }) =>
-      dashboardsApi.createTemplateDashboard({
-        project,
-        template: params.template,
-        ...(params.data ? { data: params.data } : {}),
-      }),
-    onSuccess: (dashboard) => {
-      queryClient.setQueryData<Dashboard[]>(
-        DASHBOARDS_KEY(project),
-        (old = []) =>
-          dashboard.home
-            ? [...old.map((item) => ({ ...item, home: false })), dashboard]
-            : [...old, dashboard],
-      );
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, dashboard.id),
-        () => dashboard,
-      );
-      void queryClient.invalidateQueries({ queryKey: INSIGHTS_KEY(project) });
-    },
-  });
+  return useDashboardMutation(
+    project,
+    (params: { template: DashboardTemplate; data?: DashboardTemplateInput }) =>
+      dashboardsApi.createTemplateDashboard({ project, ...params }),
+    true,
+  );
 }
-
 export function useApplyDashboardTemplate(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (params: {
-      dashboardId: number;
-      template: DashboardTemplate;
-    }) =>
-      dashboardsApi.applyTemplateToDashboard({
-        project,
-        dashboardId: params.dashboardId,
-        template: params.template,
-      }),
-    onSuccess: (updatedDashboard) => {
-      queryClient.setQueryData<Dashboard[]>(DASHBOARDS_KEY(project), (old) =>
-        old?.map((dashboard) =>
-          dashboard.id === updatedDashboard.id ? updatedDashboard : dashboard,
-        ),
-      );
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, updatedDashboard.id),
-        () => updatedDashboard,
-      );
-      void queryClient.invalidateQueries({ queryKey: INSIGHTS_KEY(project) });
-    },
-  });
+  return useDashboardMutation(
+    project,
+    (params: { dashboardId: number; template: DashboardTemplate }) =>
+      dashboardsApi.applyTemplateToDashboard({ project, ...params }),
+    true,
+  );
 }
-
 export function useUpdateDashboard(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (dashboard: Dashboard) =>
-      dashboardsApi.updateDashboard({ project, dashboard }),
-    onSuccess: (updatedDashboard) => {
-      queryClient.setQueryData<Dashboard[]>(DASHBOARDS_KEY(project), (old) =>
-        old?.map((o) => (o.id === updatedDashboard.id ? updatedDashboard : o)),
-      );
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, updatedDashboard.id),
-        () => updatedDashboard,
-      );
-    },
-  });
+  return useDashboardMutation(project, (dashboard: Dashboard) =>
+    dashboardsApi.updateDashboard({ project, dashboard }),
+  );
 }
-
-export function useDashboard(
-  project: string,
-  dashboardId: number,
-  options?: Partial<UseQueryOptions<Dashboard, Error>>,
-) {
-  const queryClient = useQueryClient();
-
-  return useQuery<Dashboard, Error>({
-    queryKey: DASHBOARD_KEY(project, dashboardId),
-    queryFn: () => dashboardsApi.getDashboard({ project, id: dashboardId }),
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: true,
-    placeholderData: () => {
-      const dashboards = queryClient.getQueryData<Dashboard[]>(
-        DASHBOARDS_KEY(project),
-      );
-      return dashboards?.find((dashboard) => dashboard.id === dashboardId);
-    },
-    ...options,
-  });
-}
-
 export function useSetDashboardInsights(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (params: { dashboardId: number; insightIds: number[] }) =>
-      dashboardsApi.setDashboardInsights({
-        project,
-        dashboardId: params.dashboardId,
-        insightIds: params.insightIds,
-      }),
-    onSuccess: (updatedDashboard) => {
-      // Update the dashboard in the dashboards list
-      queryClient.setQueryData<Dashboard[]>(DASHBOARDS_KEY(project), (old) =>
-        old?.map((o) => (o.id === updatedDashboard.id ? updatedDashboard : o)),
-      );
-
-      // Update the individual dashboard cache
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, updatedDashboard.id),
-        () => updatedDashboard,
-      );
-    },
-  });
+  return useDashboardMutation(
+    project,
+    (params: { dashboardId: number; insightIds: number[] }) =>
+      dashboardsApi.setDashboardInsights({ project, ...params }),
+  );
 }
-
 export function useSetHomeDashboard(project: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (dashboardId: number) =>
-      dashboardsApi.setHomeDashboard({
-        project,
-        dashboardId,
-      }),
-    onSuccess: (updatedDashboard) => {
-      // Update the dashboards list, ensuring only one dashboard has home=true
-      queryClient.setQueryData<Dashboard[]>(
-        DASHBOARDS_KEY(project),
-        (old = []) =>
-          old.map((dashboard) => ({
-            ...dashboard,
-            home: dashboard.id === updatedDashboard.id,
-          })),
-      );
-
-      // Update the individual dashboard cache
-      queryClient.setQueryData<Dashboard>(
-        DASHBOARD_KEY(project, updatedDashboard.id),
-        () => updatedDashboard,
-      );
-    },
-  });
+  return useDashboardMutation(project, (dashboardId: number) =>
+    dashboardsApi.setHomeDashboard({ project, dashboardId }),
+  );
 }
-
 export function useSetDashboardLayout(project: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
+  return useDashboardMutation(
+    project,
+    ({
       dashboardId,
       layout,
     }: {
       dashboardId: number;
-      layout: import("@quacklytics/contracts").DashboardGridItem[];
-    }) =>
-      http.put(
-        `${project}/dashboards/${dashboardId}/layout`,
-        { layout },
-        dashboardSchema,
-      ),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(DASHBOARD_KEY(project, updated.id), updated);
-      queryClient.setQueryData<Dashboard[]>(DASHBOARDS_KEY(project), (old) =>
-        old?.map((item) => (item.id === updated.id ? updated : item)),
-      );
-    },
-  });
+      layout: DashboardGridItem[];
+    }) => dashboardsApi.setDashboardLayout(project, dashboardId, layout),
+  );
 }

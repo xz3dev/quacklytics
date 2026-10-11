@@ -1,3 +1,4 @@
+import { fieldExpression } from "./sql/compiler";
 import { createContext, useContext } from "react";
 import type { Field } from "@/model/filters";
 import type { QueryParamValue } from "@/lib/queries";
@@ -8,13 +9,7 @@ export const ChartBreakdownContext = createContext<{
 } | null>(null);
 
 export function breakdownExpression(field: Field): string {
-  if (field.isProperty || field.name.startsWith("$.")) {
-    const path = (
-      field.name.startsWith("$.") ? field.name : `$.${field.name}`
-    ).replaceAll("'", "''");
-    return `COALESCE(json_extract_string(properties, '${path}'), json_extract_string(json_extract_string(properties, '$'), '${path}'))`;
-  }
-  return `CAST("${field.name.replaceAll('"', '""')}" AS VARCHAR)`;
+  return fieldExpression(field, "VARCHAR");
 }
 
 export function scopeBreakdownQuery(

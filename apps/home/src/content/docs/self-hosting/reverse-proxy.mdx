@@ -1,0 +1,97 @@
+---
+title: Reverse Proxy
+description: Serve Quacklytics over HTTPS behind Caddy, nginx or Traefik.
+sidebar:
+  order: 2
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Quacklytics listens on plain HTTP (port `3000`). In production, put a reverse proxy in front that terminates HTTPS.
+
+## Two settings that matter
+
+| Variable | Set it to | Why |
+| --- | --- | --- |
+| `APP_ORIGIN` | Your exact public origin, for example `https://analytics.example.com` | Authentication and origin checks compare against it. A mismatch breaks sign-in. |
+| `TRUSTED_PROXIES` | Your proxy's IPs/CIDRs, or `private` / `loopback` | Only then is `X-Forwarded-For` trusted to identify visitors. |
+
+<Aside type="caution" title="Forgot TRUSTED_PROXIES?">
+    Without it, every request appears to come from the proxy. Anonymous visitors (those who declined consent) are then counted as a **single** visitor, and sign-in rate limits apply to everyone at once.
+</Aside>
+
+| Preset | Trusts |
+| --- | --- |
+| `private` | `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `100.64.0.0/10`, `fc00::/7` |
+| `loopback` | `127.0.0.0/8`, `::1` |
+
+<Aside type="tip" title="Which one do I need?">
+    - **Quacklytics in Docker:** use `private`, even when the proxy runs on the same host. Docker forwards published ports from its bridge network address.
+    - **Quacklytics from source, proxy on the same host:** use `loopback`.
+    - **Several proxies in a chain** (for example Cloudflare → nginx): trust every hop. For a CDN with public IPs, list its published CIDRs, for example `private,173.245.48.0/20,…`.
+</Aside>
+
+## Check your setup
+
+Quacklytics checks this for you. After you sign in, the app shows a hint when requests arrive through a proxy it doesn't trust, or one that doesn't forward the visitor's address, and suggests a `TRUSTED_PROXIES` value. You can also call the check directly:
+
+```sh
+curl https://analytics.example.com/api/proxy-check
+```
+
+```json
+{ "status": "ok", "clientIp": "203.0.113.7", "socketIp": "172.18.0.1", "forwardedFor": "203.0.113.7", "trustedProxies": "private", "suggestion": null }
+```
+
+| `status` | Meaning |
+| --- | --- |
+| `direct` | No proxy detected |
+| `ok` | The proxy is trusted and the visitor's address is resolved |
+| `untrusted` | A proxy forwards `X-Forwarded-For` but isn't in `TRUSTED_PROXIES`. See `suggestion`. |
+| `partial` | Another proxy sits in front of the trusted one. See `suggestion`. |
+| `missing-header` | A proxy is in front, but it doesn't send `X-Forwarded-For` |
+
+## Examples
+
+<Tabs>
+<TabItem label="Caddy">
+
+```txt title="Caddyfile"
+analytics.example.com {
+    reverse_proxy analytics:3000
+}
+```
+
+Caddy obtains certificates automatically and sets `X-Forwarded-For`.
+
+</TabItem>
+<TabItem label="nginx">
+
+```nginx title="nginx.conf"
+server {
+    listen 443 ssl;
+    server_name analytics.example.com;
+
+    ssl_certificate     /etc/ssl/analytics.crt;
+    ssl_certificate_key /etc/ssl/analytics.key;
+
+    client_max_body_size 4m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+Quacklytics only reads `X-Forwarded-For`. The public scheme and host come from `APP_ORIGIN`.
+
+</TabItem>
+</Tabs>
+
+<Aside type="note">
+    Publish the app port on `127.0.0.1` only (`"127.0.0.1:3000:3000"`), or not at all when the proxy shares the Docker network, so nobody can bypass the proxy.
+
+    Ingestion batches can be up to 2 MB. Make sure your proxy accepts request bodies at least that large.
+</Aside>

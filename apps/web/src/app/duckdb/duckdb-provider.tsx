@@ -1,59 +1,48 @@
-import { createContext, useContext, useMemo } from "react";
-import { DuckDbManager } from "@/services/duck-db-manager.ts";
-import { useProjectId } from "@/hooks/use-project-id.tsx";
-import { QueryClient, useQueryClient } from "@tanstack/react-query";
-import { create } from "@/lib/store";
-
+import { createContext, useContext, useEffect, useState } from "react";
+import { DuckDbManager } from "@/client/analytics/manager";
+import { useProjectId } from "@/hooks/use-project-id";
+import { useQueryClient } from "@tanstack/react-query";
+import { Spinner } from "@/components/spinner";
 const DuckDbContext = createContext<DuckDbManager | null>(null);
-
-export const DuckDbProvider = (props: { children: React.ReactNode }) => {
+export function DuckDbProvider({ children }: { children: React.ReactNode }) {
   const projectId = useProjectId();
-  const qc = useQueryClient();
-
-  const factory = useDuckDbManagerFactory();
-
-  const db = useMemo(
-    () => factory.getInstance(projectId, qc),
-    [factory, projectId, qc],
-  );
-
   return (
-    <DuckDbContext.Provider value={db}>{props.children}</DuckDbContext.Provider>
+    <ProjectDatabase key={projectId} projectId={projectId}>
+      {children}
+    </ProjectDatabase>
   );
-};
-
-export const useDuckDb = () => {
-  const context = useContext(DuckDbContext);
-  if (!context) {
-    throw new Error("useDuckDb must be used within a DuckDbProvider");
-  }
-  return context;
-};
-
-interface DuckDbManagerFactoryState {
-  instances: Map<string, DuckDbManager>;
-  getInstance: (projectId: string, queryClient: QueryClient) => DuckDbManager;
 }
-
-export const useDuckDbManagerFactory = create<DuckDbManagerFactoryState>(
-  (_, get) => ({
-    instances: new Map(),
-
-    getInstance: (projectId: string, queryClient: QueryClient) => {
-      const { instances } = get();
-      if (!instances.has(projectId)) {
-        console.log(`Creating DuckDbManager instance for project ${projectId}`);
-        instances.set(projectId, new DuckDbManager(projectId, queryClient));
-      }
-      for (const key of instances.keys()) {
-        if (key !== projectId) {
-          void instances.get(key)?.close();
-          instances.delete(key);
-        }
-      }
-      const instance = instances.get(projectId);
-      if (!instance) throw new Error("Database instance missing");
-      return instance;
-    },
-  }),
-);
+function ProjectDatabase({
+  projectId,
+  children,
+}: {
+  projectId: string;
+  children: React.ReactNode;
+}) {
+  const client = useQueryClient();
+  const [db, setDb] = useState<DuckDbManager | null>(null);
+  useEffect(() => {
+    const manager = new DuckDbManager(projectId, client);
+    setDb(manager);
+    void manager.start().catch(() => undefined);
+    return () => {
+      void client.cancelQueries({ queryKey: ["duckdb", projectId] });
+      client.removeQueries({ queryKey: ["duckdb", projectId] });
+      void manager
+        .close()
+        .catch((error) => console.warn("Database cleanup failed", error));
+    };
+  }, [projectId, client]);
+  if (!db)
+    return (
+      <div className="p-6">
+        <Spinner />
+      </div>
+    );
+  return <DuckDbContext.Provider value={db}>{children}</DuckDbContext.Provider>;
+}
+export function useDuckDb() {
+  const db = useContext(DuckDbContext);
+  if (!db) throw new Error("useDuckDb must be used within a DuckDbProvider");
+  return db;
+}

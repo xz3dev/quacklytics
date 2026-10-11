@@ -1,5 +1,5 @@
 import { create } from "@/lib/store";
-import { FileMetadata } from "@/services/file-catalog.ts";
+import { FileMetadata } from "@/client/api/analytics.ts";
 
 interface DuckdbStoreState {
   availableFiles: FileMetadata[];

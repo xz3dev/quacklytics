@@ -1,3 +1,4 @@
+import { loginAsAdmin } from "../support/auth";
 import { test, expect } from "@playwright/test";
 import { z } from "zod";
 import {
@@ -10,21 +11,7 @@ test("funnels default to unique users and persist changes to event counting", as
   page,
   baseURL,
 }) => {
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL ?? "" },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const createdProject = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -316,6 +303,16 @@ test("funnels default to unique users and persist changes to event counting", as
     expect(response.ok(), await response.text()).toBeTruthy();
     const saved = insight.parse(await response.json());
     await page.goto(`/app/${createdProject.id}/insights/${saved.id}`);
+    if (scenario.name === "Empty funnel") {
+      await expect(
+        page.getByRole("img", { name: /Funnel chart preview/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("table", { name: "Funnel results" }),
+      ).toHaveCount(0);
+      await expect(page.getByText(/NaN|Infinity/)).toHaveCount(0);
+      continue;
+    }
     await expect(trial.getByRole("cell").nth(2)).toHaveText(scenario.expected);
     const chart = page.getByRole("img", { name: scenario.name, exact: true });
     await expect(

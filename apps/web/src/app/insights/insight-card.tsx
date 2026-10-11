@@ -7,6 +7,7 @@ import { TrendInsightChart } from "@app/insights/trend/trend-insight-chart.tsx";
 import {
   BreakdownInsightContext,
   FunnelInsightContext,
+  MapInsightContext,
   PathInsightContext,
   RetentionInsightContext,
   TrendInsightContext,
@@ -18,6 +19,7 @@ import { FunnelInsightResults } from "@app/insights/funnel/funnel-insight-result
 import { BreakdownInsightChart } from "@app/insights/breakdown/breakdown-insight-chart.tsx";
 import { RetentionInsightChart } from "@app/insights/retention/retention-insight-chart.tsx";
 import { PathInsightChart } from "@app/insights/path/path-insight-chart.tsx";
+import { MapInsightChart } from "@app/insights/map/map-insight-chart.tsx";
 
 import type { TimeBucket } from "@/model/insights/trend-insight";
 import { Clock } from "lucide-react";
@@ -62,6 +64,9 @@ export function InsightCard({ insightId, timeOverrides }: Props) {
         break;
       case "Path":
         insight.config.path.duration = timeOverrides.duration;
+        break;
+      case "Map":
+        insight.config.map.duration = timeOverrides.duration;
         break;
     }
   }
@@ -108,6 +113,8 @@ function insightDuration(insight: Insight) {
       return insight.config.retention.duration;
     case "Path":
       return insight.config.path.duration;
+    case "Map":
+      return insight.config.map.duration;
   }
 }
 
@@ -184,6 +191,18 @@ function renderInsight(insight: Insight) {
         >
           <PathInsightChart insight={insight} />
         </PathInsightContext.Provider>
+      );
+    case "Map":
+      return (
+        <MapInsightContext.Provider
+          value={{
+            data: insight,
+            update: () => undefined,
+            updateFn: () => undefined,
+          }}
+        >
+          <MapInsightChart insight={insight} showTable={false} />
+        </MapInsightContext.Provider>
       );
     default:
       return <div>Unknown insight type</div>;

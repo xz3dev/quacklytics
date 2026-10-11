@@ -5,7 +5,7 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { http } from "@/lib/fetch";
+import { http } from "@/client/api/http";
 
 export interface ApiKey {
   id: number;

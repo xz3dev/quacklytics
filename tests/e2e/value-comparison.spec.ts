@@ -1,3 +1,4 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
 import { z } from "zod";
 import {
@@ -11,21 +12,7 @@ test("value bars compare real periods, handle zero baselines, and survive reload
   baseURL,
 }) => {
   test.setTimeout(180000);
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL ?? "" },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -93,6 +80,15 @@ test("value bars compare real periods, handle zero baselines, and survive reload
     ids.push(saved.id);
     await page.goto(`/app/${created.id}/insights/${saved.id}`);
     const verify = async () => {
+      if (entry.name === "Empty") {
+        await expect(
+          page.getByRole("img", { name: /Value chart preview/ }),
+        ).toBeVisible();
+        await expect(
+          page.getByLabel("Current value", { exact: true }),
+        ).toHaveCount(0);
+        return;
+      }
       await expect(
         page.getByLabel("Current value", { exact: true }),
       ).toHaveText(String(entry.current));
@@ -154,8 +150,11 @@ test("value bars compare real periods, handle zero baselines, and survive reload
   await page.goto(`/app/${created.id}/dashboards/${dashboard.id}`);
   await expect(
     page.getByRole("group", { name: "Period comparison" }),
-  ).toHaveCount(cases.length);
-  for (const entry of cases)
+  ).toHaveCount(cases.length - 1);
+  await expect(
+    page.getByRole("img", { name: /Value chart preview/ }),
+  ).toBeVisible();
+  for (const entry of cases.filter((entry) => entry.name !== "Empty"))
     await expect(
       page
         .getByLabel("Period change", { exact: true })

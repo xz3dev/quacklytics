@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AnalyticsFreshness } from "@/app/duckdb/analytics-freshness";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -22,8 +23,9 @@ export function AppSidebar(
 ) {
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader>
+      <SidebarHeader className="gap-4">
         <ProjectSwitcher />
+        <AnalyticsFreshness />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

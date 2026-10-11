@@ -1,6 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { SchemaView } from "@/app/schema/schema-view";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
+// Old URL for the event schema page; kept so existing bookmarks still work.
 export const Route = createFileRoute("/app/$projectid/data")({
-  ssr: false,
-  component: SchemaView,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/app/$projectid/schema",
+      params,
+      replace: true,
+    });
+  },
 });

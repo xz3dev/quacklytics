@@ -36,6 +36,7 @@ export function objectAccess(project: string, name: string) {
 }
 
 export const storageIdentity = JSON.stringify([
+  "monthly-history-v2",
   config.S3_ENDPOINT,
   config.S3_BUCKET,
 ]);

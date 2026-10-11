@@ -1,18 +1,11 @@
-export type Dashboard = import("zod").infer<
-  typeof import("@quacklytics/contracts").dashboard
->;
-
-export interface DashboardInput {
-  name: string;
-  favorite: boolean;
-}
-
-export type DashboardTemplate =
-  | "web_analytics"
-  | "product_analytics"
-  | "chart_playground";
-
-export interface DashboardTemplateInput {
-  name?: string;
-  home?: boolean;
-}
+import type { z } from "zod";
+import type {
+  dashboard,
+  dashboardCreate,
+  dashboardTemplate,
+  dashboardTemplateInput,
+} from "@quacklytics/contracts";
+export type Dashboard = z.infer<typeof dashboard>;
+export type DashboardInput = z.input<typeof dashboardCreate>;
+export type DashboardTemplate = z.infer<typeof dashboardTemplate>;
+export type DashboardTemplateInput = z.infer<typeof dashboardTemplateInput>;

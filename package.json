@@ -9,19 +9,23 @@
   ],
   "scripts": {
     "dev": "bun run --cwd apps/web dev",
+    "dev:landing": "bun run --cwd apps/home dev",
     "build": "bun run --cwd packages/tracker build && bun run --cwd apps/web build",
     "start": "bun run --cwd apps/web start",
-    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd packages/tracker typecheck && tsc -p tsconfig.tooling.json",
+    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd packages/tracker typecheck && tsc -p tsconfig.tooling.json && tsc -p tsconfig.unit.json",
     "lint": "eslint apps/web/src packages tests scripts",
     "test:e2e": "playwright test",
-    "test": "bun run test:e2e",
+    "test": "bun run test:unit && bun run test:e2e",
+    "test:unit": "bun test tests/unit",
     "check:boundaries": "bun scripts/check-boundaries.ts",
-    "check": "bun run build && bun run typecheck && bun run lint && bun run check:boundaries && bun run test:e2e",
+    "check:imports": "bun scripts/check-boundaries.ts --source-only",
+    "check": "bun run check:imports && bun run build && bun run typecheck && bun run lint && bun run check:boundaries && bun run test:unit && bun run test:e2e",
     "format": "prettier --write apps/web/src packages tests scripts apps/web/server.ts",
     "build:docs": "bun run --cwd packages/tracker build && bun run --cwd apps/home build",
     "seed:dev": "bun scripts/seed-dev.ts",
     "storage:up": "docker compose -f compose.dev.yml up -d --wait garage && docker compose -f compose.dev.yml run --rm garage-init",
-    "storage:down": "docker compose -f compose.dev.yml down"
+    "storage:down": "docker compose -f compose.dev.yml down",
+    "db:migrate": "bun apps/web/src/server/db/migrate-cli.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

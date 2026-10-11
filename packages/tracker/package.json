@@ -1,7 +1,7 @@
 {
   "name": "@quacklytics/client",
-  "version": "0.1.0",
-  "description": "Minimal TypeScript client for Quacklytics event ingestion.",
+  "version": "0.2.0",
+  "description": "First-party browser and server analytics client for Quacklytics.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,6 +17,14 @@
     "./consent": {
       "types": "./dist/consent.d.ts",
       "import": "./dist/consent.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol.d.ts",
+      "import": "./dist/protocol.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
     }
   },
   "files": [
@@ -24,7 +32,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "bun run build"
   },
   "dependencies": {
     "preact": "^10.26.4",
@@ -32,5 +41,6 @@
   },
   "devDependencies": {
     "typescript": "5.9.3"
-  }
+  },
+  "sideEffects": false
 }

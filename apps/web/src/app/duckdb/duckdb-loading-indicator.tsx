@@ -15,10 +15,7 @@ export function DuckDBLoadingIndicator(props: { children: React.ReactNode }) {
       {state.error}{" "}
       <button
         onClick={() => {
-          void db.fileManager
-            .getState()
-            .loadData()
-            .catch(() => undefined);
+          void db.retry().catch(() => undefined);
         }}
       >
         Retry

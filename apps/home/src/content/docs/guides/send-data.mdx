@@ -1,80 +1,245 @@
 ---
 title: Sending Data
+description: Track events from the browser, your server, or any language over HTTP.
 ---
 
+import { Aside, Steps, Tabs, TabItem, LinkCard } from "@astrojs/starlight/components";
 
-## Sending events via HTTPs
+## Before you start
 
-The **AppendEvent** endpoint allows you to send one event or a batch of events to the server for processing. The API key identifies the project.
+New projects open a setup guide with ready-to-copy snippets for this project. It waits for your first event and checks its timestamp, visitor identity, allowed origin and whether the server sees real client IPs behind your proxy. Reopen it any time from **Ingestion → Setup guide**.
 
-### Endpoint URL
+<Steps>
+
+1. Open your project's **Ingestion** page and copy an **ingestion key**.
+2. For browser tracking, add your site's exact origin (for example `https://app.example.com`) under **Allowed origins**. Requests from other origins are rejected with `403`.
+
+</Steps>
+
+<Aside type="note" title="Ingestion keys are public">
+    An ingestion key can only send events (including via `/api/backfill`), so it's safe to ship in browser code. It can't read data or change settings.
+</Aside>
+
+<Aside type="tip">
+    `*` in **Allowed origins** accepts any origin. Server-side requests without an `Origin` header skip the origin check.
+</Aside>
+
+## Quick start
+
+<Tabs syncKey="client">
+<TabItem label="Browser">
+
+```ts
+import { createClient } from "@quacklytics/client";
+import { createCookieConsent } from "@quacklytics/client/consent";
+
+const client = createClient({
+  hostname: "https://analytics.example.com",
+  apiKey: "your-project-key",
+  autocapture: true, // optional: track clicks on links and buttons
+  onError: (error) => console.warn("Analytics delivery failed", error),
+});
+
+// Optional built-in banner. Your own UI can call client.setConsent() instead.
+createCookieConsent({ client }).showBanner();
+
+await client.track("signup", { plan: "pro" });
+await client.identify("your-user-id", { plan: "pro" });
+
+// On logout, before another account signs in:
+client.reset();
+```
+
+Pageviews are captured from the first page load. While consent is pending, they're buffered and sent once the visitor decides.
+
+</TabItem>
+<TabItem label="Server">
+
+```ts
+import { createServerClient } from "@quacklytics/client/server";
+
+const client = createServerClient({
+  hostname: "https://analytics.example.com",
+  apiKey: process.env.QUACKLYTICS_KEY ?? "",
+});
+
+await client.track("invoice_paid", { amount: 42 }, { userId: "your-user-id" });
+await client.flush();   // sends automatically every 20 events, but has no timer
+await client.destroy();
+```
+
+The server client never creates browser identities, pageviews or storage. A `userId` joins the event to the same user that browser `identify()` creates (`user:<id>`). Without a `userId`, the event has no person.
+
+</TabItem>
+<TabItem label="HTTP">
+
+```sh
+curl -X POST https://analytics.example.com/api/ingest \
+  -H "Content-Type: application/json" \
+  -H "X-API-KEY: your-project-key" \
+  -d '{
+    "requestId": "bb7b720a-0d30-4f6b-a159-910a56b70c51",
+    "events": [{
+      "id": "24fc73e5-aa9b-4c28-bc3f-3bd02a5bc0c3",
+      "eventType": "signup",
+      "timestamp": "2026-09-25T12:00:00Z",
+      "personId": "user:your-user-id",
+      "properties": { "plan": "pro" }
+    }]
+  }'
+```
+
+See [HTTP API](#http-api) below for every field.
+
+</TabItem>
+</Tabs>
+
+<Aside type="caution" title="Installing the client">
+    `@quacklytics/client` isn't published to npm yet. It lives in [`packages/tracker`](https://github.com/xz3dev/quacklytics/tree/master/packages/tracker) in the repository. Build it with `bun run build` in that directory and add it to your app as a local or git dependency.
+</Aside>
+
+## Browser client
+
+### Consent
+
+The default consent mode is `required`. Until the visitor decides, **nothing is sent**.
+
+| State | What happens |
+| --- | --- |
+| **Undecided** | Events (including `identify`) are buffered in `localStorage` and survive reloads. |
+| **Granted** — `setConsent("granted")` | Buffered events are sent with the full visitor identity, in order. Collection continues normally. |
+| **Denied** — `setConsent("denied")` | Buffered events are sent **anonymously**. From then on, events carry no identifiers and only the consent choice is stored in the browser. Events wait in memory, so they're lost if the page closes before delivery. `identify` is disabled. |
+
+<Aside type="tip" title="Anonymous mode still counts visitors">
+    For denied visitors, the server derives a daily visitor ID by hashing the client IP and user agent with a random salt that rotates each UTC day. Salts older than yesterday are deleted the next time such an event is processed, so visitors can be counted per day but not linked across days or traced back. They appear as `anonymous:daily:<hash>`.
+</Aside>
+
+Revoking consent later clears the visitor identity and any queued events. Data that was already sent can't be recalled. Passing `consent: "granted"` to `createClient` starts collecting immediately, unless the visitor already denied.
+
+The optional banner follows your page's `color-scheme`, or the visitor's OS preference if none is set. Restyle it with `createCookieConsent({ client, banner: { css } })` or `showBanner({ css })`, using selectors scoped to `[data-quacklytics-cookie-banner]` (`.ql-banner`, `.ql-text`, `.ql-actions`, `.ql-primary`, `.ql-secondary`).
+
+### Pageviews
+
+`$pageview` is sent on the initial load and on every SPA navigation (History API, back/forward and Astro page loads). Repeated calls for the same URL are deduplicated.
+
+To hook into your router instead, turn off the automatic tracking and call `page()` yourself:
+
+```ts
+const client = createClient({ hostname, apiKey, autoTrackPageviews: false });
+router.subscribe("onResolved", () => client.page()); // e.g. TanStack Router
+```
+
+### Autocapture
+
+`autocapture: true` sends a `$click` event for links, buttons, `role="button"`/`role="link"` elements and anything with `data-ql-event`.
+
+```html
+<!-- Custom event name and a stable ID -->
+<button data-ql-event="trial_started" data-ql-id="hero-trial">Start trial</button>
+
+<!-- Exclude an element and everything inside it -->
+<div data-ql-ignore>
+  <button>Private action</button>
+</div>
+```
+
+<Aside type="note" title="What autocapture records">
+    It records the tag name, the link URL (anchors only, without query string) and the `role`, `type` and `data-ql-id` attributes (up to 128 characters), plus the usual `$context`. It never reads text, input values, element IDs, classes or other attributes.
+</Aside>
+
+### Privacy controls
+
+- **URLs** drop query strings, fragments and credentials by default. To keep approved campaign parameters in the page URL, use `allowedQueryParameters: ["utm_source", "utm_campaign"]`. Referrers and link URLs never include query strings.
+- **Paths and titles** are recorded as-is. Redact private ones with `beforeSend`.
+- **`beforeSend(event)`** lets you redact paths, titles or properties. Return `null` to drop the event.
+- **Context** such as SDK version, page, browser, OS, device type, language, timezone and viewport is stored under `properties.$context`.
+
+### Identity
+
+- Each browser gets a persistent **anonymous visitor ID** and a **session ID**. A session ends after 30 minutes of inactivity (`sessionTimeoutMs`).
+- `identify(userId, traits?)` links earlier anonymous activity to that user across sessions, except in [archived months](/guides/import/#how-old-data-is-stored). It isn't counted as an event.
+- Call `reset()` when the user logs out. A visitor can't switch to another user without it.
+- In SQL, actors appear in `person_id` as `anonymous:<id>`, `anonymous:daily:<hash>` (declined consent) or `user:<id>`. A raw HTTP `personId` is stored exactly as sent, so use `user:<id>` to join SDK users.
+
+### Typed events
+
+```ts
+interface Events {
+  signup: { plan: string };
+  purchase: { amount: number; currency: string };
+}
+
+const client = createClient<Events>({ hostname, apiKey });
+await client.track("purchase", { amount: 42, currency: "EUR" }); // type-checked
+```
+
+### Delivery
+
+| Behavior | Default |
+| --- | --- |
+| Automatic flush | Every 5 s, at 20 queued events, and when the page is hidden |
+| Retries | Up to 3 attempts per flush for network errors, timeouts, `429` and `5xx`, with jittered backoff and `Retry-After` (max 60 s). Failing batches stay queued; other `4xx` responses drop the batch. |
+| Request timeout | 10 s |
+| Outbox | Per-tab `sessionStorage` (granted consent): survives reloads, **not** closing the tab |
+| Queue limits | 1,000 operations · 1 MB total · 48 KB per event · 24 h retention |
+
+`track()` and `page()` resolve as soon as the event is queued locally. `await client.flush()` waits until the server has committed every queued batch. On shutdown, call `await client.flush()` and then `await client.destroy()`.
+
+Automatic delivery failures go to `onError`. Failures from explicit calls reject their promises.
+
+## HTTP API
+
+Use the HTTP endpoint from any language.
 
 ```
 POST /api/ingest
 ```
 
-### Request Format
+**Headers**
 
-**Request Headers**
+| Header | Value |
+| --- | --- |
+| `Content-Type` | `application/json` |
+| `X-API-KEY` | Your project's ingestion key |
 
-- **Content-Type:** `application/json`
-- **X-API-KEY:** `your-api-key` - Create a new api-key via the project settings.
+**Body**
 
-**Request Body**
+| Field | Required | Description |
+| --- | --- | --- |
+| `requestId` | ✅ | UUID that identifies this batch. Keep it when retrying. |
+| `events` | ✅ | 1–1,000 events. The whole body may be at most 2,000,000 bytes (otherwise `413`). |
+| `deferExport` | | Importers only: pause S3 exports briefly. See [Importing Data](/guides/import/). |
 
-The endpoint accepts an object with a UUID `requestId` and an `events` array (1–1000 events, at most 2 MB). Every event needs a UUID `id`. Keep both IDs unchanged when retrying. Reusing an ID with different content returns 409 and rolls back the entire batch. Event fields:
+**Event fields**
 
-- **eventType**: The type of event (e.g., `"user_signup"`).
-- **sessionId**: Optional session identifier for pseudo-anonymous events.
-- **personId**: Optional person identifier. Sending both `sessionId` and `personId` upgrades the session to that person.
-- **timestamp**: The time of the event occurring in ISO 8601 format.
-- **properties**: A map of additional properties. This is stored as JSON and can be queried.
-- **personProperties**: Optional person properties. The latest event timestamp wins per property, with event ID resolving equal timestamps.
+| Field | Required | Description |
+| --- | --- | --- |
+| `id` | ✅ | UUID that identifies the event. |
+| `eventType` | ✅ | Event name, 1–200 characters, for example `"user_signup"`. |
+| `timestamp` | ✅ | ISO 8601 date-time **with** a UTC offset, for example `2026-09-25T12:00:00Z`. |
+| `sessionId` | | Session identifier for pseudo-anonymous events. |
+| `personId` | | Person identifier. Sending it together with `sessionId` links the session (including earlier events) to that person. |
+| `properties` | | Any JSON object. Nested values keep their types and can be queried. |
+| `personProperties` | | Properties to set on the person. The newest event wins per property. |
 
-### Example
+**Response**, sent after the batch is durably committed:
 
 ```json
-{
-  "requestId": "bb7b720a-0d30-4f6b-a159-910a56b70c51",
-  "events": [
-  {
-    "id": "24fc73e5-aa9b-4c28-bc3f-3bd02a5bc0c3",
-    "eventType": "user_signup",
-    "sessionId": "session_abc",
-    "personId": "person_123",
-    "timestamp": "2025-02-23T10:00:00Z",
-    "properties": {
-      "plan": "premium",
-      "referrer": "google"
-    },
-    "personProperties": {
-      "email": "test@example.com"
-    }
-  }
-  ]
-}
+{ "committed": 1, "duplicates": 0, "rejected": 0, "revision": 41 }
 ```
 
-## Sending events via the TypeScript client
+<Aside type="caution" title="Retry safely">
+    After a network error, `429` or `5xx`, retry with the **same** `requestId` and the **identical** body. The server replays the original response instead of storing anything twice. Known event IDs sent under a new `requestId` are counted as `duplicates`.
 
-The client automatically sends a `$pageview` event when it is created in a browser. Disable that with `autoTrackPageviews: false` and call `trackPageview()` manually when you want to control timing, for example after consent has been resolved.
+    `409` rolls back the whole batch. It happens when a `requestId` is reused with a different body, an event `id` is reused with different content, or a `personId` conflicts with the person a session already belongs to.
+</Aside>
 
-```ts
-import { createClient } from "@quacklytics/client";
-import { enableClickAutotracking } from "@quacklytics/client/autotrack";
+<Aside type="note" title="Old events">
+    Events for [archived months](/guides/import/#how-old-data-is-stored) are dropped and counted as `rejected`. A month is normally archived just after midnight UTC on the 8th of the following month. Use the [backfill endpoint](/guides/import/) for historical data.
+</Aside>
 
-const client = createClient({
-  apiKey: "your-api-key",
-  hostname: "localhost",
-  port: 3000,
-  autoTrackPageviews: false,
-});
+### Rate limits
 
-await client.trackPageview();
+Each project accepts **600 requests per minute** by default (configurable with `INGEST_REQUESTS_PER_MINUTE`), shared between `/api/ingest` and `/api/backfill`. Requests over the limit get `429` with a `Retry-After` header. When the whole server is overloaded, it answers `503` with `Retry-After`.
 
-enableClickAutotracking({ client }); // emits $click events
-```
-
-Browser context such as user agent, browser name and version, operating system, device type, device model, language, timezone, viewport, and current page URL is added to every event's `properties`.
-
-Browser ingestion requires the browser origin in project settings. Keys are shown in full only when created. The tracker generates IDs and retries network/5xx/429 failures using the same payload. A successful response acknowledges a committed SQLite WAL/FULL transaction.
+<LinkCard title="Importing historical data" description="Backfill events into archived months." href="/guides/import/" />

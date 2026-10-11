@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Project } from "@/model/project";
-import { useUpdateProjectName } from "@/services/projects";
+import { useUpdateProjectDetails } from "@/services/projects";
+import { ProjectAvatar } from "@/app/projects/projects-shell";
+import { ProjectEmojiPopover } from "./project-emoji-popover";
 
 export function RenameProjectDialog({
   project,
@@ -20,8 +22,9 @@ export function RenameProjectDialog({
   onClose: () => void;
 }) {
   const [name, setName] = useState(project.name);
+  const [emoji, setEmoji] = useState(project.emoji);
   const [error, setError] = useState("");
-  const updater = useUpdateProjectName();
+  const updater = useUpdateProjectDetails();
   const trimmedName = name.trim();
 
   return (
@@ -31,7 +34,7 @@ export function RenameProjectDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Rename project</DialogTitle>
         </DialogHeader>
@@ -44,15 +47,20 @@ export function RenameProjectDialog({
             try {
               await updater.mutateAsync({
                 projectId: project.id,
-                value: trimmedName,
+                name: trimmedName,
+                emoji,
               });
-              toast.success("Project name updated!");
+              toast.success(
+                emoji === project.emoji
+                  ? "Project name updated!"
+                  : "Project updated!",
+              );
               onClose();
             } catch (error) {
               setError(
                 error instanceof Error
                   ? error.message
-                  : "Failed to rename project. Please try again.",
+                  : "Failed to update project. Please try again.",
               );
             }
           }}
@@ -70,6 +78,47 @@ export function RenameProjectDialog({
               }}
             />
           </div>
+          <div className="space-y-2">
+            <Label>Project emoji</Label>
+            <div className="flex items-center gap-3">
+              <ProjectEmojiPopover
+                onSelect={(selected) => {
+                  setEmoji(selected);
+                  setError("");
+                }}
+                anchor={
+                  <ProjectAvatar
+                    name={trimmedName}
+                    emoji={emoji}
+                    className="size-10 text-lg"
+                  />
+                }
+                trigger={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label="Choose project emoji"
+                  >
+                    {emoji ? "Change emoji" : "Choose emoji"}
+                  </Button>
+                }
+              />
+              {emoji && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEmoji("")}
+                >
+                  Remove emoji
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Shown in project tiles. Leave empty to use the first letter.
+            </p>
+          </div>
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error}
@@ -84,7 +133,7 @@ export function RenameProjectDialog({
               disabled={
                 updater.isPending ||
                 !trimmedName ||
-                trimmedName === project.name
+                (trimmedName === project.name && emoji === project.emoji)
               }
             >
               {updater.isPending ? "Saving…" : "Save"}

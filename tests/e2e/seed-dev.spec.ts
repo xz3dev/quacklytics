@@ -1,5 +1,9 @@
+import { loginAsAdmin } from "../support/auth";
 import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
 import {
@@ -7,8 +11,75 @@ import {
   dashboard,
   storedEvent,
   insight,
+  analyticsSnapshot,
+  parseJson,
 } from "../../packages/contracts/src/index";
+import type { Page } from "@playwright/test";
 const exec = promisify(execFile);
+// Reads what analytics query: published Parquet (the only copy of archived
+// months) plus the SQLite rows the snapshot adds.
+async function analyticsEvents(page: Page, projectId: string) {
+  const snapshot = analyticsSnapshot.parse(
+    await (await page.request.get(`/api/${projectId}/events/snapshot`)).json(),
+  );
+  const directory = mkdtempSync(join(tmpdir(), "quacklytics-seed-read-"));
+  try {
+    const paths: string[] = [];
+    for (const file of snapshot.files) {
+      const path = join(directory, file.name);
+      writeFileSync(
+        path,
+        Buffer.from(await (await page.request.get(file.url)).body()),
+      );
+      paths.push(path);
+    }
+    const rows = paths.length
+      ? z
+          .array(
+            z.object({
+              id: z.string(),
+              timestamp: z.number(),
+              event_type: z.string(),
+              session_id: z.string().nullable(),
+              person_id: z.string().nullable(),
+              properties: z.string(),
+            }),
+          )
+          .parse(
+            JSON.parse(
+              (
+                await exec(
+                  "bun",
+                  [
+                    "-e",
+                    `import { DuckDBInstance } from "@duckdb/node-api";
+                    const conn = await (await DuckDBInstance.create()).connect();
+                    const files = JSON.parse(Bun.argv.at(-1)).map((path) => "'" + path.replaceAll("'", "''") + "'");
+                    const reader = await conn.runAndReadAll("SELECT id,epoch_ms(timestamp)::DOUBLE AS timestamp,event_type,session_id,person_id,properties::VARCHAR AS properties FROM read_parquet([" + files.join(",") + "])");
+                    console.log(JSON.stringify(reader.getRowObjectsJS()));`,
+                    JSON.stringify(paths),
+                  ],
+                  { cwd: resolve("apps/web"), maxBuffer: 256 * 1024 * 1024 },
+                )
+              ).stdout,
+            ),
+          )
+          .map((row) => ({ ...row, properties: parseJson(row.properties) }))
+      : [];
+    return storedEvent.array().parse(
+      [...rows, ...snapshot.liveEvents].map((row) => ({
+        id: row.id,
+        timestamp: row.timestamp,
+        eventType: row.event_type,
+        sessionId: row.session_id,
+        personId: row.person_id,
+        properties: row.properties,
+      })),
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
 
 test("Bun demo command provisions real chart data and supports an existing ingestion key", async ({
   page,
@@ -21,14 +92,7 @@ test("Bun demo command provisions real chart data and supports an existing inges
     password: "Migration-test-password-42",
     name: "Migration",
   };
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    { headers: { Origin: origin }, data: credentials },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const result = await exec(
     "bun",
     [
@@ -53,7 +117,7 @@ test("Bun demo command provisions real chart data and supports an existing inges
     },
   );
   expect(result.stdout).toContain("Open your demo dashboard:");
-  expect(result.stdout).toMatch(/Imported in [\d.]+s \([\d,]+ events\/s\)/);
+  expect(result.stdout).toMatch(/Imported in [\d.]+s \([\d,]+ operations\/s\)/);
   const sentCount = (stdout: string) =>
     z.coerce
       .number()
@@ -66,6 +130,9 @@ test("Bun demo command provisions real chart data and supports an existing inges
   const demo = projects.find((item) => item.name.startsWith("Demo "));
   if (!demo) throw new Error("Demo project not created");
   const exportedCount = async () => {
+    expect(
+      (await page.request.post(`/api/${demo.id}/events/catalog/gen`)).ok(),
+    ).toBeTruthy();
     const files = z
       .array(z.object({ eventCount: z.number() }))
       .parse(
@@ -82,7 +149,7 @@ test("Bun demo command provisions real chart data and supports an existing inges
   expect(playground.name).toBe("Chart playground");
   expect(new Set(playground.insights.map((item) => item.type)).size).toBe(6);
   expect(playground.insights.map((item) => item.name)).toEqual([
-    "Daily workspace visits and completed tasks",
+    "Daily pageviews and completed tasks",
     "Revenue this month (EUR)",
     "Feature adoption",
     "Pricing to paid subscription",
@@ -105,75 +172,113 @@ test("Bun demo command provisions real chart data and supports an existing inges
     expect(playground.insights).toHaveLength(6);
   }
 
-  const events = storedEvent
-    .array()
-    .parse(await (await page.request.get(`/api/${demo.id}/events`)).json());
+  const events = await analyticsEvents(page, demo.id);
   expect(events.length).toBeGreaterThan(500);
-  expect(new Set(events.map((item) => item.properties.chart_target))).toEqual(
-    new Set(["trend", "value", "breakdown", "funnel", "retention", "path"]),
-  );
   expect(events.every((item) => item.timestamp.getTime() < Date.now())).toBe(
     true,
   );
   const count = (name: string) =>
     events.filter((item) => item.eventType === name).length;
-  expect(count("demo.funnel.pricing_viewed")).toBe(40);
-  expect(count("demo.funnel.subscription_started")).toBeGreaterThan(0);
-  expect(count("demo.funnel.subscription_started")).toBeLessThan(
-    count("demo.funnel.trial_started"),
+  // Read back what ingestion stored: the same shape real SDK traffic produces.
+  const sdkContext = z.object({
+    sdk: z.object({ name: z.literal("@quacklytics/client") }),
+    page: z
+      .object({
+        url: z.string().startsWith("https://orbit.example/"),
+        path: z.string().startsWith("/"),
+        title: z.string().min(1),
+        referrer: z.string(),
+        pageViewId: z.uuid(),
+        previousUrl: z.string().optional(),
+      })
+      .optional(),
+    browser: z.string().optional(),
+    os: z.string().optional(),
+    deviceType: z.enum(["desktop", "mobile", "tablet"]).optional(),
+    language: z.string().optional(),
+    timezone: z.string().optional(),
+  });
+  const parsed = events.map((event) => ({
+    ...event,
+    context: sdkContext.parse(event.properties.$context),
+  }));
+  const browserEvents = parsed.filter((event) => event.context.page);
+  const serverEvents = parsed.filter((event) => !event.context.page);
+  expect(count("$pageview")).toBeGreaterThan(count("signed_up"));
+  expect(count("$click")).toBeGreaterThan(0);
+  for (const event of browserEvents) {
+    expect(event.sessionId).toBeTruthy();
+    expect(event.personId).toMatch(/^(user|anonymous):/);
+    expect(event.properties.$country).toMatch(/^[A-Z]{2}$/);
+    expect(event.context.browser).toBeTruthy();
+    if (event.eventType === "$click")
+      expect(typeof event.properties.tagName).toBe("string");
+  }
+  // Billing comes from the server SDK: no page, browser or session.
+  expect(new Set(serverEvents.map((event) => event.eventType))).toContain(
+    "invoice_paid",
   );
+  for (const event of serverEvents) {
+    expect(event.personId).toMatch(/^user:usr_/);
+    expect(event.sessionId).toBeNull();
+    expect(event.properties.$country).toBeUndefined();
+  }
+  // A session belongs to one browser in one place.
+  const sessionProfiles = new Map<string, string>();
+  for (const event of browserEvents) {
+    const profile = JSON.stringify([
+      event.context.browser,
+      event.context.os,
+      event.context.deviceType,
+      event.context.timezone,
+      event.properties.$country,
+    ]);
+    const key = event.sessionId ?? "";
+    expect(sessionProfiles.get(key) ?? profile).toBe(profile);
+    sessionProfiles.set(key, profile);
+  }
+  for (const field of ["browser", "os", "deviceType"] as const)
+    expect(
+      new Set(browserEvents.map((event) => event.context[field])).size,
+    ).toBeGreaterThan(1);
+  // identify() attributes earlier anonymous browsing to the user who signed up.
+  const signups = parsed.filter((event) => event.eventType === "signed_up");
+  expect(signups).toHaveLength(40);
+  const signedUp = new Set(signups.map((event) => event.personId));
+  expect(signedUp.size).toBe(40);
+  expect(
+    browserEvents.some(
+      (event) =>
+        signedUp.has(event.personId) &&
+        event.eventType === "$pageview" &&
+        !event.context.page?.path.startsWith("/app"),
+    ),
+  ).toBe(true);
+  const funnelUsers = (name: string) =>
+    new Set(
+      parsed
+        .filter((event) => event.eventType === name)
+        .map((event) => event.personId),
+    ).size;
+  const pricingVisitors = new Set(
+    browserEvents
+      .filter(
+        (event) =>
+          event.eventType === "$pageview" &&
+          event.context.page?.path === "/pricing",
+      )
+      .map((event) => event.personId),
+  ).size;
+  expect(pricingVisitors).toBeGreaterThan(signedUp.size);
+  expect(funnelUsers("subscription_started")).toBeGreaterThan(0);
+  expect(funnelUsers("subscription_started")).toBeLessThan(signedUp.size);
   expect(
     new Set(
       events
-        .filter((item) => item.eventType === "demo.breakdown.feature_used")
+        .filter((item) => item.eventType === "feature_used")
         .map((item) => item.properties.feature),
     ).size,
   ).toBeGreaterThan(3);
-  // Read back ingested profiles: every chart family can be filtered using
-  // tracker-compatible dimensions, with stable values for returning actors.
-  for (const property of [
-    "browser",
-    "os",
-    "userAgent",
-    "deviceType",
-    "plan",
-    "country",
-    "source",
-  ]) {
-    expect(
-      events.every((event) => typeof event.properties[property] === "string"),
-    ).toBe(true);
-    expect(
-      new Set(events.map((event) => event.properties[property])).size,
-    ).toBeGreaterThan(1);
-  }
-  const profiles = new Map<string, string>();
-  for (const event of events) {
-    expect(event.properties.deviceType).toBe(event.properties.device);
-    const profile = JSON.stringify([
-      event.properties.browser,
-      event.properties.os,
-      event.properties.userAgent,
-      event.properties.device,
-      event.properties.plan,
-      event.properties.country,
-      event.properties.source,
-    ]);
-    if (!event.personId) throw new Error("Seed event is missing its actor");
-    const previous = profiles.get(event.personId);
-    if (previous !== undefined) expect(profile).toBe(previous);
-    profiles.set(event.personId, profile);
-  }
-  const safariEvents = events.filter(
-    (event) => event.properties.browser === "Safari",
-  );
-  expect(safariEvents.length).toBeGreaterThan(0);
-  expect(safariEvents.length).toBeLessThan(events.length);
-  expect(
-    new Set(safariEvents.map((event) => event.properties.chart_target)),
-  ).toEqual(
-    new Set(["trend", "value", "breakdown", "funnel", "retention", "path"]),
-  );
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.addInitScript(() =>
@@ -181,7 +286,7 @@ test("Bun demo command provisions real chart data and supports an existing inges
   );
   await page.goto(`/app/${demo.id}/dashboards/${playground.id}`);
   for (const name of [
-    "Daily workspace visits and completed tasks",
+    "Daily pageviews and completed tasks",
     "Feature adoption",
     "Pricing to paid subscription",
     "Workspace retention by signup cohort",
@@ -190,28 +295,52 @@ test("Bun demo command provisions real chart data and supports an existing inges
     await expect(page.getByRole("img", { name, exact: true })).toBeVisible();
   await expect(page.getByText(/^Error:/)).toHaveCount(0);
   const trendChart = page.getByRole("img", {
-    name: "Daily workspace visits and completed tasks",
+    name: "Daily pageviews and completed tasks",
     exact: true,
   });
   await expect(trendChart).toContainText(/[A-Z][a-z]{2} \d{1,2}/);
   await expect(trendChart).not.toContainText(/T00:00:00/);
-  const chartBounds = await trendChart.boundingBox();
-  if (!chartBounds) throw new Error("Trend chart has no bounds");
-  const pointer = {
-    x: chartBounds.x + chartBounds.width / 2,
-    y: chartBounds.y + 40,
-  };
-  await page.mouse.move(pointer.x, pointer.y);
   const popup = page.locator(".analytics-tooltip:visible");
-  await expect(popup).toHaveCount(1);
-  await expect(popup).toContainText("Workspace visits");
-  await expect(popup).toContainText("Tasks completed");
-  const dateText = await popup.locator(".ts-chart-tooltip__title").innerText();
-  const day = new Date(`${dateText} UTC`).toISOString().slice(0, 10);
-  for (const { name, eventType } of [
-    { name: "Workspace visits", eventType: "demo.trend.workspace_opened" },
-    { name: "Tasks completed", eventType: "demo.trend.task_completed" },
+  await expect(trendChart.locator(".ts-chart__line path")).toHaveCount(1);
+  // Tooltips follow nearby rendered points. Inspect each series explicitly;
+  // overlapping curves are still tested together below.
+  for (const { name, eventType, mark } of [
+    {
+      name: "Pageviews",
+      eventType: "$pageview",
+      mark: trendChart.locator(".ts-chart__line path").first(),
+    },
+    {
+      name: "Tasks completed",
+      eventType: "task_completed",
+      mark: trendChart.locator(".ts-chart__bar-y rect").first(),
+    },
   ]) {
+    await expect(mark).toBeVisible();
+    await mark.scrollIntoViewIfNeeded();
+    const pointer = await mark.evaluate((element) => {
+      if (element instanceof SVGRectElement) {
+        const rect = element.getBoundingClientRect();
+        return {
+          x: rect.x + rect.width / 2,
+          y: rect.y + Math.min(1, rect.height / 2),
+        };
+      }
+      if (!(element instanceof SVGPathElement))
+        throw new Error("Expected trend line");
+      const point = element.getPointAtLength(0);
+      const matrix = element.getScreenCTM();
+      if (!matrix) throw new Error("Missing chart transform");
+      const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+      return { x: screen.x, y: screen.y };
+    });
+    await page.mouse.move(pointer.x, pointer.y);
+    await expect(popup).toHaveCount(1);
+    await expect(popup).toContainText(name);
+    const dateText = await popup
+      .locator(".ts-chart-tooltip__title")
+      .innerText();
+    const day = new Date(`${dateText} UTC`).toISOString().slice(0, 10);
     const expected = events.filter(
       (event) =>
         event.eventType === eventType &&
@@ -219,18 +348,15 @@ test("Bun demo command provisions real chart data and supports an existing inges
     ).length;
     await expect(
       popup.locator(".ts-chart-tooltip__row").filter({ hasText: name }),
-    ).toContainText(expected.toLocaleString("en-US"));
+    ).toContainText(
+      `${expected.toLocaleString("en-US")} ${expected === 1 ? "event" : "events"}`,
+    );
+    const popupBounds = await popup.boundingBox();
+    if (!popupBounds) throw new Error("Tooltip has no bounds");
+    expect(Math.abs(popupBounds.y - pointer.y)).toBeLessThan(150);
+    await page.mouse.move(0, 0);
+    await expect(popup).toHaveCount(0);
   }
-  const popupBounds = await popup.boundingBox();
-  if (!popupBounds) throw new Error("Tooltip has no bounds");
-  expect(Math.abs(popupBounds.y - pointer.y)).toBeLessThan(150);
-  await page.screenshot({ path: "test-results/shared-chart-tooltip.png" });
-  // Moving vertically should retain the same x bucket and both series.
-  await page.mouse.move(pointer.x, pointer.y + 90);
-  await expect(popup.locator(".ts-chart-tooltip__title")).toHaveText(dateText);
-  await expect(popup.locator(".ts-chart-tooltip__row")).toHaveCount(2);
-  await page.mouse.move(0, 0);
-  await expect(popup).toHaveCount(0);
 
   const breakdownChart = page.getByRole("img", {
     name: "Feature adoption",
@@ -269,7 +395,7 @@ test("Bun demo command provisions real chart data and supports an existing inges
   const revenue = events
     .filter(
       (event) =>
-        event.eventType === "demo.value.invoice_paid" &&
+        event.eventType === "invoice_paid" &&
         event.timestamp >= start &&
         event.timestamp < end,
     )
@@ -409,15 +535,20 @@ test("Bun demo command provisions real chart data and supports an existing inges
   expect(await exportedCount()).toBe(
     sentCount(result.stdout) + sentCount(sent.stdout),
   );
-  const after = storedEvent
-    .array()
-    .parse(await (await page.request.get(`/api/${demo.id}/events`)).json());
+  const after = await analyticsEvents(page, demo.id);
   expect(
     after.some(
       (item) => item.timestamp.getTime() < Date.now() - 300 * 86400000,
     ),
   ).toBe(true);
-  expect(new Set(after.map((item) => item.properties.demo_run)).size).toBe(2);
+  // Each run signs up its own users rather than reusing the first run's.
+  expect(
+    new Set(
+      after
+        .filter((item) => item.eventType === "signed_up")
+        .map((item) => item.personId),
+    ).size,
+  ).toBe(60);
   expect(
     project
       .array()

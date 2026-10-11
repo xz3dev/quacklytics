@@ -1,3 +1,4 @@
+import { loginAsAdmin } from "../support/auth";
 import { test, expect } from "@playwright/test";
 import { z } from "zod";
 import {
@@ -11,21 +12,7 @@ test("funnel table groups long values and preserves metrics on narrow screens", 
   page,
   baseURL,
 }) => {
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL ?? "" },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const createdProject = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -216,6 +203,7 @@ test("funnel table groups long values and preserves metrics on narrow screens", 
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(390);
+  await trial.scrollIntoViewIfNeeded();
   await table.locator("..").evaluate((element) => {
     element.scrollLeft = element.scrollWidth;
   });

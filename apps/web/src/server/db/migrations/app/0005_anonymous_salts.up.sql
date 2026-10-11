@@ -1,0 +1,1 @@
+CREATE TABLE anonymous_salts(day TEXT PRIMARY KEY,salt BLOB NOT NULL);

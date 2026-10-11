@@ -1,5 +1,5 @@
+import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
-import { z } from "zod";
 import {
   defaultInsights,
   insight,
@@ -12,21 +12,7 @@ test("insight modes isolate temporary timeframes, save defaults, and retain fail
 }) => {
   if (!baseURL) throw new Error("Missing test origin");
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const setup = z
-    .object({ adminRegistered: z.boolean() })
-    .parse(await (await page.request.get("/api/setup")).json());
-  const login = await page.request.post(
-    `/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
-    {
-      headers: { Origin: baseURL },
-      data: {
-        email: "migration@example.com",
-        password: "Migration-test-password-42",
-        name: "Migration",
-      },
-    },
-  );
-  expect(login.ok(), await login.text()).toBeTruthy();
+  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
   const created = project.parse(
     await (
       await page.request.post("/api/projects", {
@@ -128,9 +114,10 @@ test("insight modes isolate temporary timeframes, save defaults, and retain fail
     const resultsBox = await results.boundingBox();
     if (!sidebarBox || !resultsBox) throw new Error("Missing editor layout");
     expect(sidebarBox.x + sidebarBox.width).toBeLessThanOrEqual(resultsBox.x);
+    // Maps are already grouped by country and offer no further breakdown.
     await expect(
       results.getByLabel("Chart breakdown", { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(saved.type === "Map" ? 0 : 1);
     const chartControls = results.getByRole("group", {
       name: "Chart controls",
     });

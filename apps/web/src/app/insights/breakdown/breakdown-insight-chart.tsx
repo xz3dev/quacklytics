@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import {
   formatMetricValue,
   insightMetricUnit,
@@ -90,13 +91,7 @@ function UngroupedBreakdownInsightChart({ insight, showTable = true }: Props) {
         : row.dimension_value,
     };
   });
-  if (rows.length === 0) {
-    return (
-      <div className="py-6 text-sm text-muted-foreground">
-        No matching events.
-      </div>
-    );
-  }
+  if (rows.length === 0) return <ChartEmptyState insight={insight} />;
 
   const maxValue = Math.max(...rows.map((row) => Number(row.result_value)));
 

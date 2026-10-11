@@ -21,6 +21,9 @@ function quacklyticsHomepageTracking() {
 export default defineConfig({
     site: 'https://quacklytics.com',
     base: '/',
+    redirects: {
+        '/start-here/docker': '/start-here/local/',
+    },
     server: {
         host: '0.0.0.0',
         port: homePort,
@@ -48,9 +51,13 @@ export default defineConfig({
                     label: 'Start Here',
                     items: [
                         {slug: 'start-here/introduction'},
-                        {slug: 'start-here/docker'},
-                        {slug: 'start-here/roadmap'},
+                        {slug: 'start-here/local'},
+                        {slug: 'start-here/production'},
                     ],
+                },
+                {
+                    label: 'Self-Hosting',
+                    autogenerate: {directory: 'self-hosting'},
                 },
                 {
                     label: 'Guides',

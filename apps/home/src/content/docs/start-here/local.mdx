@@ -1,0 +1,83 @@
+---
+title: Local Setup
+description: Try Quacklytics on your machine with Docker Compose, or run it from source for development.
+---
+
+import { Aside, Steps, Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<Aside type="danger" title="For testing only">
+    This setup uses public demo credentials and an S3 endpoint (`http://127.0.0.1:3900`) that only the machine running Docker can reach. To deploy for real, follow [Production Deployment](/start-here/production/).
+</Aside>
+
+## Quick start with Docker
+
+The included Compose file starts Quacklytics together with [Garage](https://garagehq.deuxfleurs.fr/), a small S3-compatible store, so you don't need to set anything up.
+
+<Steps>
+
+1. **Clone and start**
+
+    ```sh
+    git clone https://github.com/xz3dev/quacklytics.git
+    cd quacklytics
+    docker compose up --build
+    ```
+
+2. **Register the administrator.** Open [`http://localhost:3000`](http://localhost:3000) and create the first account.
+
+    <Aside type="caution" title="Only one account">
+        Registration closes after the first account. Whoever registers first becomes the administrator.
+    </Aside>
+
+3. **Create a project.** Then open its **Ingestion** page to copy an ingestion key and add your site's origin under **Allowed origins**.
+
+4. **Send data.** Continue with [Sending data](/guides/send-data/).
+
+</Steps>
+
+<Aside type="tip" title="localhost vs. 127.0.0.1">
+    Sign-in only works on the exact `APP_ORIGIN`. With Docker that's `http://localhost:3000`; from source it's `http://127.0.0.1:3000`.
+</Aside>
+
+Data is kept in Docker volumes between restarts. To start over, run `docker compose down -v`.
+
+## Running from source
+
+<Tabs>
+<TabItem label="Bun">
+
+Requires [Bun](https://bun.sh) **1.3.4** and Docker (for local S3 storage).
+
+```sh
+bun install --frozen-lockfile
+cp .env.example apps/web/.env.local
+bun run storage:up   # starts Garage on http://127.0.0.1:3900
+bun run dev
+```
+
+Open [`http://127.0.0.1:3000`](http://127.0.0.1:3000). Stop the storage again with `bun run storage:down`.
+
+</TabItem>
+<TabItem label="Demo data">
+
+Fill a local project with a year of realistic activity:
+
+```sh
+QUACKLYTICS_API_KEY=your-local-key bun run seed:dev
+```
+
+Or create a new demo project with every chart type configured:
+
+```sh
+QUACKLYTICS_PASSWORD=your-local-password bun run seed:dev --email you@example.com
+```
+
+Run `bun run seed:dev --help` for more options.
+
+</TabItem>
+</Tabs>
+
+<CardGrid>
+    <LinkCard title="Sending data" description="Track your first events." href="/guides/send-data/" />
+    <LinkCard title="Production deployment" description="Run Quacklytics for real." href="/start-here/production/" />
+</CardGrid>

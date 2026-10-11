@@ -1,6 +1,6 @@
 # Orbit development data
 
-Orbit is a fictional team project-management product. The generator sends real HTTP batches through `/api/ingest`, exercising validation, SQLite persistence, schema inference and Parquet export. It never writes databases directly.
+Orbit is a fictional team project-management product with a marketing website and a web app at `https://orbit.example`. The generator simulates its traffic as the Quacklytics SDKs would record it and sends it in the SDK's versioned wire format (`protocolVersion: 1`) through `/api/backfill`, exercising validation, identity linking, SQLite persistence, schema inference and Parquet export. It never writes databases directly.
 
 Start the local application with `bun run dev` and register your administrator in the browser first.
 
@@ -17,7 +17,7 @@ unset QUACKLYTICS_PASSWORD
 
 The `read` example uses zsh, the development workspace's shell. Alternatively set `QUACKLYTICS_PASSWORD` in your shell/environment before running the command.
 
-This creates a **new Orbit demo project**, sends its events, creates six configured insights, and sets the **Chart playground** dashboard as its home. The project automatically loads all generated months into browser queries. The command prints the dashboard URL. It does not register or modify administrator accounts.
+This creates a **new Orbit demo project**, sends its events, creates six configured insights, and sets the **Chart playground** dashboard as its home. The project's default **Web Analytics Overview** dashboard fills from the same data. The project automatically loads all generated months into browser queries. The command prints the dashboard URL. It does not register or modify administrator accounts.
 
 ## Development dashboard template
 
@@ -44,43 +44,57 @@ bun run seed:dev --help
 QUACKLYTICS_API_KEY=your-local-key bun run seed:dev --url http://127.0.0.1:3000 --users 300 --days 90 --seed 123
 ```
 
-Defaults: **250 fictional users per chart family**, **365 complete UTC days ending yesterday**, random seed **42**. Bounds: 20–1000 users, 14–365 days. Use at least 60 days to compare this month's revenue with the prior month. Match `--url` to your application's configured origin. Only loopback origins are accepted.
+Defaults: **250 users who sign up**, plus ten times as many website visitors who never do, over **365 complete UTC days ending yesterday**, random seed **42**. Bounds: 20–1000 users, 14–365 days. Use at least 60 days to compare this month's revenue with the prior month. Match `--url` to your application's configured origin. Only loopback origins are accepted.
 
-The defaults generate roughly 130,000 events (about 350 per day), similar daily volume to the previous 200-user, 60-day defaults. Actual counts vary with the calendar and seed.
+The defaults generate roughly 140,000 events (about 380 per day), growing over the year. Actual counts vary with the calendar and seed.
 
-A fixed seed reproduces the activity distribution for the same date/users/days. IDs are fresh each run: repeated runs intentionally add separate datasets, rather than silently overwriting or deleting existing events. Every event has `demo_product: "Orbit"`, `demo_run` (printed by the command), and `chart_target`. Chart families use separate actor identities so navigation and funnel sequences remain independent. Within each family, users keep stable identities across days and sessions.
+A fixed seed reproduces the activity distribution for the same date/users/days. IDs are fresh each run: repeated runs intentionally add separate datasets, rather than silently overwriting or deleting existing events. Like real SDK traffic, events carry no demo-specific markers; use `--email` to keep a dataset in its own project.
 
-## Filterable profiles
+## What the SDK would send
 
-Every event includes a stable user profile sampled with its own weighted distribution:
+The site is instrumented like the documentation recommends: `autocapture: true` and `allowedQueryParameters: ["utm_source", "utm_medium", "utm_campaign"]`. Every browser event has the SDK's `$context` (`sdk`, `page` with `url`, `path`, `title`, `referrer`, `pageViewId` and, for in-app navigation, `previousUrl`; `browser`, `os`, `deviceType`, `language`, `timezone`, `viewport`) and the `$country` that ingestion derives from the visitor's address.
 
-| Property                | Approximate share of users                                                     |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `plan`                  | starter 35%, team 50%, business 15%                                            |
-| `country`               | Germany 32%, United States 27%, United Kingdom 18%, France 14%, Netherlands 9% |
-| `source`                | organic 42%, direct 28%, referral 19%, paid_search 11%                         |
-| `browser`               | Chrome 54%, Safari 32%, Firefox 8%, Edge 6%                                    |
-| `os`                    | Windows 36%, macOS 26%, iOS 20%, Android 10%, Linux 8%                         |
-| `device` / `deviceType` | desktop 70%, mobile 25%, tablet 5%                                             |
-| `userAgent`             | Eight matching browser/OS/device combinations, with weights from 5% to 30%     |
+- **Visitors** arrive from search (Google, Bing, DuckDuckGo), direct traffic, referrals (Hacker News, Product Hunt, Reddit, GitHub, G2), social networks, a Google Ads campaign and a newsletter (the latter two with UTM parameters), landing on the home page, pricing, features, blog posts or docs. Most bounce or browse a few pages; some return on later days. Each browser keeps one `anonymousId` and starts a new `sessionId` per visit.
+- **Sign-ups** research the site, view pricing, then sign up. `identify(userId, traits)` links their earlier anonymous browsing (traits: `name`, `email`, `plan`, `company_size`, `signup_method`); from then on the browser's events carry `userId`. Some later log in on a phone, which identifies a second browser as the same user.
+- **The app** (`/app`, a single-page application) is loaded directly, from email notifications or Slack links. Users open project boards and tasks, and record custom events. Engaged teams keep returning; casual users fade, and unconverted trials stop after 14 days.
+- **Billing** events come from Orbit's server: `invoice_paid` and failed-renewal `subscription_cancelled` carry `userId` and a context with only `sdk` — no page, session or country.
+- **Clicks** (`$click`) record `tagName`, `attributes` (`role`, `type`, `data-ql-id`) and, for links, `href`. The home page's sign-up button uses `data-ql-event`, so its click is named `signup_cta_clicked`.
 
-These are fictional traffic targets. Sampling varies with `--seed` and user count; small runs may omit rare profiles. Event shares also reflect how active each user is. Browser, OS, device and user-agent values agree with one another and remain stable across a user's events. `deviceType` matches the tracker property name; `device` remains available for existing charts.
+| Custom event             | Properties                                                     |
+| ------------------------ | -------------------------------------------------------------- |
+| `pricing_plan_selected`  | `plan`, `billing_cycle`                                        |
+| `newsletter_subscribed`  | `location`                                                     |
+| `signed_up`              | `method` (email, google, github)                               |
+| `workspace_created`      | `template`                                                     |
+| `teammate_invited`       | `role`, `invites`, `location`                                  |
+| `task_created`           | `source`, `task_kind`                                          |
+| `task_completed`         | `task_kind`, `via`                                             |
+| `comment_added`          | `mentions`                                                     |
+| `search_performed`       | `results`                                                      |
+| `feature_used`           | `feature`, `plan`                                              |
+| `report_exported`        | `format`                                                       |
+| `automation_created`     | `trigger`                                                      |
+| `subscription_started`   | `plan`, `billing_cycle`, `amount`, `currency` (EUR)            |
+| `invoice_paid` (server)  | `amount`, `currency`, `plan`, `billing_cycle`, `upgraded_from` |
+| `subscription_cancelled` | `plan`, `reason`                                               |
 
-Try filtering `browser = Safari`, combining `country = Germany` with `plan = team`, or grouping a breakdown by `os` or `userAgent`. Scenario constants such as currency and trial length keep their existing meaning.
+Prices are €9/€29/€79 per month for starter/team/business, or ten months' price per year. Visitors come from 15 countries, led by Germany and the United States, with matching languages, timezones and local activity hours. Browsers, operating systems, devices and viewports agree with each browser's user agent and stay stable per browser. Declined consent (`anonymous: true`) is not simulated: the server derives those visitors from the importer's own address.
 
 ## Chart recipes
 
-Set the date range to include the generated history (default last 365 days). Filter by the event names below; add a `demo_run` filter if you sent multiple datasets into one project.
+Set the date range to include the generated history (default last 365 days). Property paths into the context use JSON paths, e.g. `$."$context".page.path` or `$."$context".browser`.
 
 Calendar ranges such as Last 30 days include complete UTC days ending yesterday. The value comparison uses the preceding, equally long period with no shared boundary events. Use Today or Last 24 hours to include live activity.
 
-| Chart     | Events / configuration                                                                                                           | What to expect                                                                                                                         |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Trend     | Two series counting `demo.trend.workspace_opened` and `demo.trend.task_completed`, bucket Daily                                  | Growing adoption, quieter weekends, a short campaign bump, more completed tasks than visits                                            |
-| Value     | `SUM(amount)` where event type is `demo.value.invoice_paid`, last 30 days                                                        | EUR subscription revenue at €9/€29/€79, monthly renewals, some churn and upgrades; previous-period comparison with 60+ days            |
-| Breakdown | Count `demo.breakdown.feature_used`, group by property `feature`                                                                 | Board dominates; larger plans favor Reports and Automations. Also try `plan`, `country`, `device`, `source`                            |
-| Funnel    | `demo.funnel.pricing_viewed` → `demo.funnel.trial_started` → `demo.funnel.teammate_invited` → `demo.funnel.subscription_started` | Sequential drop-off, roughly 100% → 76% → 49% → 31%, with timestamps ten minutes apart                                                 |
-| Retention | Activation: `demo.retention.workspace_created`; return: `demo.retention.workspace_active`; daily cohorts; 14 periods             | Guaranteed activation-day activity, loyal teams, decaying casual usage and quieter weekends; recent cohorts have fewer elapsed periods |
-| Path      | Anchor `demo.path.home`; step field `event_type`; forward, five steps                                                            | Branches through project_list → board → task_detail, reports → export, and settings → help; includes backtracking                      |
+| Chart     | Events / configuration                                                                                                           | What to expect                                                                                                  |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Trend     | Count `$pageview` (line) and `task_completed` (bar), bucket Daily                                                                | Growing traffic, quieter weekends, a short paid campaign bump                                                   |
+| Value     | `SUM(amount)` where event type is `invoice_paid`, last 30 days                                                                   | EUR subscription revenue with renewals, churn and upgrades; previous-period comparison with 60+ days            |
+| Breakdown | Count `feature_used`, group by property `feature`                                                                                | Board dominates; larger plans use Reports and Automations more. Also try `plan`                                 |
+| Funnel    | `$pageview` with `$."$context".page.path` = `/pricing` → `signed_up` → `teammate_invited` → `subscription_started`, unique users | Most pricing visitors never sign up; engaged teams invite colleagues and subscribe                              |
+| Retention | Activation `workspace_created`; return `$pageview` with page path `LIKE /app%`; daily cohorts; 14 periods                        | Loyal teams keep returning, casual users decay, expired trials drop out after two weeks                         |
+| Path      | Anchor `$pageview` on `/`; step field `$."$context".page.path`; forward, five steps                                              | Visitors move to pricing, features, blog posts and sign-up. Clicks share their page's path, so pages can repeat |
 
-Percentages vary with the seed and sample size. All events occur in the past. The script sends timestamp-ordered batches of 1,000 using the tracker client's existing stable-payload retry behavior. Bulk batches defer new Parquet snapshots until the final batch; if ingestion stops, the delay expires 10 seconds after the last committed batch and the next catalog refresh or background export publishes the data. SQLite commits retain WAL and `synchronous=FULL` durability throughout. The command reports ingestion time and events per second. If a command is interrupted, committed batches remain; rerunning starts a new dataset. No cleanup is performed.
+The default Web Analytics Overview dashboard shows visitors, pageviews, sessions, countries, top pages, referrers, custom events, devices, browsers and operating systems from the same events.
+
+Percentages vary with the seed and sample size. All events occur in the past. The script sends timestamp-ordered SDK batches of 1,000 operations, retrying with the same request ID like the SDK does. Each `identify` is sent no later than the events it attributes. SQLite commits retain WAL and `synchronous=FULL` durability throughout. The command reports ingestion time and operations per second. If a command is interrupted, committed batches remain; rerunning starts a new dataset. No cleanup is performed.

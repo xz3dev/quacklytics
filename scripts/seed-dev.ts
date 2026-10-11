@@ -1,16 +1,21 @@
 import { parseArgs } from "node:util";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { createClient } from "../packages/tracker/src/index";
+import {
+  ingestAcknowledgment,
+  sdkRequest,
+} from "../packages/tracker/src/protocol";
 import {
   dashboard,
   insight,
   project,
   apiKey,
 } from "../packages/contracts/src/index";
-import { generateOrbit, orbitInsights } from "./demo/orbit";
+import { generateOrbit, orbitInsights, visitorsPerSignup } from "./demo/orbit";
 
-const help = `Generate realistic Orbit project-management activity through the real local ingestion API.
+const help = `Generate realistic SDK traffic for Orbit, a fictional project-management product,
+through the real local ingestion API: website and app pageviews, autocaptured clicks,
+identified users and custom events, in the browser and server SDKs' wire format.
 
 Existing project (create a key in Settings):
   QUACKLYTICS_API_KEY=... bun run seed:dev
@@ -22,7 +27,8 @@ Options:
   --url URL       Local server origin (default http://127.0.0.1:3000)
   --api-key KEY   Existing project's ingestion key; or QUACKLYTICS_API_KEY
   --email EMAIL   Admin login; or QUACKLYTICS_EMAIL (creates a new demo project)
-  --users N       Fictional users per chart family (default 250; 20–1000)
+  --users N       Fictional users who sign up (default 250; 20–1000); ten times
+                  as many visitors browse the website without signing up
   --days N        Complete UTC days of history, ending yesterday (default 365; 14–365)
   --seed N        Random seed for reproducible distributions (default 42)
   --help          Show this message
@@ -130,38 +136,69 @@ async function main() {
     console.log(`Created project: ${created.name} (${projectId})`);
   }
   const runId = randomUUID();
-  const { events, counts, from, to } = generateOrbit({
+  const { operations, counts, from, to } = generateOrbit({
     users,
     days,
     seed,
     runId,
   });
   console.log(
-    `Orbit: ${users} fictional users per chart family, ${days} days, seed ${seed}.`,
+    `Orbit: ${users} fictional sign-ups and ${users * visitorsPerSignup} other visitors, ${days} days, seed ${seed}.`,
   );
   console.log(
-    `${from} → ${to}\nSending ${events.length.toLocaleString()} events to ${origin.origin}/api/ingest (run ${runId})…`,
+    `${from} → ${to}\nSending ${(operations.length - (counts.get("identify") ?? 0)).toLocaleString()} events and ${(counts.get("identify") ?? 0).toLocaleString()} identify calls to ${origin.origin}/api/backfill (run ${runId})…`,
   );
-  const client = createClient({
-    hostname: origin.origin,
-    apiKey: key,
-    autoTrackPageviews: false,
-  });
+  // History may reach months already archived to S3, which only backfill accepts.
+  const endpoint = new URL("/api/backfill", origin);
+  async function deliver(body: string) {
+    for (let attempt = 0; ; attempt++) {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-KEY": key ?? "" },
+        body,
+        signal: AbortSignal.timeout(60000),
+      });
+      if (response.ok) return ingestAcknowledgment.parse(await response.json());
+      // Request IDs make retries idempotent, exactly as in the SDK.
+      if ((response.status !== 429 && response.status < 500) || attempt === 4)
+        throw new Error(
+          `POST /api/backfill: HTTP ${response.status} ${await response.text()}`,
+        );
+      const retryAfter = Number(response.headers.get("Retry-After"));
+      const delay =
+        Number.isFinite(retryAfter) && retryAfter > 0
+          ? retryAfter * 1000
+          : 250 * 2 ** attempt;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
   const batchSize = 1000;
   const started = performance.now();
-  for (let offset = 0; offset < events.length; offset += batchSize) {
-    await client.sendBatch(events.slice(offset, offset + batchSize), {
-      signal: AbortSignal.timeout(60000),
-      deferExport: offset + batchSize < events.length,
-    });
-    if (offset % 10000 === 0 || offset + batchSize >= events.length)
+  let committed = 0;
+  for (let offset = 0; offset < operations.length; offset += batchSize) {
+    const batch = operations.slice(offset, offset + batchSize);
+    const result = await deliver(
+      JSON.stringify(
+        sdkRequest.parse({
+          protocolVersion: 1,
+          requestId: randomUUID(),
+          operations: batch,
+        }),
+      ),
+    );
+    if (result.committed + result.duplicates !== batch.length)
+      throw new Error(
+        `The server rejected ${batch.length - result.committed - result.duplicates} operations`,
+      );
+    committed += result.committed;
+    if (offset % 20000 === 0 || offset + batchSize >= operations.length)
       console.log(
-        `  ${Math.min(offset + batchSize, events.length).toLocaleString()} / ${events.length.toLocaleString()} committed`,
+        `  ${Math.min(offset + batchSize, operations.length).toLocaleString()} / ${operations.length.toLocaleString()} committed`,
       );
   }
   const seconds = (performance.now() - started) / 1000;
   console.log(
-    `Imported in ${seconds.toFixed(1)}s (${Math.round(events.length / seconds).toLocaleString()} events/s).`,
+    `Imported in ${seconds.toFixed(1)}s (${Math.round(committed / seconds).toLocaleString()} operations/s).`,
   );
   if (projectId) {
     const ids: number[] = [];
@@ -181,18 +218,18 @@ async function main() {
       "PUT",
     );
     await api(`/api/${projectId}/dashboards/${created.id}/home`, {}, "PUT");
-    await api(`/api/${projectId}/events/catalog`);
+    await api(`/api/${projectId}/events/catalog/gen`, {});
     console.log(
       `\nOpen your demo dashboard: ${origin.origin}/app/${projectId}/dashboards/${created.id}`,
     );
   } else console.log("\nOpen or reload your project to query the latest data.");
-  console.log("\nEvents by chart target:");
-  for (const [name, count] of [...counts].sort(([a], [b]) =>
-    a.localeCompare(b),
+  console.log("\nOperations by type:");
+  for (const [name, count] of [...counts].sort(
+    ([a, x], [b, y]) => y - x || a.localeCompare(b),
   ))
-    console.log(`  ${name.padEnd(38)} ${count}`);
+    console.log(`  ${name.padEnd(24)} ${count.toLocaleString()}`);
   console.log(
-    "\nBreakdown dimensions: feature, plan, country, device, source, browser, os, userAgent (also deviceType). Revenue: SUM(amount) for demo.value.invoice_paid.\nFilter chart_target or demo_run to isolate a scenario. See scripts/demo/README.md for chart recipes.",
+    "\nEvents carry the SDK's $context (page, browser, os, deviceType, language, timezone, viewport) and $country. See scripts/demo/README.md for chart recipes.",
   );
 }
 main().catch((error: unknown) => {

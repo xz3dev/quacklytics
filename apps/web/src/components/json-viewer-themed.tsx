@@ -24,15 +24,20 @@ const theme: NamedColorspace = {
 interface Props {
   json: unknown;
   rootName?: string;
+  defaultInspectDepth?: number;
 }
 
-export function JsonViewerThemed({ json, rootName }: Props) {
+export function JsonViewerThemed({
+  json,
+  rootName,
+  defaultInspectDepth = 0,
+}: Props) {
   return (
     <>
       <JsonViewer
         value={json}
         theme={theme}
-        defaultInspectDepth={0}
+        defaultInspectDepth={defaultInspectDepth}
         rootName={rootName ?? false}
       />
     </>

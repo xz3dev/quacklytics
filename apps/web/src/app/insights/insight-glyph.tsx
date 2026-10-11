@@ -64,6 +64,30 @@ export function InsightGlyph({
                 />
               )),
           )}
+        {type === "Map" && (
+          <g fill="currentColor">
+            <path
+              d="M8 18c6-8 20-10 28-5 4 3 2 9-3 11-3 1-4 5-8 7-5 2-10-1-12-5-3-3-7-4-5-8Z"
+              opacity=".8"
+            />
+            <path
+              d="M27 35c5-1 9 2 9 7 0 6-4 12-7 17-2-4-5-9-5-14 0-4 0-9 3-10Z"
+              opacity=".45"
+            />
+            <path
+              d="M46 14c6-5 18-6 28-4 9 2 18 6 19 12 0 5-6 7-11 8-3 4-9 4-13 2-4 3-9 1-11-3-5-2-15-9-12-15Z"
+              opacity=".6"
+            />
+            <path
+              d="M50 33c4-1 8 1 9 6 1 6-2 11-6 14-3-3-6-8-6-13 0-3 1-6 3-7Z"
+              opacity=".3"
+            />
+            <path
+              d="M78 44c4-2 10-1 12 3 1 4-3 7-8 7-4 0-7-2-7-5 0-2 1-4 3-5Z"
+              opacity=".5"
+            />
+          </g>
+        )}
         {type === "Path" && (
           <g stroke="currentColor" strokeWidth="2">
             <path d="M17 32h24m0 0V12h35M41 32v20h35" opacity=".5" />

@@ -1,3 +1,4 @@
+import { ChartEmptyState } from "@/components/chart-empty-state";
 import { insightMetricUnit } from "@/lib/metric-value";
 import { useState } from "react";
 import { ArrowRight, ArrowDownRight, Clock3 } from "lucide-react";
@@ -47,7 +48,7 @@ function BreakdownLabel({ name }: { name: string }) {
 
 function UngroupedFunnelInsightResults(props: Props) {
   if (!props.insight.config.funnel.steps?.length)
-    return <p>Funnel requires at least one step defined.</p>;
+    return <ChartEmptyState insight={props.insight} />;
   return <ConfiguredFunnel {...props} />;
 }
 function ConfiguredFunnel({ insight }: Props) {
@@ -107,6 +108,8 @@ function ConfiguredFunnel({ insight }: Props) {
     });
     return { name: breakdown ? breakdownLabel(value) : countLabel, points };
   });
+  if (series.every((entry) => entry.points.every((point) => point.value === 0)))
+    return <ChartEmptyState insight={insight} />;
   return (
     <div className="space-y-4">
       <FunnelInsightChart

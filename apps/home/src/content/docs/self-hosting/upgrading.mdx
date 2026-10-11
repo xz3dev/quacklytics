@@ -1,0 +1,32 @@
+---
+title: Upgrading
+description: Update Quacklytics to a new version.
+sidebar:
+  order: 4
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+## Update to a new version
+
+<Steps>
+
+1. **Back up first.** Follow [Backups](/self-hosting/backups/).
+
+2. **Rebuild and restart:**
+
+    ```sh
+    docker compose up -d --build
+    ```
+
+    Compose re-fetches the repository when building from a git URL. Pin a commit (`https://github.com/xz3dev/quacklytics.git#<commit-sha>`) for reproducible deployments.
+
+3. **Done.** Database migrations apply automatically when the backend handles its first API request. In Docker, that's the health check, about 30 seconds after start.
+
+</Steps>
+
+<Aside type="tip">
+    Check the container logs (`docker compose logs -f analytics`) after an upgrade. If a migration fails, the UI still loads, but the API returns `503` and the container turns unhealthy. Restore your backup and stay on the previous version.
+</Aside>
+
+To go back to an older version, roll back its migrations first. See [Database Migrations](/self-hosting/migrations/).

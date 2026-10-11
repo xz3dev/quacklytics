@@ -71,5 +71,7 @@ export function insightMetricUnit(
     case "Path":
       // Paths count transitions, including repeated transitions by the same actor.
       return "transition";
+    case "Map":
+      return aggregationUnit(insight.config.map.aggregation);
   }
 }

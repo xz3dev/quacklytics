@@ -7,10 +7,15 @@ module.exports = {
       boxShadow: { floating: "var(--shadow-floating)" },
       animation: {
         spin: "spin 1s linear infinite",
+        "soft-ping": "soft-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       keyframes: {
+        "soft-ping": {
+          "0%": { opacity: "0.5", transform: "scale(1)" },
+          "80%, 100%": { opacity: "0", transform: "scale(2.2)" },
+        },
         spin: {
           "0%": {
             transform: "rotate(0deg)",
