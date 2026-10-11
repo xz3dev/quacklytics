@@ -82,7 +82,7 @@ The included Compose file starts Garage and the app for local development, using
 
 ## Releases
 
-Publishing a GitHub release with a new `vX.Y.Z` tag runs full CI on the tagged commit, then publishes `@quacklytics/client@X.Y.Z` to npm (dist-tag `latest`; `vX.Y.Z-rc.N` publishes to `next`), attaches the package tarball to the release, and pushes `ghcr.io/xz3dev/quacklytics/{amd64,arm64}` images tagged `X.Y.Z`, `X.Y` and `latest`. The tag is the only version source: the workflow stamps it into the client's `package.json` and `SDK_VERSION`, so no version bump commit is needed.
+Publishing a GitHub release with a new `vX.Y.Z` tag runs full CI on the tagged commit, then publishes `@quacklytics/client@X.Y.Z` to npm (dist-tag `latest`; `vX.Y.Z-rc.N` publishes to `next`), attaches the package tarball to the release, and pushes the multi-arch (amd64 + arm64) image `ghcr.io/xz3dev/quacklytics` tagged `X.Y.Z`, `X.Y` and `latest`. The tag is the only version source: the workflow stamps it into the client's `package.json` and `SDK_VERSION`, so no version bump commit is needed.
 
 Every push to `master` publishes a nightly: `@quacklytics/client@<next patch>-nightly.sha-<commit>` on the npm `nightly` dist-tag and images tagged `nightly` and the full commit SHA. `bun run check:client` packs the client, installs it into a clean project and imports every entrypoint.
 
