@@ -162,4 +162,4 @@ jobs:
           sources=()
           for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
           docker buildx imagetools create "${tags[@]}" "${sources[@]}"
-      - run: docker buildx imagetools inspect "$IMAGE:$(jq -r '.version' <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+      - run: docker buildx imagetools inspect "$IMAGE:$DOCKER_METADATA_OUTPUT_VERSION"
