@@ -96,6 +96,7 @@ export function MapInsightChart({ insight, showTable = true }: Props) {
         total={total}
         metricUnit={metricUnit}
         label={insight.name ?? "Map"}
+        attribution={geoip === "db-ip"}
       />
       {offMap.length > 0 && (
         <p className="text-xs text-muted-foreground">
@@ -103,18 +104,6 @@ export function MapInsightChart({ insight, showTable = true }: Props) {
           {offMap
             .map((row) => `${row.label} (${row.value.toLocaleString("en-US")})`)
             .join(", ")}
-        </p>
-      )}
-      {geoip === "db-ip" && (
-        <p className="text-[11px] text-muted-foreground">
-          <a
-            href="https://db-ip.com"
-            target="_blank"
-            rel="noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            IP Geolocation by DB-IP
-          </a>
         </p>
       )}
       {showTable && (
@@ -153,12 +142,15 @@ function WorldMap({
   total,
   metricUnit,
   label,
+  attribution,
 }: {
   shapes: CountryShape[];
   rows: CountryValue[];
   total: number;
   metricUnit: MetricUnit;
   label: string;
+  /** Credit DB-IP, as its licence requires when it resolved the countries. */
+  attribution: boolean;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const values = useMemo(
@@ -276,7 +268,19 @@ function WorldMap({
           />
         )}
       </ChartSpace>
-      <Legend steps={steps} metricUnit={metricUnit} />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <Legend steps={steps} metricUnit={metricUnit} />
+        {attribution && (
+          <a
+            href="https://db-ip.com"
+            target="_blank"
+            rel="noreferrer"
+            className="ml-auto text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+          >
+            IP Geolocation by DB-IP
+          </a>
+        )}
+      </div>
     </div>
   );
 }

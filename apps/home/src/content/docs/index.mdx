@@ -36,19 +36,26 @@ Quacklytics stores recent events in **SQLite** on your server and moves history 
     </Card>
 </CardGrid>
 
-## Up and running in three steps
+## Up and running in four steps
 
 <Steps>
 
-1. **Start the server** locally with the [Local Setup](/start-here/local/), or [deploy to production](/start-here/production/).
+1. **Clone the repository.**
+
+    ```sh
+    git clone https://github.com/xz3dev/quacklytics.git
+    cd quacklytics
+    ```
+
+2. **Start the server** locally with the [Local Setup](/start-here/local/), or [deploy to production](/start-here/production/).
 
     ```sh
     docker compose up --build
     ```
 
-2. **Create a project** at `http://localhost:3000`, then copy its ingestion key from the **Ingestion** page.
+3. **Create a project** at `http://localhost:3000`, then copy its ingestion key from the **Ingestion** page.
 
-3. **Send your first event** with the [TypeScript client](/guides/send-data/) or plain HTTP.
+4. **Send your first event** with the [TypeScript client](/guides/send-data/) or plain HTTP.
 
     ```ts
     await client.track("signup", { plan: "pro" });
