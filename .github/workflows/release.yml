@@ -1,0 +1,121 @@
+# Nightly: every push to master publishes @quacklytics/client@<next>-nightly.sha-<sha> (npm dist-tag
+# "nightly") and Docker images tagged "nightly" and <sha>.
+# Release: publishing a GitHub release with a vX.Y.Z tag runs full CI, then publishes the client at X.Y.Z
+# ("latest", or "next" for vX.Y.Z-prerelease) and Docker images tagged X.Y.Z, X.Y and latest.
+name: Release
+on:
+  push:
+    branches: [master]
+  release:
+    types: [published]
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      dist-tag: ${{ steps.version.outputs.dist-tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.4
+      - run: bun install --frozen-lockfile
+      - id: version
+        run: bun scripts/set-client-version.ts ${{ github.event_name == 'release' && 'release' || 'nightly' }}
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+
+  # Nightlies rely on the CI run already triggered by the push; releases re-run it on the tagged commit.
+  ci:
+    needs: version
+    if: github.event_name == 'release'
+    uses: ./.github/workflows/ci.yml
+
+  client-check:
+    needs: version
+    uses: ./.github/workflows/client.yml
+
+  publish-client:
+    needs: [version, ci, client-check]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing (OIDC) requires npm 11.5.1 or newer.
+      - run: npm install -g npm@11
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/set-client-version.ts ${{ github.event_name == 'release' && 'release' || 'nightly' }}
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+      - run: bun run check:client
+      - id: pack
+        working-directory: packages/tracker
+        run: echo "tarball=$RUNNER_TEMP/$(npm pack --json --pack-destination "$RUNNER_TEMP" | jq -r '.[0].filename')" >> "$GITHUB_OUTPUT"
+      # Authenticates through npm trusted publishing (OIDC); no token secret is used.
+      - run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public --tag ${{ needs.version.outputs.dist-tag }}
+      - if: github.event_name == 'release'
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.pack.outputs.tarball }}" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  docker:
+    needs: [version, ci]
+    if: ${{ !failure() && !cancelled() }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/xz3dev/quacklytics/${{ matrix.arch }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=nightly,enable=${{ github.event_name == 'push' }}
+            type=sha,format=long,prefix=
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ needs.version.outputs.dist-tag == 'latest' }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          platforms: linux/${{ matrix.arch }}
+          provenance: false
+          file: Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

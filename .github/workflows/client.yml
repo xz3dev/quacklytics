@@ -1,0 +1,32 @@
+name: Client package
+on:
+  push:
+    branches: [master]
+    paths: &client-paths
+      - packages/tracker/**
+      - scripts/check-client-package.ts
+      - scripts/set-client-version.ts
+      - bun.lock
+      - .github/workflows/client.yml
+      - .github/workflows/release.yml
+  pull_request:
+    paths: *client-paths
+  workflow_call:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - run: bun run --cwd packages/tracker typecheck
+      - run: bunx eslint packages/tracker
+      # Packs the tarball, installs it into a clean project and imports every entrypoint.
+      - run: bun run check:client
+      - run: bunx publint@0.3.25 packages/tracker
+      - run: bunx @arethetypeswrong/cli@0.18.5 --pack packages/tracker --profile esm-only

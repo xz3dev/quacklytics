@@ -19,6 +19,7 @@
     "test:unit": "bun test tests/unit",
     "check:boundaries": "bun scripts/check-boundaries.ts",
     "check:imports": "bun scripts/check-boundaries.ts --source-only",
+    "check:client": "bun scripts/check-client-package.ts",
     "check": "bun run check:imports && bun run build && bun run typecheck && bun run lint && bun run check:boundaries && bun run test:unit && bun run test:e2e",
     "format": "prettier --write apps/web/src packages tests scripts apps/web/server.ts",
     "build:docs": "bun run --cwd packages/tracker build && bun run --cwd apps/home build",

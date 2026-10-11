@@ -2,6 +2,22 @@
   "name": "@quacklytics/client",
   "version": "0.2.0",
   "description": "First-party browser and server analytics client for Quacklytics.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xz3dev/quacklytics.git",
+    "directory": "packages/tracker"
+  },
+  "homepage": "https://github.com/xz3dev/quacklytics/tree/master/packages/tracker#readme",
+  "bugs": {
+    "url": "https://github.com/xz3dev/quacklytics/issues"
+  },
+  "keywords": [
+    "analytics",
+    "tracking",
+    "consent",
+    "quacklytics"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,6 +46,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
