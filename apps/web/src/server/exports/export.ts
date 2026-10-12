@@ -135,7 +135,7 @@ export function exportProject(db: Database, project: string) {
       setSetting(db, "exported_revision", "0");
       db.query("DELETE FROM settings WHERE key='export_checked_day'").run();
       db.query("DELETE FROM settings WHERE key='exported_at'").run();
-    })();
+    }).immediate();
   // Discover new closed days once per UTC day, including days closed while down.
   // Today's ingestion does not dirty history or cause S3 writes.
   const checkedDay = z
@@ -174,7 +174,7 @@ export function exportProject(db: Database, project: string) {
           ).run(partition, revision);
       }
       setSetting(db, "export_checked_day", String(dayStart));
-    })();
+    }).immediate();
   }
   if (!db.query("SELECT partition FROM dirty_partitions LIMIT 1").get())
     return Promise.resolve(readCatalog(db, project));
@@ -299,7 +299,7 @@ async function writeExport(db: Database, project: string) {
           }
           snapshots.push({ ...part, live, start, end, stored: storedPath });
         }
-      })();
+      }).immediate();
     } finally {
       appender.closeSync();
     }
@@ -420,7 +420,7 @@ async function writeExport(db: Database, project: string) {
       db.query("UPDATE jobs SET error=NULL").run();
       setSetting(db, "exported_revision", String(revision));
       setSetting(db, "exported_at", new Date().toISOString());
-    })();
+    }).immediate();
     return readCatalog(db, project);
   } finally {
     conn?.closeSync();

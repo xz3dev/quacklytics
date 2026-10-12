@@ -32,7 +32,7 @@ export function anonymousVisitors(
           .query("SELECT day,salt FROM anonymous_salts WHERE day IN (?,?)")
           .all(today, yesterday),
       );
-  })();
+  }).immediate();
   const visitor = (day: string) => {
     const salt = salts.find((row) => row.day === day)?.salt;
     return salt

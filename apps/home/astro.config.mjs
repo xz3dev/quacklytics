@@ -32,6 +32,15 @@ export default defineConfig({
         plugins: [
             tailwindcss()
         ],
+        // The injected tracker is a linked workspace package, so Vite's startup scan misses
+        // its dependencies and would otherwise reload the first page after discovering them.
+        optimizeDeps: {
+            include: [
+                '@quacklytics/client > preact',
+                '@quacklytics/client > preact/jsx-runtime',
+                '@quacklytics/client > zod',
+            ],
+        },
     },
     integrations: [
         quacklyticsHomepageTracking(),

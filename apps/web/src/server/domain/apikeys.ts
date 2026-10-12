@@ -16,6 +16,6 @@ export function createApiKey(projectId: string) {
     );
     storeApiKeySecret(keyId, secret);
     return keyId;
-  })();
+  }).immediate();
   return { id, secret };
 }

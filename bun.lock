@@ -82,6 +82,7 @@
         "date-fns": "^4.1.0",
         "emoji-picker-react": "^4.22.2",
         "iso8601-duration": "^2.1.2",
+        "kysely": "^0.29.6",
         "lucide-react": "^0.469.0",
         "mmdb-lib": "^3.0.3",
         "next-themes": "^0.4.4",

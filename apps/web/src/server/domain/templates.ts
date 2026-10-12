@@ -74,12 +74,12 @@ export function createTemplate(
       },
       target,
     );
-  })();
+  }).immediate();
 }
 export function restoreDefaultDashboard(db: Database) {
   return db.transaction(() => {
     if (listDashboards(db).length)
       throw new RequestError(409, "Dashboards already exist");
     return createTemplate(db, "web_analytics", true);
-  })();
+  }).immediate();
 }

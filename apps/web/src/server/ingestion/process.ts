@@ -448,7 +448,7 @@ export function processIngestion(
       JSON.stringify(result),
     );
     return result;
-  })();
+  }).immediate();
 }
 function mergePerson(
   db: Database,

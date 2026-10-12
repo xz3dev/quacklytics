@@ -5,6 +5,19 @@ on:
   pull_request:
   workflow_call:
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.4
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run check:boundaries
+      - run: bun run test:unit
   e2e:
     runs-on: ubuntu-latest
     steps:
@@ -16,10 +29,6 @@ jobs:
       - run: cp .env.example apps/web/.env.local
       - run: bun run storage:up
       - run: bun run build
-      - run: bun run typecheck
-      - run: bun run lint
-      - run: bun run check:boundaries
-      - run: bun run test:unit
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
       - uses: actions/upload-artifact@v4

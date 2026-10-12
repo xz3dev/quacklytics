@@ -70,7 +70,7 @@ export function saveDashboard(db: Database, input: unknown, id?: number) {
       id,
     );
     return getDashboard(db, savedId);
-  })();
+  }).immediate();
 }
 export function setDashboardInsights(
   db: Database,
@@ -90,7 +90,7 @@ export function setDashboardInsights(
       },
       id,
     );
-  })();
+  }).immediate();
 }
 export function setDashboardLayout(
   db: Database,
@@ -111,12 +111,12 @@ export function setDashboardLayout(
         "Dashboard insights changed. Reload before adjusting the layout.",
       );
     return saveDashboard(db, { ...existing, layout }, id);
-  })();
+  }).immediate();
 }
 export function setHomeDashboard(db: Database, id: number) {
   return db.transaction(() =>
     saveDashboard(db, { ...getDashboard(db, id), home: true }, id),
-  )();
+  ).immediate();
 }
 export function deleteDashboard(db: Database, id: number) {
   getDashboard(db, id);

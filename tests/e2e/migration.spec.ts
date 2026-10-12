@@ -274,6 +274,14 @@ test("unrecoverable ingestion keys display an error without offering a truncated
   await expect(
     page.getByText(
       "This older key cannot be recovered. Create a new ingestion key to copy its full value.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  // The send-data examples need the same key, so they surface the failure too.
+  await expect(
+    page.getByText(
+      "Loading the ingestion key failed: This older key cannot be recovered. Create a new ingestion key to copy its full value.",
+      { exact: true },
     ),
   ).toBeVisible();
   await expect(
