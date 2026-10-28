@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { execFile } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -19,6 +19,8 @@ test("published image initializes beside a GeoIP cache, exports history, queries
   const container = `quacklytics-image-${suffix}`;
   const volume = `quacklytics-image-data-${suffix}`;
   const fixtures = mkdtempSync(join(tmpdir(), "quacklytics-image-"));
+  // The image runs as bun, which must be able to read this public test fixture.
+  chmodSync(fixtures, 0o755);
   writeFileSync(
     join(fixtures, "countries.mmdb"),
     countryDatabase({ "8.8.8.0/24": "US" }),
