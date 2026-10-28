@@ -26,8 +26,36 @@ test("published image initializes beside a GeoIP cache, exports history, queries
     countryDatabase({ "8.8.8.0/24": "US" }),
   );
   const endpoint = new URL(z.url().parse(process.env.S3_ENDPOINT));
-  if (["localhost", "127.0.0.1"].includes(endpoint.hostname))
-    endpoint.hostname = "host.docker.internal";
+  const networkArgs: string[] = [];
+  if (["localhost", "127.0.0.1"].includes(endpoint.hostname)) {
+    const garage = (
+      await docker(
+        "compose",
+        "-f",
+        "compose.dev.yml",
+        "ps",
+        "--quiet",
+        "garage",
+      )
+    ).trim();
+    const networks = z
+      .record(z.string(), z.unknown())
+      .parse(
+        JSON.parse(
+          await docker(
+            "inspect",
+            "--format",
+            "{{json .NetworkSettings.Networks}}",
+            garage,
+          ),
+        ),
+      );
+    const network = Object.keys(networks).at(0);
+    if (!network || Object.keys(networks).length !== 1)
+      throw new Error("Expected one development storage network");
+    networkArgs.push("--network", network);
+    endpoint.hostname = "garage";
+  }
   const ready = async () => {
     await expect
       .poll(async () => {
@@ -60,8 +88,7 @@ test("published image initializes beside a GeoIP cache, exports history, queries
       "--detach",
       "--name",
       container,
-      "--add-host",
-      "host.docker.internal:host-gateway",
+      ...networkArgs,
       "--publish",
       "127.0.0.1:4176:3000",
       "--mount",
@@ -209,9 +236,10 @@ test("published image initializes beside a GeoIP cache, exports history, queries
       401,
     );
   } catch (error) {
-    console.error(
-      await docker("logs", container).catch(() => "Container not created"),
+    const logs = await exec("docker", ["logs", container]).catch(
+      () => undefined,
     );
+    console.error(logs ? logs.stdout + logs.stderr : "Container not created");
     throw error;
   } finally {
     await docker("rm", "--force", container).catch(() => undefined);

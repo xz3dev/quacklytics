@@ -9,6 +9,10 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 ## Update to a new version
 
+<Aside type="caution" title="Upgrading to 0.4.0">
+    Version 0.4.0 introduces a new initial schema baseline and requires a fresh `DATA_DIR`. Databases from earlier releases are not migrated to this baseline. Preserve the old data directory and S3 objects separately before replacing an older installation.
+</Aside>
+
 <Steps>
 
 1. **Back up first.** Follow [Backups](/self-hosting/backups/).

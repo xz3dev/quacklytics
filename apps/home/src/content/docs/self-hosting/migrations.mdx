@@ -9,6 +9,8 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 Quacklytics uses two kinds of SQLite databases, and each has its own migrations:
 
+Version 0.4.0 starts a new schema baseline. Its migration commands do not convert databases from earlier releases; use a fresh `DATA_DIR` and preserve older data separately. See [Upgrading](/self-hosting/upgrading/).
+
 | Scope | File | Migrated when |
 | --- | --- | --- |
 | `app` | `/data/app.sqlite` | When the backend starts (on the first API request) |
