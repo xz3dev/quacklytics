@@ -64,38 +64,6 @@ export async function migrate(
       version INTEGER PRIMARY KEY, name TEXT NOT NULL, checksum TEXT NOT NULL,
       down_checksum TEXT NOT NULL, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`);
-    // Adopt the original single-version ledger only when its exact SQL checksum matches.
-    if (
-      db
-        .query(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='migration'",
-        )
-        .get()
-    ) {
-      const legacy = z
-        .array(z.object({ version: z.number(), checksum: z.string() }))
-        .parse(
-          db
-            .query("SELECT version, checksum FROM migration ORDER BY version")
-            .all(),
-        );
-      if (
-        legacy.length !== 1 ||
-        legacy[0]?.version !== 1 ||
-        legacy[0]?.checksum !== migrations[0]?.checksum
-      )
-        throw new Error("Legacy migration checksum or version mismatch");
-      const first = migrations[0];
-      if (
-        !first ||
-        db.query("SELECT version FROM schema_migrations LIMIT 1").get()
-      )
-        throw new Error("Conflicting migration histories");
-      db.query(
-        "INSERT INTO schema_migrations(version,name,checksum,down_checksum) VALUES(?,?,?,?)",
-      ).run(first.version, first.name, first.checksum, first.down_checksum);
-      db.exec("DROP TABLE migration");
-    }
     const applied = historySchema.parse(
       db
         .query(

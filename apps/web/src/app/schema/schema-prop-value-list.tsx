@@ -71,7 +71,7 @@ export function SchemaPropValueList({
             <div className="min-w-0 space-y-2">
               <DialogTitle className="text-xl leading-7">
                 Values for{" "}
-                <span className="font-mono text-lg text-primary [overflow-wrap:anywhere]">
+                <span className="font-mono text-lg text-primary wrap-anywhere">
                   {fieldName}
                 </span>
               </DialogTitle>
@@ -138,7 +138,7 @@ export function SchemaPropValueList({
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
                     >
-                      <div className="my-2 rounded-md bg-muted/50 px-4 py-4 font-mono text-[13px] leading-7 text-foreground/90 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      <div className="my-2 rounded-md bg-muted/50 px-4 py-4 font-mono text-[13px] leading-7 text-foreground/90 whitespace-pre-wrap wrap-anywhere">
                         {filteredValues[virtualRow.index]}
                       </div>
                     </div>

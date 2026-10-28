@@ -214,7 +214,7 @@ export function DashboardList({ filter, sort, title }: Props) {
       </p>
 
       {allDashboards.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-primary/20 bg-primary/3 px-6 py-10 text-center">
           <div>
             <h3 className="text-lg font-semibold">No dashboards</h3>
             <p className="text-sm text-muted-foreground">
@@ -273,14 +273,14 @@ export function DashboardList({ filter, sort, title }: Props) {
                         autoFocus
                       />
                     ) : (
-                      <h3 className="min-w-0 break-words text-base font-semibold tracking-tight">
+                      <h3 className="min-w-0 wrap-break-word text-base font-semibold tracking-tight">
                         <Link
                           to="/app/$projectid/dashboards/$dashboardid"
                           params={{
                             projectid: projectId,
                             dashboardid: String(dashboard.id),
                           }}
-                          className="after:absolute after:inset-0 after:rounded-xl hover:underline focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                          className="after:absolute after:inset-0 after:rounded-xl hover:underline focus-visible:outline-hidden focus-visible:after:ring-2 focus-visible:after:ring-ring"
                         >
                           {dashboard.name}
                         </Link>
@@ -391,7 +391,7 @@ export function DashboardList({ filter, sort, title }: Props) {
           ))}
         </div>
       ) : allDashboards.length > 0 ? (
-        <div className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center">
+        <div className="rounded-xl border border-dashed border-primary/20 bg-primary/3 px-6 py-10 text-center">
           <h3 className="font-semibold">
             {query ? "No matching dashboards" : "No dashboards to show"}
           </h3>

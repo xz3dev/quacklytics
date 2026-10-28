@@ -22,7 +22,7 @@ export function PageHeader({
 
 export function PageTitle({ children }: { children: ReactNode }) {
   return (
-    <h1 className="min-w-0 break-words text-2xl font-bold leading-9">
+    <h1 className="min-w-0 wrap-break-word text-2xl font-bold leading-9">
       {children}
     </h1>
   );

@@ -131,7 +131,7 @@ function UngroupedBreakdownInsightChart({ insight, showTable = true }: Props) {
                       <TooltipTrigger asChild>
                         <button
                           type="button"
-                          className="min-w-0 truncate rounded-sm text-right text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="min-w-0 truncate rounded-sm text-right text-muted-foreground outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                           aria-label={row.dimension_value}
                         >
                           {row.dimension_value}
@@ -139,7 +139,7 @@ function UngroupedBreakdownInsightChart({ insight, showTable = true }: Props) {
                       </TooltipTrigger>
                       <TooltipContent
                         side="top"
-                        className="max-w-[min(24rem,calc(100vw-2rem))] break-words"
+                        className="max-w-[min(24rem,calc(100vw-2rem))] wrap-break-word"
                       >
                         {row.dimension_value}
                       </TooltipContent>
@@ -166,7 +166,7 @@ function UngroupedBreakdownInsightChart({ insight, showTable = true }: Props) {
                             <button
                               type="button"
                               aria-label={`${row.dimension_value}: ${formatMetricValue(value, metricUnit)}`}
-                              className="relative block h-full rounded-r-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              className="relative block h-full rounded-r-md outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                               style={{
                                 width: `${Math.max(0, (value / axisMax) * 100)}%`,
                                 minWidth: value > 0 ? 2 : 0,
@@ -183,7 +183,7 @@ function UngroupedBreakdownInsightChart({ insight, showTable = true }: Props) {
                           </TooltipTrigger>
                           <TooltipContent
                             side="top"
-                            className="max-w-[min(24rem,calc(100vw-2rem))] break-words"
+                            className="max-w-[min(24rem,calc(100vw-2rem))] wrap-break-word"
                           >
                             {row.dimension_value}:{" "}
                             {formatMetricValue(value, metricUnit)}
@@ -230,7 +230,7 @@ function UngroupedBreakdownInsightChart({ insight, showTable = true }: Props) {
             {rows.map((row) => (
               <TableRow key={`table-${row.dimension_value}`}>
                 <TableCell
-                  className="max-w-[240px] break-words"
+                  className="max-w-[240px] wrap-break-word"
                   title={row.dimension_value}
                 >
                   {row.dimension_value}

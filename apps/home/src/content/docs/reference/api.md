@@ -66,7 +66,7 @@ Admin requests that change state (anything except `GET`, `HEAD` and `OPTIONS`) a
 | `/api/:project/dashboards/templates/:template` | POST | Create a dashboard from a template |
 | `/api/:project/dashboards/:id/templates/:template` | POST | Apply a template to an empty dashboard |
 
-Available templates: `web_analytics` and `product_analytics` (plus `chart_playground` in development). `website_traffic` remains accepted and creates the same insights as `web_analytics`.
+Available templates: `web_analytics` and `product_analytics` (plus `chart_playground` in development).
 
 ### Events and data
 

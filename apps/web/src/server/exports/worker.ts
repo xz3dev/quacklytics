@@ -5,6 +5,7 @@ import {
   closeDatabases,
   evictIdleDatabases,
 } from "../db/database";
+import { readDataset } from "./dataset";
 import { exportProject, cleanupExports } from "./export";
 import { exportRequest } from "./protocol";
 
@@ -25,14 +26,15 @@ function enqueue(project: string) {
           error instanceof Error ? error.message : String(error),
         );
         throw error;
-      }
-      // Cleanup failure must not mark a successfully published export as failed.
-      if (Date.now() - (lastCleanup.get(project) ?? 0) >= 3600_000) {
-        await cleanupExports(db, project)
-          .then(() => lastCleanup.set(project, Date.now()))
-          .catch((error) =>
-            console.error("Export cleanup failed", project, error),
-          );
+      } finally {
+        // Runs while exports fail too, since agent datasets keep uploading live
+        // files. A cleanup failure must not change the export's outcome.
+        if (Date.now() - (lastCleanup.get(project) ?? 0) >= 3600_000)
+          await cleanupExports(db, project)
+            .then(() => lastCleanup.set(project, Date.now()))
+            .catch((error) =>
+              console.error("Export cleanup failed", project, error),
+            );
       }
     })
     .finally(() => {
@@ -43,6 +45,15 @@ function enqueue(project: string) {
   chain = task.catch(() => undefined);
   return task;
 }
+async function answerDataset(project: string) {
+  const dataset = closing
+    ? null
+    : await readDataset(project).catch((error: unknown) => {
+        console.error("Dataset capture failed", project, error);
+        return null;
+      });
+  self.postMessage({ type: "dataset", project, dataset });
+}
 self.onmessage = async (event: MessageEvent<unknown>) => {
   const message = exportRequest.parse(event.data);
   if (message.type === "shutdown") {
@@ -51,6 +62,11 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
     await chain;
     closeDatabases();
     self.postMessage({ type: "shutdown" });
+    return;
+  }
+  // Captures run beside the export queue: a long export must not delay agents.
+  if (message.type === "dataset") {
+    void answerDataset(message.project);
     return;
   }
   if (closing) return;

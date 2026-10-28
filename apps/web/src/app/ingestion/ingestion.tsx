@@ -8,6 +8,7 @@ import { useProjectId } from "@/hooks/use-project-id";
 import { useProjects, useUpdateProjectCorsOrigins } from "@/services/projects";
 import { Spinner } from "@/components/spinner";
 import { ApikeyManagement } from "@app/apikeys/apikey-management";
+import { McpAccess } from "@app/apikeys/mcp-access";
 import { Project } from "@/model/project";
 import { originError } from "@/lib/origins";
 import { Link } from "@/lib/navigation";
@@ -193,6 +194,7 @@ export default function Ingestion() {
         <ApikeyManagement />
         <SendDataSection project={project} />
         <AllowedOrigins key={project.id} project={project} />
+        <McpAccess />
       </div>
     </div>
   );

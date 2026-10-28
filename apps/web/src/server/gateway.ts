@@ -196,7 +196,7 @@ export const { gateway, shutdownBackend } = createGateway({
     new Worker(
       resolve(
         process.cwd(),
-        process.env.NODE_ENV === "production"
+        Bun.env.NODE_ENV === "production"
           ? "dist/backend-worker.js"
           : "src/server/worker.ts",
       ),

@@ -81,19 +81,9 @@ test("funnels default to unique users and persist changes to event counting", as
       },
     }),
   );
-  // Omit the new field to exercise compatibility with existing saved funnels.
-  const { countingMode: omittedMode, ...legacyConfig } =
-    configured.config.funnel;
-  expect(omittedMode).toBe("uniqueUsers");
   const response = await page.request.post(
     `/api/${createdProject.id}/insights`,
-    {
-      data: {
-        ...configured,
-        name: "Counting funnel",
-        config: { funnel: legacyConfig },
-      },
-    },
+    { data: { ...configured, name: "Counting funnel" } },
   );
   expect(response.ok(), await response.text()).toBeTruthy();
   const saved = insight.parse(await response.json());

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SDK_VERSION = "0.2.0";
+export const SDK_VERSION = "0.4.0";
 export const jsonProperties = z.record(z.string(), z.json());
 export type EventProperties = z.infer<typeof jsonProperties>;
 export type JsonValue = z.infer<ReturnType<typeof z.json>>;

@@ -32,7 +32,7 @@ export function BrandBackdrop() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(hsl(var(--foreground)/0.08)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
+      className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(hsl(var(--foreground)/0.08)_1px,transparent_1px)] bg-size-[22px_22px] mask-[radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
     />
   );
 }

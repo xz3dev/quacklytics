@@ -134,7 +134,7 @@ export function FunnelStepView({ step }: FunnelStepProps) {
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="sm" onClick={openEditNameModal}>
                   {step?.name && <span className="truncate">{step.name}</span>}
-                  <Pencil className="!size-3" />
+                  <Pencil className="size-3!" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

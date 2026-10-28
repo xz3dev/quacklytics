@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
-import { exportResponse } from "./protocol";
+import type { z } from "zod";
+import { exportResponse, type dataset } from "./protocol";
 import { RequestError } from "../errors";
 let worker: Worker | undefined;
 let closing = false;
@@ -13,12 +14,22 @@ const pending = new Map<
     reject: (error: Error) => void;
   }
 >();
+type Dataset = z.infer<typeof dataset>;
+const datasets = new Map<
+  string,
+  {
+    promise: Promise<Dataset>;
+    resolve: (dataset: Dataset) => void;
+    reject: (error: Error) => void;
+  }
+>();
 function getWorker() {
   if (worker) return worker;
   const instance = new Worker(
     resolve(
       process.cwd(),
-      process.env.NODE_ENV === "production"
+      // Bun can replace process.env.NODE_ENV while bundling; choose at runtime.
+      Bun.env.NODE_ENV === "production"
         ? "dist/export-worker.js"
         : "src/server/exports/worker.ts",
     ),
@@ -30,6 +41,13 @@ function getWorker() {
       finishShutdown?.();
       return;
     }
+    if (message.type === "dataset") {
+      const task = datasets.get(message.project);
+      datasets.delete(message.project);
+      if (message.dataset) task?.resolve(message.dataset);
+      else task?.reject(new Error("Dataset unavailable; retry later"));
+      return;
+    }
     const task = pending.get(message.project);
     pending.delete(message.project);
     if (message.error) task?.reject(new Error(message.error));
@@ -37,9 +55,10 @@ function getWorker() {
   };
   instance.onerror = () => {
     if (worker !== instance) return;
-    for (const task of pending.values())
+    for (const task of [...pending.values(), ...datasets.values()])
       task.reject(new Error("Export worker stopped"));
     pending.clear();
+    datasets.clear();
     instance.terminate();
     worker = undefined;
     finishShutdown?.();
@@ -63,6 +82,25 @@ export async function requestExport(project: string): Promise<void> {
     pending.delete(project);
     task.reject(
       error instanceof Error ? error : new Error("Export unavailable"),
+    );
+  }
+  return task.promise;
+}
+/** One consistent, signed snapshot of every event; concurrent requests share it. */
+export async function requestDataset(project: string) {
+  const existing = datasets.get(project);
+  if (existing) return existing.promise;
+  if (closing)
+    return Promise.reject(new RequestError(503, "Server shutting down"));
+  const backend = getWorker();
+  const task = Promise.withResolvers<Dataset>();
+  datasets.set(project, task);
+  try {
+    backend.postMessage({ type: "dataset", project });
+  } catch (error) {
+    datasets.delete(project);
+    task.reject(
+      error instanceof Error ? error : new Error("Dataset unavailable"),
     );
   }
   return task.promise;

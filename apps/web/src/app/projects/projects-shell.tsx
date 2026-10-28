@@ -30,7 +30,7 @@ export function ProjectsShell({ children }: { children: ReactNode }) {
 function ShellHeader() {
   const { user, logout } = useAuth();
   return (
-    <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           to="/projects"

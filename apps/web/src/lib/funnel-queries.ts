@@ -21,7 +21,7 @@ export function buildFunnelQuery(
   eventsTable: string = "events",
   startDate: Date | string,
   endDate: Date | string,
-  countingMode: FunnelInsightConfig["countingMode"] = "uniqueUsers",
+  countingMode: FunnelInsightConfig["countingMode"],
 ): { sql: string; params: QueryParamValue[] } {
   // Updated return type
   if (!steps || steps.length === 0) {

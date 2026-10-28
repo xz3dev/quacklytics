@@ -1,6 +1,6 @@
 {
+  "version": "0.4.0",
   "name": "@quacklytics/client",
-  "version": "0.2.0",
   "description": "First-party browser and server analytics client for Quacklytics.",
   "license": "MIT",
   "repository": {
@@ -55,11 +55,11 @@
     "prepack": "bun run build"
   },
   "dependencies": {
-    "preact": "^10.26.4",
-    "zod": "4.6.5"
+    "preact": "11.0.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   },
   "sideEffects": false
 }

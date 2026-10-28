@@ -116,7 +116,7 @@ export function DashboardManageInsights({ dashboard }: Props) {
             </PopoverTrigger>
             <PopoverContent
               align="start"
-              className="w-[var(--radix-popover-trigger-width)] p-1"
+              className="w-(--radix-popover-trigger-width) p-1"
             >
               <Command>
                 <CommandInput
@@ -167,7 +167,7 @@ export function DashboardManageInsights({ dashboard }: Props) {
                           className="gap-3 py-3"
                         >
                           <BarChart3 />
-                          <span className="min-w-0 flex-1 break-words">
+                          <span className="min-w-0 flex-1 wrap-break-word">
                             {insight.name ?? "Untitled chart"}
                           </span>
                           <Plus className="text-muted-foreground" />
@@ -209,7 +209,7 @@ export function DashboardManageInsights({ dashboard }: Props) {
                       <BarChart3 className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="break-words text-sm font-medium">
+                      <p className="wrap-break-word text-sm font-medium">
                         {insight.name ?? "Untitled chart"}
                       </p>
                       <p className="text-xs text-muted-foreground">

@@ -5,9 +5,12 @@ import { cn } from "@/lib/utils/tailwind";
 
 export function CodeSnippet({
   children,
+  label,
   className,
 }: {
   children: string;
+  /** What the copy button copies, when a page shows several snippets. */
+  label?: string;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -19,7 +22,7 @@ export function CodeSnippet({
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Copy"
+        aria-label={label ? `Copy ${label}` : "Copy"}
         className="absolute right-1 top-1 size-8"
         onClick={() => {
           void navigator.clipboard.writeText(children).then(() => {

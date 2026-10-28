@@ -87,7 +87,7 @@ export const insightInput = z.discriminatedUnion("type", [
     config: z.object({
       funnel: z.object({
         duration: z.string(),
-        countingMode: funnelCountingMode.default("uniqueUsers"),
+        countingMode: funnelCountingMode,
         steps: z
           .array(
             z.object({
@@ -222,7 +222,6 @@ export const dashboardTemplate = z.enum([
   "web_analytics",
   "product_analytics",
   "chart_playground",
-  "website_traffic",
 ]);
 export const dashboardTemplateInput = z.object({
   name: z.string().optional(),
@@ -240,6 +239,13 @@ export const apiKey = z.object({
   project: z.string(),
   key: z.string(),
 });
+// Read access for agents. Only the creation response carries the secret.
+export const mcpToken = z.object({
+  id: z.number(),
+  prefix: z.string(),
+  createdAt: z.number(),
+});
+export const createdMcpToken = mcpToken.extend({ token: z.string() });
 export const user = z.object({
   id: z.string(),
   email: z.string(),

@@ -476,6 +476,7 @@ test("all insight definitions persist and dashboards preserve ordering across re
         ? {
             funnel: {
               duration: "P30D",
+              countingMode: "uniqueUsers",
               steps: ["signup", "purchase"].map((name, order) => ({
                 id: crypto.randomUUID(),
                 name,

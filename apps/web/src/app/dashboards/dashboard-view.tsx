@@ -144,7 +144,7 @@ function DashboardContent({ dashboardId, readOnly, presentation }: Props) {
                     type="button"
                     aria-label="Rename dashboard"
                     disabled={updateDashboard.isPending}
-                    className="inline-flex min-h-10 max-w-full items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-flex min-h-10 max-w-full items-center gap-3 rounded-md text-left outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => {
                       setDashboardName(dashboard.name);
                       updateDashboard.reset();
@@ -152,7 +152,7 @@ function DashboardContent({ dashboardId, readOnly, presentation }: Props) {
                       setIsEditingName(true);
                     }}
                   >
-                    <span className="min-w-0 break-words">
+                    <span className="min-w-0 wrap-break-word">
                       {dashboard.name}
                     </span>
                     <Edit

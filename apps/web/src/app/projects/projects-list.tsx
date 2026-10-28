@@ -100,7 +100,7 @@ function ProjectsOverview() {
                 <Link
                   to="/app/$projectid"
                   params={{ projectid: project.id }}
-                  className="block truncate font-medium after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none"
+                  className="block truncate font-medium after:absolute after:inset-0 after:rounded-xl focus-visible:outline-hidden"
                 >
                   {project.name}
                 </Link>

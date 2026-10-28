@@ -62,7 +62,7 @@ export function ProjectSwitcher() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-[--radix-dropdown-menu-trigger-width] min-w-56 overflow-y-auto overscroll-contain rounded-lg"
+            className="max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-dropdown-menu-trigger-width) min-w-56 overflow-y-auto overscroll-contain rounded-lg"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}

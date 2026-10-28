@@ -28,6 +28,8 @@ import { insightsHandler } from "./handlers/insights";
 import { dashboardsHandler } from "./handlers/dashboards";
 import { schemaHandler } from "./handlers/schema";
 import { eventsHandler } from "./handlers/events";
+import { mcpTokensHandler } from "./handlers/mcp-tokens";
+import { handleMcp } from "./mcp/server";
 const proxyCheckFor = (request: Request) =>
   proxyCheck({
     socket: request.headers.get("x-quacklytics-socket-ip") ?? "",
@@ -48,6 +50,8 @@ export async function handleApi(request: Request): Promise<Response> {
         geoip: geoipSource(),
       });
     if (projectId === "health") return json({ ok: true });
+    // Agents authenticate with a project-scoped bearer token instead of a session.
+    if (projectId === "mcp" && !resource) return await handleMcp(request);
     // Backfill shares ingestion's key, CORS and rate limits, but may write into
     // archived months and responds only after they are merged into S3.
     if (projectId === "ingest" || projectId === "backfill") {
@@ -212,6 +216,7 @@ export async function handleApi(request: Request): Promise<Response> {
     if (resource === "setup" && request.method === "GET")
       return json(projectSetup(db, projectId));
     if (resource === "apikeys") return await apikeysHandler(context);
+    if (resource === "mcptokens") return mcpTokensHandler(context);
     if (resource === "insights") return await insightsHandler(context);
     if (resource === "dashboards") return await dashboardsHandler(context);
     if (resource === "schema") return await schemaHandler(context);

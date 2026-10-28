@@ -59,7 +59,7 @@ test("projects page lists, opens and creates projects on a dedicated page", asyn
   await page
     .getByRole("textbox", { name: "Type to search for an emoji" })
     .fill("rocket");
-  await page.getByRole("button", { name: "rockets", exact: true }).click();
+  await page.getByRole("gridcell", { name: "rockets", exact: true }).click();
 
   await page.route("**/api/projects", (route) =>
     route.request().method() === "POST"

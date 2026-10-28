@@ -3,22 +3,22 @@
 First-party TypeScript analytics for Quacklytics.
 
 ```ts
-import { createClient } from '@quacklytics/client'
+import { createClient } from "@quacklytics/client";
 
 const analytics = createClient({
-  hostname: 'https://analytics.example.com',
-  apiKey: 'public-project-ingestion-key',
+  hostname: "https://analytics.example.com",
+  apiKey: "public-project-ingestion-key",
   autocapture: true,
-})
+});
 
 // Start from your consent UI. Before a decision, events are buffered locally.
-analytics.setConsent('granted')
-await analytics.track('signup', { plan: 'pro' })
-await analytics.identify('account-123', { plan: 'pro' })
-await analytics.flush()
+analytics.setConsent("granted");
+await analytics.track("signup", { plan: "pro" });
+await analytics.identify("account-123", { plan: "pro" });
+await analytics.flush();
 
 // On logout, before tracking activity for a new account:
-analytics.reset()
+analytics.reset();
 ```
 
 Add the exact site origin to the project's allowed origins. Browser ingestion keys are public, ingestion-only credentials; never use an administrative credential. Always specify a full HTTPS service URL in production. Bare hostnames default to HTTPS.
@@ -32,7 +32,9 @@ Add the exact site origin to the project's allowed origins. Browser ingestion ke
 `autocapture: true` collects `$click` from links, buttons, role=button/link, and elements with `data-ql-event`. It records tagName, sanitized link URL, and only role/type/data-ql-id attributes. It never reads text, input values, arbitrary data attributes, element IDs, or CSS classes.
 
 ```html
-<button data-ql-event="trial_started" data-ql-id="hero-trial">Start trial</button>
+<button data-ql-event="trial_started" data-ql-id="hero-trial">
+  Start trial
+</button>
 <div data-ql-ignore><button>Private action</button></div>
 ```
 
@@ -44,7 +46,7 @@ The SDK maintains an anonymous visitor UUID and a session UUID, rotating the lat
 
 `identify(userId, traits?)` durably links the current anonymous visitor's history across sessions to the application user, then sets that user on subsequent events. It is a control operation, excluded from event counts. Multiple visitors/devices can identify as the same user. A visitor cannot change users without `reset()`. Reset creates a new anonymous/session identity on the next event; already queued events retain their original capture identity. Person traits merge per key using timestamp/event ID ordering.
 
-The service resolves SDK actors as `anonymous:<id>` and `user:<id>` in its existing person_id analytical column. Legacy first-party person IDs remain unchanged. Identity changes republish affected historical Parquet partitions that are not yet archived; a committed identification can therefore precede updated browser reports. Archived months (seven days after a month ends) keep their original attribution.
+The service resolves SDK actors as `anonymous:<id>` and `user:<id>` in its person_id analytical column. Person IDs sent through the server importer are kept as given. Identity changes republish affected historical Parquet partitions that are not yet archived; a committed identification can therefore precede updated browser reports. Archived months (seven days after a month ends) keep their original attribution.
 
 Default consent is `required`. Three modes follow from the visitor's decision:
 
@@ -57,9 +59,9 @@ Default consent is `required`. Three modes follow from the visitor's decision:
 Optional UI:
 
 ```ts
-import { createCookieConsent } from '@quacklytics/client/consent'
-const banner = createCookieConsent({ client: analytics })
-banner.showBanner()
+import { createCookieConsent } from "@quacklytics/client/consent";
+const banner = createCookieConsent({ client: analytics });
+banner.showBanner();
 ```
 
 The banner is presentation only; the client always enforces collection state. It follows the page's CSS `color-scheme` (falling back to the visitor's OS preference), so it switches to dark mode with your site. Pass `css` in the banner options to restyle it; scope selectors with `[data-quacklytics-cookie-banner]` and target `.ql-banner`, `.ql-text`, `.ql-actions`, `.ql-primary` or `.ql-secondary`. `/consent` imports Preact; the core and server entrypoints do not. Custom `textHtml` must be trusted application-authored markup.
@@ -78,28 +80,23 @@ Typed application events:
 
 ```ts
 interface Events {
-  signup: { plan: string }
-  purchase: { amount: number; currency: string }
+  signup: { plan: string };
+  purchase: { amount: number; currency: string };
 }
-const client = createClient<Events>({ hostname, apiKey })
-await client.track('purchase', { amount: 42, currency: 'EUR' })
+const client = createClient<Events>({ hostname, apiKey });
+await client.track("purchase", { amount: 42, currency: "EUR" });
 ```
 
-## Server and existing first-party callers
+## Server and batch imports
 
 ```ts
-import { createServerClient } from '@quacklytics/client/server'
-const client = createServerClient({ hostname, apiKey })
-await client.track('invoice_paid', { amount: 42 }, { userId: 'account-123' })
-await client.flush()
-await client.destroy()
+import { createServerClient } from "@quacklytics/client/server";
+const client = createServerClient({ hostname, apiKey });
+await client.track("invoice_paid", { amount: 42 }, { userId: "account-123" });
+await client.flush();
+await client.destroy();
 ```
 
-Server `send`/`sendBatch` preserve the existing first-party importer protocol, including `deferExport`, `backfill` (for archived months) and AbortSignal. They acknowledge committed batches and never collect browser context or create identities. Use `personId: 'user:account-123'` when intentionally joining a server event to the SDK's resolved user actor. `track()` uses the versioned queue and requires an explicit `flush()` in server runtimes. Browser `send`/`sendBatch` are convenience capture-and-flush methods and may split into multiple transactions; a later invalid event can leave earlier events queued. Explicit browser identity fields, `personProperties`, AbortSignal, `deferExport` and `backfill` are rejected: use identify/reset for browser identity and the server importer for explicit batches. The legacy cookie-wrapper API has been replaced; rejection now means no collection.
+Server `send`/`sendBatch` use the first-party importer protocol, including `deferExport`, `backfill` (for archived months) and AbortSignal. They acknowledge committed batches and never collect browser context or create identities. Use `personId: 'user:account-123'` when intentionally joining a server event to the SDK's resolved user actor. `track()` uses the versioned queue and requires an explicit `flush()` in server runtimes. Browser `send`/`sendBatch` are convenience capture-and-flush methods and may split into multiple transactions; a later invalid event can leave earlier events queued. Explicit browser identity fields, `personProperties`, AbortSignal, `deferExport` and `backfill` are rejected: use identify/reset for browser identity and the server importer for explicit batches. Rejection means no collection.
 
 The `/protocol` entrypoint exports Zod schemas and inferred types for versioned events and identify operations. Keep protocol changes backward compatible or introduce a new version.
-
-
-## Upgrading from 0.1
-
-This is a breaking browser API release. Replace the old consent wrapper with `createClient` plus `setConsent` (or the presentation-only banner). Identity no longer uses the old `ql_person_id`/`ql_session_id` cookies; remove those legacy cookies in your application if you previously deployed them, including any configured parent-domain copies. Old consent does not silently authorize the new collector. Replace `includeText`/DOM-path capture with explicit `data-ql-id` and `data-ql-event` instrumentation. Page context now lives under `$context`; use the Website traffic template for new SDK reports. Existing generic dashboards, stored legacy events, and the first-party server importer remain supported. The public client is version 0.2.0; its new wire protocol is version 1.

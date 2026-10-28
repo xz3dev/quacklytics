@@ -21,7 +21,7 @@
   "exclude": ["tests/unit", "tests/fixtures"],
   "include": [
     "tests/**/*.ts",
-    "playwright.config.ts",
+    "playwright*.config.ts",
     "scripts/**/*.ts"
   ]
 }

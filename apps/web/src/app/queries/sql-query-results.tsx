@@ -1,37 +1,38 @@
 import { useMemo } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  type ColumnDef,
+  createColumnHelper,
+  tableFeatures,
+  useTable,
 } from "@tanstack/react-table";
 import type { ResultRow } from "@quacklytics/contracts";
+const features = tableFeatures({});
+const helper = createColumnHelper<typeof features, ResultRow>();
+const noRows: ResultRow[] = [];
 export function SqlQueryResults({ data }: { data: ResultRow[] | undefined }) {
-  const columns = useMemo<ColumnDef<ResultRow>[]>(
+  const columns = useMemo(
     () =>
-      Object.keys(data?.[0] ?? {}).map((key) => ({
-        id: key,
-        accessorFn: (row) => row[key],
-        header: key,
-        cell: (info) => {
-          const value = info.getValue();
-          return value === null || value === undefined
-            ? "NULL"
-            : value instanceof Date
-              ? value.toISOString()
-              : String(value);
-        },
-      })),
+      helper.columns(
+        Object.keys(data?.[0] ?? {}).map((key) =>
+          helper.accessor((row) => row[key], {
+            id: key,
+            header: key,
+            cell: (info) => {
+              const value = info.getValue();
+              return value === null || value === undefined
+                ? "NULL"
+                : value instanceof Date
+                  ? value.toISOString()
+                  : String(value);
+            },
+          }),
+        ),
+      ),
     [data],
   );
-  const table = useReactTable({
-    data: data ?? [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const table = useTable({ features, data: data ?? noRows, columns });
   if (!data)
     return (
-      <p className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-primary/20 bg-primary/3 px-6 py-10 text-center text-sm text-muted-foreground">
         Run a query to see results.
       </p>
     );
@@ -39,7 +40,7 @@ export function SqlQueryResults({ data }: { data: ResultRow[] | undefined }) {
     return (
       <p
         role="status"
-        className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center text-sm text-muted-foreground"
+        className="rounded-xl border border-dashed border-primary/20 bg-primary/3 px-6 py-10 text-center text-sm text-muted-foreground"
       >
         Empty result set.
       </p>
@@ -55,10 +56,7 @@ export function SqlQueryResults({ data }: { data: ResultRow[] | undefined }) {
                   className="h-11 px-4 text-left font-medium text-muted-foreground"
                   key={header.id}
                 >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext(),
-                  )}
+                  <table.FlexRender header={header} />
                 </th>
               ))}
             </tr>
@@ -67,9 +65,9 @@ export function SqlQueryResults({ data }: { data: ResultRow[] | undefined }) {
         <tbody>
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className="even:bg-muted/40">
-              {row.getVisibleCells().map((cell) => (
+              {row.getAllCells().map((cell) => (
                 <td className="px-4 py-3" key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  <table.FlexRender cell={cell} />
                 </td>
               ))}
             </tr>

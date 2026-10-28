@@ -10,12 +10,13 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.32.2",
+    "@astrojs/starlight": "0.42.6",
     "@quacklytics/client": "workspace:*",
-    "@tailwindcss/vite": "^4.0.14",
-    "astro": "^5.1.5",
-    "sharp": "^0.32.5",
-    "starlight-image-zoom": "^0.11.1",
-    "tailwindcss": "^4.0.14"
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.4.0",
+    "satteri": "0.10.5",
+    "sharp": "0.35.5",
+    "starlight-image-zoom": "0.16.2",
+    "tailwindcss": "4.3.3"
   }
 }

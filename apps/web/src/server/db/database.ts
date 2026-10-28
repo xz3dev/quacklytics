@@ -21,9 +21,15 @@ if (
 )
   throw new Error("Unsupported data format");
 if (!existsSync(marker)) {
-  if (readdirSync(dataRoot).length)
+  // GeoIP can populate its disposable cache before the first backend request.
+  // It does not indicate an existing analytics database or storage format.
+  if (
+    readdirSync(dataRoot, { withFileTypes: true }).some(
+      (entry) => entry.name !== "geoip" || !entry.isDirectory(),
+    )
+  )
     throw new Error(
-      "DATA_DIR must be empty or contain the SQLite format marker. Use a new directory for this migration.",
+      "DATA_DIR must be empty or contain the SQLite format marker.",
     );
   writeFileSync(marker, "quacklytics-sqlite-v1\n");
 }

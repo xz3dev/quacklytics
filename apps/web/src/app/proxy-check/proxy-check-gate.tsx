@@ -88,7 +88,7 @@ function ProxySetupGuide({
       role="dialog"
       aria-modal="true"
       aria-labelledby="proxy-check-title"
-      className="fixed inset-0 z-[100] isolate overflow-y-auto bg-background"
+      className="fixed inset-0 z-100 isolate overflow-y-auto bg-background"
     >
       <BrandBackdrop />
       <div className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-8 px-6 py-12">

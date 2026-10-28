@@ -8,6 +8,7 @@ if (existsSync("apps/web/.env.local")) loadEnvFile("apps/web/.env.local");
 process.env.GEOIP ??= "off";
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: "**/production-image.spec.ts",
   fullyParallel: false,
   workers: 1,
   timeout: 90000,

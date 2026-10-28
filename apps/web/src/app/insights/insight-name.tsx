@@ -40,13 +40,13 @@ export function InsightName({
 
   if (!editing)
     return (
-      <h2 className="min-w-0 break-words text-2xl font-bold">
+      <h2 className="min-w-0 wrap-break-word text-2xl font-bold">
         <button
           ref={renameButton}
           type="button"
           aria-label={`Rename ${displayName}`}
           disabled={disabled || saving}
-          className="group inline-flex max-w-full items-center gap-2 rounded-md text-left outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+          className="group inline-flex max-w-full items-center gap-2 rounded-md text-left outline-hidden hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => {
             editActive.current = true;
             setDraft(displayName);
@@ -54,7 +54,7 @@ export function InsightName({
             setEditing(true);
           }}
         >
-          <span className="min-w-0 break-words">{displayName}</span>
+          <span className="min-w-0 wrap-break-word">{displayName}</span>
           <Pencil
             aria-hidden="true"
             className="h-4 w-4 shrink-0 text-muted-foreground opacity-40 group-hover:opacity-100 group-focus-visible:opacity-100"

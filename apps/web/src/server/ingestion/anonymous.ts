@@ -20,19 +20,21 @@ export function anonymousVisitors(
 ): AnonymousVisitors {
   const today = new Date(now).toISOString().slice(0, 10);
   const yesterday = new Date(now - DAY_MS).toISOString().slice(0, 10);
-  const salts = appDb.transaction(() => {
-    appDb.query("DELETE FROM anonymous_salts WHERE day < ?").run(yesterday);
-    appDb
-      .query("INSERT OR IGNORE INTO anonymous_salts(day,salt) VALUES(?,?)")
-      .run(today, randomBytes(16));
-    return z
-      .array(saltRow)
-      .parse(
-        appDb
-          .query("SELECT day,salt FROM anonymous_salts WHERE day IN (?,?)")
-          .all(today, yesterday),
-      );
-  }).immediate();
+  const salts = appDb
+    .transaction(() => {
+      appDb.query("DELETE FROM anonymous_salts WHERE day < ?").run(yesterday);
+      appDb
+        .query("INSERT OR IGNORE INTO anonymous_salts(day,salt) VALUES(?,?)")
+        .run(today, randomBytes(16));
+      return z
+        .array(saltRow)
+        .parse(
+          appDb
+            .query("SELECT day,salt FROM anonymous_salts WHERE day IN (?,?)")
+            .all(today, yesterday),
+        );
+    })
+    .immediate();
   const visitor = (day: string) => {
     const salt = salts.find((row) => row.day === day)?.salt;
     return salt

@@ -5,6 +5,29 @@ on:
   pull_request:
   workflow_call:
 jobs:
+  image:
+    strategy:
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.4
+      - run: bun install --frozen-lockfile
+      - run: cp .env.example apps/web/.env.local
+      - run: bun run storage:up
+      - run: docker build --tag quacklytics-image-test .
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:image
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: image-playwright-report-${{ matrix.runner }}
+          path: |
+            playwright-report/
+            test-results/
   check:
     runs-on: ubuntu-latest
     steps:

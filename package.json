@@ -12,9 +12,10 @@
     "dev:landing": "bun run --cwd apps/home dev",
     "build": "bun run --cwd packages/tracker build && bun run --cwd apps/web build",
     "start": "bun run --cwd apps/web start",
-    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd packages/tracker typecheck && tsc -p tsconfig.tooling.json && tsc -p tsconfig.unit.json",
+    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd packages/tracker typecheck && bun node_modules/typescript-7/bin/tsc -p tsconfig.tooling.json && bun node_modules/typescript-7/bin/tsc -p tsconfig.unit.json",
     "lint": "eslint apps/web/src packages tests scripts",
     "test:e2e": "playwright test",
+    "test:image": "playwright test --config playwright.image.config.ts",
     "test": "bun run test:unit && bun run test:e2e",
     "test:unit": "bun test tests/unit",
     "check:boundaries": "bun scripts/check-boundaries.ts",
@@ -29,16 +30,17 @@
     "db:migrate": "bun apps/web/src/server/db/migrate-cli.ts"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.0",
-    "@playwright/test": "latest",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
     "@types/bun": "1.3.4",
-    "eslint": "^9.39.0",
-    "typescript": "5.9.3",
-    "typescript-eslint": "latest",
-    "zod": "^4.6.5",
-    "prettier": "3.8.1",
-    "@types/node": "^22.10.2",
-    "eslint-plugin-unused-imports": "4.4.1"
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "zod": "4.6.7",
+    "prettier": "3.9.10",
+    "@types/node": "24.19.2",
+    "eslint-plugin-unused-imports": "4.4.1",
+    "typescript-7": "npm:typescript@7.0.2"
   },
   "patchedDependencies": {
     "@duckdb/duckdb-wasm@1.32.0": "patches/@duckdb%2Fduckdb-wasm@1.32.0.patch"

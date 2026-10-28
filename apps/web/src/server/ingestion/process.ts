@@ -116,339 +116,348 @@ export function processIngestion(
       (backfill ? "\nbackfill" : ""),
   );
   const historyBoundary = Date.parse(new Date().toISOString().slice(0, 10));
-  return db.transaction(() => {
-    const previous = z
-      .object({ fingerprint: z.string(), result: z.string() })
-      .nullable()
-      .parse(
-        db
-          .query("SELECT fingerprint,result FROM requests WHERE id=?")
-          .get(request.requestId),
-      );
-    if (previous) {
-      if (previous.fingerprint !== fingerprint)
-        throw new RequestError(409, "Request ID reused with different events");
-      return z
-        .object({
-          committed: z.number(),
-          duplicates: z.number(),
-          rejected: z.number().default(0),
-          revision: z.number(),
-        })
-        .parse(parseJson(previous.result));
-    }
-    let committed = 0,
-      duplicates = 0,
-      rejected = 0;
-    const dirty = new Set<string>();
-    // Transaction-local state cannot leak across requests, projects or rollbacks.
-    const persons = new Map<string, PendingPerson>();
-    let resolvedVisitors: AnonymousVisitors | undefined;
-    const schemas = new Map<string, Map<string, PendingSchema>>();
-    for (const operation of controls) {
-      const fingerprint = hash(JSON.stringify(operation));
-      const existing = stringRow
+  return db
+    .transaction(() => {
+      const previous = z
+        .object({ fingerprint: z.string(), result: z.string() })
         .nullable()
         .parse(
           db
-            .query("SELECT fingerprint FROM identity_operations WHERE id=?")
-            .get(operation.id),
+            .query("SELECT fingerprint,result FROM requests WHERE id=?")
+            .get(request.requestId),
         );
-      if (existing) {
-        if (existing.fingerprint !== fingerprint)
+      if (previous) {
+        if (previous.fingerprint !== fingerprint)
           throw new RequestError(
             409,
-            "Operation ID reused with different content",
+            "Request ID reused with different events",
           );
-        duplicates++;
-        continue;
+        return z
+          .object({
+            committed: z.number(),
+            duplicates: z.number(),
+            rejected: z.number().default(0),
+            revision: z.number(),
+          })
+          .parse(parseJson(previous.result));
       }
-      const link = z
-        .object({ user_id: z.string() })
-        .nullable()
-        .parse(
-          db
-            .query("SELECT user_id FROM identity_links WHERE anonymous_id=?")
-            .get(operation.anonymousId),
-        );
-      if (link && link.user_id !== operation.userId)
-        throw new RequestError(
-          409,
-          "Anonymous identity already belongs to another user; reset before switching accounts",
-        );
-      db.query(
-        "INSERT INTO identity_links VALUES(?,?) ON CONFLICT(anonymous_id) DO NOTHING",
-      ).run(operation.anonymousId, operation.userId);
-      if (!link) {
-        // Only a new link changes historical actors. Aggregate in SQLite rather
-        // than materializing every historical event on repeated identify calls.
-        for (const row of z
-          .array(z.object({ timestamp: z.number() }))
+      let committed = 0,
+        duplicates = 0,
+        rejected = 0;
+      const dirty = new Set<string>();
+      // Transaction-local state cannot leak across requests, projects or rollbacks.
+      const persons = new Map<string, PendingPerson>();
+      let resolvedVisitors: AnonymousVisitors | undefined;
+      const schemas = new Map<string, Map<string, PendingSchema>>();
+      for (const operation of controls) {
+        const fingerprint = hash(JSON.stringify(operation));
+        const existing = stringRow
+          .nullable()
           .parse(
             db
-              .query(
-                "SELECT min(timestamp) timestamp FROM events WHERE anonymous_id=? GROUP BY strftime('%Y-%m',timestamp/1000,'unixepoch')",
-              )
-              .all(operation.anonymousId),
-          )) {
-          if (row.timestamp < historyBoundary)
-            dirty.add(new Date(row.timestamp).toISOString().slice(0, 7));
-          mergePerson(
-            db,
-            persons,
-            `user:${operation.userId}`,
-            row.timestamp,
-            operation.id,
-            {},
+              .query("SELECT fingerprint FROM identity_operations WHERE id=?")
+              .get(operation.id),
           );
+        if (existing) {
+          if (existing.fingerprint !== fingerprint)
+            throw new RequestError(
+              409,
+              "Operation ID reused with different content",
+            );
+          duplicates++;
+          continue;
         }
-      }
-      mergePerson(
-        db,
-        persons,
-        `user:${operation.userId}`,
-        Date.parse(operation.timestamp),
-        operation.id,
-        operation.traits,
-      );
-      db.query("INSERT INTO identity_operations VALUES(?,?)").run(
-        operation.id,
-        fingerprint,
-      );
-      committed++;
-    }
-    for (const event of [...request.events].sort(
-      (a, b) =>
-        Date.parse(a.timestamp) - Date.parse(b.timestamp) ||
-        a.id.localeCompare(b.id),
-    )) {
-      if (
-        !backfill &&
-        db
-          .query("SELECT 1 FROM archived_partitions WHERE partition=?")
-          .get(new Date(event.timestamp).toISOString().slice(0, 7))
-      ) {
-        rejected++;
-        continue;
-      }
-      const eventHash = hash(JSON.stringify(event));
-      const existing = stringRow
-        .nullable()
-        .parse(
-          db.query("SELECT fingerprint FROM events WHERE id=?").get(event.id),
-        );
-      if (existing) {
-        if (existing.fingerprint !== eventHash)
-          throw new RequestError(409, "Event ID reused with different content");
-        duplicates++;
-        continue;
-      }
-      // Added after the duplicate check, so a retry from elsewhere stays a duplicate.
-      const eventProperties =
-        versioned && country && !("$country" in event.properties)
-          ? { ...event.properties, $country: country }
-          : event.properties;
-      const time = Date.parse(event.timestamp);
-      let anonymousId = "anonymousId" in event ? event.anonymousId : undefined;
-      let sessionId = event.sessionId;
-      // Resolved after the duplicate check: the fingerprint covers the event as sent.
-      if ("anonymous" in event && event.anonymous) {
-        if (!visitors)
-          throw new RequestError(400, "Anonymous events require a client");
-        resolvedVisitors ??= visitors();
-        ({ anonymousId, sessionId } = anonymousSession(
+        const link = z
+          .object({ user_id: z.string() })
+          .nullable()
+          .parse(
+            db
+              .query("SELECT user_id FROM identity_links WHERE anonymous_id=?")
+              .get(operation.anonymousId),
+          );
+        if (link && link.user_id !== operation.userId)
+          throw new RequestError(
+            409,
+            "Anonymous identity already belongs to another user; reset before switching accounts",
+          );
+        db.query(
+          "INSERT INTO identity_links VALUES(?,?) ON CONFLICT(anonymous_id) DO NOTHING",
+        ).run(operation.anonymousId, operation.userId);
+        if (!link) {
+          // Only a new link changes historical actors. Aggregate in SQLite rather
+          // than materializing every historical event on repeated identify calls.
+          for (const row of z
+            .array(z.object({ timestamp: z.number() }))
+            .parse(
+              db
+                .query(
+                  "SELECT min(timestamp) timestamp FROM events WHERE anonymous_id=? GROUP BY strftime('%Y-%m',timestamp/1000,'unixepoch')",
+                )
+                .all(operation.anonymousId),
+            )) {
+            if (row.timestamp < historyBoundary)
+              dirty.add(new Date(row.timestamp).toISOString().slice(0, 7));
+            mergePerson(
+              db,
+              persons,
+              `user:${operation.userId}`,
+              row.timestamp,
+              operation.id,
+              {},
+            );
+          }
+        }
+        mergePerson(
           db,
-          resolvedVisitors,
-          time,
-        ));
+          persons,
+          `user:${operation.userId}`,
+          Date.parse(operation.timestamp),
+          operation.id,
+          operation.traits,
+        );
+        db.query("INSERT INTO identity_operations VALUES(?,?)").run(
+          operation.id,
+          fingerprint,
+        );
+        committed++;
       }
-      const userId = "userId" in event ? event.userId : undefined;
-      const link = anonymousId
-        ? z
-            .object({ user_id: z.string() })
+      for (const event of [...request.events].sort(
+        (a, b) =>
+          Date.parse(a.timestamp) - Date.parse(b.timestamp) ||
+          a.id.localeCompare(b.id),
+      )) {
+        if (
+          !backfill &&
+          db
+            .query("SELECT 1 FROM archived_partitions WHERE partition=?")
+            .get(new Date(event.timestamp).toISOString().slice(0, 7))
+        ) {
+          rejected++;
+          continue;
+        }
+        const eventHash = hash(JSON.stringify(event));
+        const existing = stringRow
+          .nullable()
+          .parse(
+            db.query("SELECT fingerprint FROM events WHERE id=?").get(event.id),
+          );
+        if (existing) {
+          if (existing.fingerprint !== eventHash)
+            throw new RequestError(
+              409,
+              "Event ID reused with different content",
+            );
+          duplicates++;
+          continue;
+        }
+        // Added after the duplicate check, so a retry from elsewhere stays a duplicate.
+        const eventProperties =
+          versioned && country && !("$country" in event.properties)
+            ? { ...event.properties, $country: country }
+            : event.properties;
+        const time = Date.parse(event.timestamp);
+        let anonymousId =
+          "anonymousId" in event ? event.anonymousId : undefined;
+        let sessionId = event.sessionId;
+        // Resolved after the duplicate check: the fingerprint covers the event as sent.
+        if ("anonymous" in event && event.anonymous) {
+          if (!visitors)
+            throw new RequestError(400, "Anonymous events require a client");
+          resolvedVisitors ??= visitors();
+          ({ anonymousId, sessionId } = anonymousSession(
+            db,
+            resolvedVisitors,
+            time,
+          ));
+        }
+        const userId = "userId" in event ? event.userId : undefined;
+        const link = anonymousId
+          ? z
+              .object({ user_id: z.string() })
+              .nullable()
+              .parse(
+                db
+                  .query(
+                    "SELECT user_id FROM identity_links WHERE anonymous_id=?",
+                  )
+                  .get(anonymousId),
+              )
+          : null;
+        if (anonymousId && userId && link?.user_id !== userId)
+          throw new RequestError(
+            409,
+            "Identify must commit before authenticated events",
+          );
+        const resolvedUser = userId ?? link?.user_id;
+        if (resolvedUser)
+          mergePerson(db, persons, `user:${resolvedUser}`, time, event.id, {});
+        let person = event.personId ?? null;
+        if (sessionId) {
+          const session = sessionRow
             .nullable()
             .parse(
               db
                 .query(
-                  "SELECT user_id FROM identity_links WHERE anonymous_id=?",
+                  "SELECT person_id,first_seen,last_seen FROM sessions WHERE id=?",
                 )
-                .get(anonymousId),
-            )
-        : null;
-      if (anonymousId && userId && link?.user_id !== userId)
-        throw new RequestError(
-          409,
-          "Identify must commit before authenticated events",
-        );
-      const resolvedUser = userId ?? link?.user_id;
-      if (resolvedUser)
-        mergePerson(db, persons, `user:${resolvedUser}`, time, event.id, {});
-      let person = event.personId ?? null;
-      if (sessionId) {
-        const session = sessionRow
-          .nullable()
-          .parse(
-            db
-              .query(
-                "SELECT person_id,first_seen,last_seen FROM sessions WHERE id=?",
+                .get(sessionId),
+            );
+          if (session?.person_id && person && session.person_id !== person)
+            throw new RequestError(
+              409,
+              "Session already belongs to another person",
+            );
+          person = person ?? session?.person_id ?? null;
+          db.query(
+            "INSERT INTO sessions VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET person_id=excluded.person_id,first_seen=min(first_seen,excluded.first_seen),last_seen=max(last_seen,excluded.last_seen)",
+          ).run(sessionId, person, time, time);
+          if (person && !session?.person_id) {
+            const historical = z
+              .array(
+                z.object({
+                  id: z.string(),
+                  timestamp: z.number(),
+                  person_properties: z.string(),
+                }),
               )
-              .get(sessionId),
+              .parse(
+                db
+                  .query(
+                    "SELECT id,timestamp,person_properties FROM events WHERE session_id=? ORDER BY timestamp,id",
+                  )
+                  .all(sessionId),
+              );
+            for (const row of historical) {
+              mergePerson(
+                db,
+                persons,
+                person,
+                row.timestamp,
+                row.id,
+                properties.parse(parseJson(row.person_properties)),
+              );
+              if (row.timestamp < historyBoundary)
+                dirty.add(new Date(row.timestamp).toISOString().slice(0, 7));
+            }
+          }
+        }
+        if (person)
+          mergePerson(
+            db,
+            persons,
+            person,
+            time,
+            event.id,
+            event.personProperties,
           );
-        if (session?.person_id && person && session.person_id !== person)
-          throw new RequestError(
-            409,
-            "Session already belongs to another person",
-          );
-        person = person ?? session?.person_id ?? null;
         db.query(
-          "INSERT INTO sessions VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET person_id=excluded.person_id,first_seen=min(first_seen,excluded.first_seen),last_seen=max(last_seen,excluded.last_seen)",
-        ).run(sessionId, person, time, time);
-        if (person && !session?.person_id) {
-          const historical = z
-            .array(
-              z.object({
-                id: z.string(),
-                timestamp: z.number(),
-                person_properties: z.string(),
-              }),
-            )
+          "INSERT INTO events(id,timestamp,event_type,session_id,person_id,properties,person_properties,fingerprint,anonymous_id,user_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        ).run(
+          event.id,
+          time,
+          event.eventType,
+          sessionId ?? null,
+          event.personId ?? null,
+          JSON.stringify(eventProperties),
+          JSON.stringify(event.personProperties),
+          eventHash,
+          anonymousId ?? null,
+          userId ?? null,
+        );
+        for (const [name, value] of Object.entries(eventProperties)) {
+          const type =
+            value !== null &&
+            ["string", "number", "boolean"].includes(typeof value)
+              ? typeof value
+              : "json";
+          let fields = schemas.get(event.eventType);
+          if (!fields) {
+            fields = new Map();
+            schemas.set(event.eventType, fields);
+          }
+          let field = fields.get(name);
+          if (!field) {
+            field = { type, values: new Set() };
+            fields.set(name, field);
+          }
+          if (field.type !== type) field.type = "json";
+          // Only the first 100 distinct samples can affect the persisted cap.
+          if (field.values.size < 100)
+            field.values.add(
+              typeof value === "string" ? value : JSON.stringify(value),
+            );
+        }
+        if (time < historyBoundary)
+          dirty.add(new Date(time).toISOString().slice(0, 7));
+        // Record event types even if their properties are empty.
+        committed++;
+      }
+      for (const [id, person] of persons)
+        db.query(
+          "INSERT INTO persons VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET first_seen=excluded.first_seen,properties=excluded.properties,property_timestamps=excluded.property_timestamps",
+        ).run(
+          id,
+          person.firstSeen,
+          JSON.stringify(person.properties),
+          JSON.stringify(person.stamps),
+        );
+      for (const [eventType, fields] of schemas) {
+        for (const [name, field] of fields) {
+          const { id } = z
+            .object({ id: z.number() })
             .parse(
               db
                 .query(
-                  "SELECT id,timestamp,person_properties FROM events WHERE session_id=? ORDER BY timestamp,id",
+                  "INSERT INTO schemas(event_type,name,type) VALUES(?,?,?) ON CONFLICT(event_type,name) DO UPDATE SET type=CASE WHEN type=excluded.type THEN type ELSE 'json' END RETURNING id",
                 )
-                .all(sessionId),
+                .get(eventType, name, field.type),
             );
-          for (const row of historical) {
-            mergePerson(
-              db,
-              persons,
-              person,
-              row.timestamp,
-              row.id,
-              properties.parse(parseJson(row.person_properties)),
-            );
-            if (row.timestamp < historyBoundary)
-              dirty.add(new Date(row.timestamp).toISOString().slice(0, 7));
+          const values = new Set(
+            z
+              .array(z.object({ value: z.string() }))
+              .parse(
+                db
+                  .query("SELECT value FROM schema_values WHERE property_id=?")
+                  .all(id),
+              )
+              .map((row) => row.value),
+          );
+          for (const value of field.values) {
+            if (values.size >= 100) break;
+            if (values.has(value)) continue;
+            db.query("INSERT INTO schema_values VALUES(?,?)").run(id, value);
+            values.add(value);
           }
         }
       }
-      if (person)
-        mergePerson(
-          db,
-          persons,
-          person,
-          time,
-          event.id,
-          event.personProperties,
-        );
-      db.query(
-        "INSERT INTO events(id,timestamp,event_type,session_id,person_id,properties,person_properties,fingerprint,anonymous_id,user_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
-      ).run(
-        event.id,
-        time,
-        event.eventType,
-        sessionId ?? null,
-        event.personId ?? null,
-        JSON.stringify(eventProperties),
-        JSON.stringify(event.personProperties),
-        eventHash,
-        anonymousId ?? null,
-        userId ?? null,
-      );
-      for (const [name, value] of Object.entries(eventProperties)) {
-        const type =
-          value !== null &&
-          ["string", "number", "boolean"].includes(typeof value)
-            ? typeof value
-            : "json";
-        let fields = schemas.get(event.eventType);
-        if (!fields) {
-          fields = new Map();
-          schemas.set(event.eventType, fields);
-        }
-        let field = fields.get(name);
-        if (!field) {
-          field = { type, values: new Set() };
-          fields.set(name, field);
-        }
-        if (field.type !== type) field.type = "json";
-        // Only the first 100 distinct samples can affect the persisted cap.
-        if (field.values.size < 100)
-          field.values.add(
-            typeof value === "string" ? value : JSON.stringify(value),
-          );
-      }
-      if (time < historyBoundary)
-        dirty.add(new Date(time).toISOString().slice(0, 7));
-      // Record event types even if their properties are empty.
-      committed++;
-    }
-    for (const [id, person] of persons)
-      db.query(
-        "INSERT INTO persons VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET first_seen=excluded.first_seen,properties=excluded.properties,property_timestamps=excluded.property_timestamps",
-      ).run(
-        id,
-        person.firstSeen,
-        JSON.stringify(person.properties),
-        JSON.stringify(person.stamps),
-      );
-    for (const [eventType, fields] of schemas) {
-      for (const [name, field] of fields) {
-        const { id } = z
-          .object({ id: z.number() })
-          .parse(
-            db
-              .query(
-                "INSERT INTO schemas(event_type,name,type) VALUES(?,?,?) ON CONFLICT(event_type,name) DO UPDATE SET type=CASE WHEN type=excluded.type THEN type ELSE 'json' END RETURNING id",
-              )
-              .get(eventType, name, field.type),
-          );
-        const values = new Set(
-          z
-            .array(z.object({ value: z.string() }))
-            .parse(
-              db
-                .query("SELECT value FROM schema_values WHERE property_id=?")
-                .all(id),
-            )
-            .map((row) => row.value),
-        );
-        for (const value of field.values) {
-          if (values.size >= 100) break;
-          if (values.has(value)) continue;
-          db.query("INSERT INTO schema_values VALUES(?,?)").run(id, value);
-          values.add(value);
-        }
-      }
-    }
-    const revision = Number(setting(db, "revision")) + (committed ? 1 : 0);
-    if (committed) {
-      setSetting(db, "revision", String(revision));
-      // Persist the deadline with the events, so a restart or interrupted importer
-      // cannot leave exports paused indefinitely. Ordinary ingestion releases it.
-      if (request.deferExport)
-        setSetting(db, "export_deferred_until", String(Date.now() + 10000));
-      else
+      const revision = Number(setting(db, "revision")) + (committed ? 1 : 0);
+      if (committed) {
+        setSetting(db, "revision", String(revision));
+        // Persist the deadline with the events, so a restart or interrupted importer
+        // cannot leave exports paused indefinitely. Ordinary ingestion releases it.
+        if (request.deferExport)
+          setSetting(db, "export_deferred_until", String(Date.now() + 10000));
+        else
+          db.query(
+            "DELETE FROM settings WHERE key='export_deferred_until'",
+          ).run();
         db.query(
-          "DELETE FROM settings WHERE key='export_deferred_until'",
-        ).run();
-      db.query(
-        "INSERT INTO jobs(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision",
-      ).run(revision);
-    }
-    for (const partition of dirty)
-      db.query(
-        "INSERT INTO dirty_partitions VALUES(?,?) ON CONFLICT(partition) DO UPDATE SET revision=excluded.revision",
-      ).run(partition, revision);
-    const result = { committed, duplicates, rejected, revision };
-    db.query("INSERT INTO requests VALUES(?,?,?)").run(
-      request.requestId,
-      fingerprint,
-      JSON.stringify(result),
-    );
-    return result;
-  }).immediate();
+          "INSERT INTO jobs(id,revision) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision",
+        ).run(revision);
+      }
+      for (const partition of dirty)
+        db.query(
+          "INSERT INTO dirty_partitions VALUES(?,?) ON CONFLICT(partition) DO UPDATE SET revision=excluded.revision",
+        ).run(partition, revision);
+      const result = { committed, duplicates, rejected, revision };
+      db.query("INSERT INTO requests VALUES(?,?,?)").run(
+        request.requestId,
+        fingerprint,
+        JSON.stringify(result),
+      );
+      return result;
+    })
+    .immediate();
 }
 function mergePerson(
   db: Database,

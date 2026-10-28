@@ -137,7 +137,7 @@ export function DashboardGrid({
       role="region"
       aria-label="Dashboard layout"
       data-editing={editing}
-      className={`grid min-w-0 ${editing ? "rounded-lg bg-muted/30 outline outline-1 outline-border" : ""}`}
+      className={`grid min-w-0 ${editing ? "rounded-lg bg-muted/30 outline-solid outline-1 outline-border" : ""}`}
       style={{
         gridTemplateColumns: `repeat(${stacked ? 1 : grid.columns}, minmax(0, 1fr))`,
         gridAutoRows: stacked ? "auto" : grid.rowHeight,
@@ -189,7 +189,7 @@ export function DashboardGrid({
                   type="button"
                   aria-label={`Move ${insight.name}`}
                   title="Drag to move"
-                  className="absolute inset-0 z-10 touch-none rounded-lg cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="absolute inset-0 z-10 touch-none rounded-lg cursor-grab active:cursor-grabbing focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                   {...controls(item, "move")}
                 />
                 {edges.map(({ action, className }) => (
@@ -198,7 +198,7 @@ export function DashboardGrid({
                     type="button"
                     aria-label={`Resize ${insight.name} ${action} border`}
                     title="Drag to resize"
-                    className={`absolute z-20 touch-none rounded hover:bg-primary/40 focus-visible:bg-primary/40 focus-visible:outline-none ${className}`}
+                    className={`absolute z-20 touch-none rounded hover:bg-primary/40 focus-visible:bg-primary/40 focus-visible:outline-hidden ${className}`}
                     {...controls(item, action)}
                   />
                 ))}

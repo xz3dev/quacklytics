@@ -34,14 +34,14 @@ test("project emoji selection persists, clears, validates, and stays isolated", 
   await edit();
   await page.getByRole("button", { name: "Choose project emoji" }).click();
   await expect(
-    page.getByRole("button", { name: "grinning face", exact: true }),
+    page.getByRole("gridcell", { name: "grinning face", exact: true }),
   ).toBeVisible();
   const search = page.getByRole("textbox", {
     name: "Type to search for an emoji",
   });
   await search.fill("rocket");
   await expect(search).toHaveValue("rocket");
-  await page.getByRole("button", { name: "rockets", exact: true }).click();
+  await page.getByRole("gridcell", { name: "rockets", exact: true }).click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(switcher).toContainText("🚀");
   await page.reload();

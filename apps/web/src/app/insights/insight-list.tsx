@@ -188,7 +188,7 @@ export function InsightsList({
                           aria-describedby={`insight-type-${type}-description`}
                           className="peer sr-only"
                         />
-                        <span className="flex h-full flex-col items-center rounded-xl border border-border/60 p-3 text-center transition-colors hover:border-primary/40 hover:bg-primary/[0.025] peer-checked:border-primary peer-checked:bg-primary/[0.06] peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ring">
+                        <span className="flex h-full flex-col items-center rounded-xl border border-border/60 p-3 text-center transition-colors hover:border-primary/40 hover:bg-primary/2.5 peer-checked:border-primary peer-checked:bg-primary/6 peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:outline-solid peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ring">
                           <InsightGlyph type={type} />
                           <span className="mt-3 text-sm font-medium">
                             {type}
@@ -246,7 +246,7 @@ export function InsightsList({
           </div>
         )}
         {insights.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-6 py-10 text-center">
+          <div className="rounded-xl border border-dashed border-primary/20 bg-primary/3 px-6 py-10 text-center">
             <Star className="mx-auto mb-3 h-6 w-6 text-primary/60" />
             <h3 className="font-medium">
               {query
@@ -303,7 +303,7 @@ export function InsightsList({
                       </div>
                     ) : (
                       <ProjectLink to={`/insights/${insight.id}`}>
-                        <span className="font-medium leading-snug break-words after:absolute after:inset-0 after:rounded-xl">
+                        <span className="font-medium leading-snug wrap-break-word after:absolute after:inset-0 after:rounded-xl">
                           {name}
                         </span>
                       </ProjectLink>

@@ -69,6 +69,9 @@ const test = base.extend<{ landing: Landing }>({
         "127.0.0.1",
         "--port",
         "4325",
+        // Astro auto-backgrounds dev servers under coding agents; stay in the
+        // foreground so this fixture owns the process and its environment.
+        "--ignore-lock",
       ],
       {
         env: {

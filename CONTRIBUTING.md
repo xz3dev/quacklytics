@@ -32,6 +32,8 @@ bun run start
 - Start Garage with `bun run storage:up` before testing.
 - Tests use fresh temporary SQLite directories, unique project object prefixes in the development bucket, and the production server.
 
+`docker build --tag quacklytics-image-test .` followed by `bun run test:image` tests the actual container image: first-admin setup beside a GeoIP cache, ingestion and duplicate handling, isolated projects, Parquet export and browser queries, and persistence after restarting the container. CI runs this flow on both AMD64 and ARM64 before publishing a release. Set `QUACKLYTICS_TEST_IMAGE` to check another image tag.
+
 `bun run check:imports` rejects server/native imports in browser and shared source, except the explicit Start API gateway route, and enforces the repository/domain dependency direction. `check:boundaries` also scans the built browser bundle.
 
 The tracker landing page is the E2E client in `tests/e2e/tracker-landing.spec.ts`; run `bun run build` then `bunx playwright test tests/e2e/tracker-landing.spec.ts` with development storage running.
@@ -103,7 +105,7 @@ Signed URLs expire after one hour and are renewed before expiry. Browser databas
 
 ### Domain and repositories
 
-Backend handlers delegate project, insight, dashboard, and template operations to `src/server/domain`. Domain services own business rules and transaction boundaries; `src/server/repositories` owns their SQLite reads and writes. Shared Zod contracts distinguish creation/update commands from responses. Dashboard commands contain insight references; ordered membership and optional card layout are stored in `dashboard_insights`, with foreign keys that remove membership when an insight is deleted. Migration `0002_dashboard_membership` converts existing embedded snapshots and supports downgrade. Expanded API responses use current insight records.
+Backend handlers delegate project, insight, dashboard, and template operations to `src/server/domain`. Domain services own business rules and transaction boundaries; `src/server/repositories` owns their SQLite reads and writes. Shared Zod contracts distinguish creation/update commands from responses. Dashboard commands contain insight references; ordered membership and optional card layout are stored in `dashboard_insights`, with foreign keys that remove membership when an insight is deleted. Expanded API responses use current insight records.
 
 ### SQL builders
 
@@ -111,17 +113,17 @@ Analytical builders share field quoting, property paths, typed predicates, and p
 
 ### Ingestion details
 
-The service accepts both the original first-party importer payload and the versioned SDK operations envelope. Migration `0003_sdk_identity` adds anonymous-user links without rewriting old event fingerprints or legacy actor IDs. Nested JSON values retain their types. A session cannot be reassigned to a different person. Person properties use event timestamp, then event ID, to resolve ties deterministically. Browser ingestion requires its exact origin (or `*`) in the project's allowed origins; server-to-server ingestion requires the key. Administrative endpoints require the administrator's session cookie.
+The service accepts both the first-party importer payload and the versioned SDK operations envelope. Anonymous SDK visitors are linked to users in `identity_links` and resolved when events are read, so linking never rewrites stored events or their fingerprints. Nested JSON values retain their types. A session cannot be reassigned to a different person. Person properties use event timestamp, then event ID, to resolve ties deterministically. Browser ingestion requires its exact origin (or `*`) in the project's allowed origins; server-to-server ingestion requires the key. Administrative endpoints require the administrator's session cookie.
 
 The **Web analytics** template is applied to new projects. Applying it to an empty dashboard recreates it; existing dashboards are left unchanged.
 
 ## Database migrations
 
-[Umzug](https://github.com/sequelize/umzug) manages versioned SQL migrations through a Bun SQLite storage adapter. Files live in `apps/web/src/server/db/migrations/{app,project}` as matching pairs, for example `0006_add_feature.up.sql` and `0006_add_feature.down.sql` (names must match `NNNN_lower_snake_case.(up|down).sql`). Use increasing numeric versions within each database scope. Both files are required. Never edit an applied migration: checksums cover both directions. Add a new pair instead.
+[Umzug](https://github.com/sequelize/umzug) manages versioned SQL migrations through a Bun SQLite storage adapter. Files live in `apps/web/src/server/db/migrations/{app,project}` as matching pairs, for example `0002_add_feature.up.sql` and `0002_add_feature.down.sql` (names must match `NNNN_lower_snake_case.(up|down).sql`). Use increasing numeric versions within each database scope. Both files are required. Never edit an applied migration: checksums cover both directions. Add a new pair instead.
 
 `bun run dev` automatically runs the web workspace's `predev` task first, migrating the app database and every registered project in `DATA_DIR` (including initializing a fresh directory). Migration failures prevent the dev server from starting. You can also run it directly with `bun run --cwd apps/web predev`.
 
-Startup applies app migrations before authentication initializes. Project migrations apply when a project database is opened. Existing SQLite version-1 ledgers are adopted after validating their original checksum; existing projects, credentials, and ingestion keys are retained. Better Auth schema changes require explicit SQL migrations when upgrading the dependency.
+Startup applies app migrations before authentication initializes. Project migrations apply when a project database is opened. Better Auth schema changes require explicit SQL migrations when upgrading the dependency.
 
 From the repository root, with the application stopped:
 

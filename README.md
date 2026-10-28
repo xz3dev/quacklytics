@@ -71,9 +71,21 @@ Add your site's origin (or `*`) to the project's allowed origins. See [the clien
 - The response `{committed, duplicates, rejected, revision}` is sent after commit. `rejected` counts events for archived months; send those to `POST /api/backfill` instead (same key, body and limits).
 - Sending a session and person together links that session's earlier anonymous events to the person.
 
+## AI agents (MCP)
+
+Each project exposes a read-only [MCP](https://modelcontextprotocol.io) server at `/api/mcp`. Create an access token under **Ingestion → Agent access (MCP)**, then, for example:
+
+```sh
+claude mcp add --transport http quacklytics https://analytics.example.com/api/mcp --header "Authorization: Bearer qmcp_…"
+```
+
+The agent runs its own DuckDB queries. `get_dataset` returns setup SQL that reads the monthly Parquet files plus one Parquet file with every event not yet in them through signed URLs. Both come from the same snapshot, so together they cover each event exactly once. A snapshot is reused for up to 10 minutes. Other tools return the schema, saved insights, dashboards and a DuckDB query guide. Tokens are shown once; ingestion keys never grant read access.
+
 ## Deploying
 
 The image is published as `ghcr.io/xz3dev/quacklytics` (`latest`, `X.Y.Z`, `X.Y`, or `nightly`). Pending database migrations are applied automatically on startup.
+
+Version 0.4.0 starts a new database schema baseline and requires a fresh `DATA_DIR`. Existing databases from earlier releases are not migrated to this baseline. Preserve your previous data directory and S3 objects separately before replacing an older installation.
 
 ### Configuration
 

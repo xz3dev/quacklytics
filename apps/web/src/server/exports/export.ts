@@ -1,8 +1,4 @@
-import {
-  DuckDBInstance,
-  type DuckDBConnection,
-  timestampValue,
-} from "@duckdb/node-api";
+import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,17 +7,15 @@ import { catalogFile, catalogAccess, parseJson } from "@quacklytics/contracts";
 import type { Database } from "bun:sqlite";
 import { setting, setSetting } from "../db/database";
 
+import { appendEvent, createEventsTable, sqlString } from "./parquet";
 import { utcDayStart } from "./snapshot";
-import { objectStore, objectKey, storageIdentity } from "./storage";
+import {
+  objectStore,
+  objectKey,
+  objectRetention,
+  storageIdentity,
+} from "./storage";
 
-const exportRow = z.object({
-  id: z.string(),
-  timestamp: z.number(),
-  event_type: z.string(),
-  session_id: z.string().nullable(),
-  person_id: z.string().nullable(),
-  properties: z.string(),
-});
 const parquetCheck = z.object({
   row_count: z.number(),
   id_count: z.number(),
@@ -43,7 +37,6 @@ const monthEnd = (start: number) => {
 const archiveDelay = 7 * 86400_000;
 const archivable = (start: number, dayStart: number) =>
   monthEnd(start) + archiveDelay <= dayStart;
-const sqlPath = (path: string) => `'${path.replaceAll("'", "''")}'`;
 async function sha256(path: string) {
   const hasher = new Bun.CryptoHasher("sha256"),
     reader = Bun.file(path).stream().getReader();
@@ -74,7 +67,7 @@ async function downloadVerified(
   const check = parquetCheck.parse(
     (
       await conn.runAndReadAll(
-        `SELECT count(*)::INTEGER row_count,count(DISTINCT id)::INTEGER id_count,count(timestamp)::INTEGER timestamp_count,count(event_type)::INTEGER type_count,count(properties)::INTEGER property_count,count(session_id)::INTEGER session_count,count(person_id)::INTEGER person_count FROM read_parquet(${sqlPath(target)})`,
+        `SELECT count(*)::INTEGER row_count,count(DISTINCT id)::INTEGER id_count,count(timestamp)::INTEGER timestamp_count,count(event_type)::INTEGER type_count,count(properties)::INTEGER property_count,count(session_id)::INTEGER session_count,count(person_id)::INTEGER person_count FROM read_parquet(${sqlString(target)})`,
       )
     ).getRowObjectsJS()[0],
   );
@@ -216,9 +209,7 @@ async function writeExport(db: Database, project: string) {
   try {
     instance = await DuckDBInstance.create();
     conn = await instance.connect();
-    await conn.run(
-      "CREATE TABLE events(id VARCHAR,timestamp TIMESTAMP,event_type VARCHAR,session_id VARCHAR,person_id VARCHAR,properties JSON)",
-    );
+    await createEventsTable(conn);
     // Backfilled rows for an archived month merge into its verified stored copy,
     // which is the only place the rest of that month exists.
     const stored = new Map<string, string>();
@@ -275,21 +266,8 @@ async function writeExport(db: Database, project: string) {
                 " WHERE e.timestamp>=? AND e.timestamp<? ORDER BY e.timestamp,e.id",
             )
             .iterate(start, end)) {
-            const row = exportRow.parse(raw);
+            appendEvent(appender, raw);
             live++;
-            appender.appendVarchar(row.id);
-            appender.appendTimestamp(
-              timestampValue(BigInt(row.timestamp) * 1000n),
-            );
-            appender.appendVarchar(row.event_type);
-            row.session_id === null
-              ? appender.appendNull()
-              : appender.appendVarchar(row.session_id);
-            row.person_id === null
-              ? appender.appendNull()
-              : appender.appendVarchar(row.person_id);
-            appender.appendVarchar(row.properties);
-            appender.endRow();
           }
           if (!live && !storedPath) {
             db.query(
@@ -316,10 +294,10 @@ async function writeExport(db: Database, project: string) {
       if (snapshot.stored) {
         // Archived rows win, so re-sent events cannot duplicate or overwrite them.
         await conn.run(
-          `DELETE FROM events WHERE id IN (SELECT id FROM read_parquet(${sqlPath(snapshot.stored)}))`,
+          `DELETE FROM events WHERE id IN (SELECT id FROM read_parquet(${sqlString(snapshot.stored)}))`,
         );
         await conn.run(
-          `INSERT INTO events SELECT * FROM read_parquet(${sqlPath(snapshot.stored)})`,
+          `INSERT INTO events SELECT * FROM read_parquet(${sqlString(snapshot.stored)})`,
         );
       }
       const stats = z
@@ -338,7 +316,7 @@ async function writeExport(db: Database, project: string) {
       const name = `events-${snapshot.partition}-${snapshot.revision}-${crypto.randomUUID()}.parquet`;
       const target = join(dir, name);
       await conn.run(
-        `COPY (SELECT * FROM events WHERE ${range}) TO ${sqlPath(target)} (FORMAT PARQUET,COMPRESSION ZSTD)`,
+        `COPY (SELECT * FROM events WHERE ${range}) TO ${sqlString(target)} (FORMAT PARQUET,COMPRESSION ZSTD)`,
       );
       await objectStore.write(objectKey(project, name), Bun.file(target), {
         type: "application/vnd.apache.parquet",
@@ -373,7 +351,10 @@ async function writeExport(db: Database, project: string) {
       for (const { file, archive, live, first, last } of files) {
         db.query(
           "UPDATE catalog SET json=json_set(json, '$.validUntil', ?) WHERE name=(SELECT json_extract(json, '$.name') FROM export_manifest WHERE partition=?)",
-        ).run(new Date(Date.now() + 3600_000).toISOString(), file.partition);
+        ).run(
+          new Date(Date.now() + objectRetention).toISOString(),
+          file.partition,
+        );
         db.query("INSERT INTO catalog VALUES(?,?)").run(
           file.name,
           JSON.stringify(file),
@@ -430,7 +411,16 @@ async function writeExport(db: Database, project: string) {
 }
 
 export async function cleanupExports(db: Database, project: string) {
-  if (exportsInFlight.has(project)) return;
+  // Until an export adopts the configured destination, the catalog describes
+  // objects stored elsewhere.
+  const destination = z
+    .object({ value: z.string() })
+    .nullable()
+    .parse(
+      db.query("SELECT value FROM settings WHERE key='parquet_storage'").get(),
+    );
+  if (exportsInFlight.has(project) || destination?.value !== storageIdentity)
+    return;
   const expired = z
     .array(z.object({ name: z.string() }))
     .parse(
@@ -444,7 +434,8 @@ export async function cleanupExports(db: Database, project: string) {
     await objectStore.delete(objectKey(project, file.name));
     db.query("DELETE FROM catalog WHERE name=?").run(file.name);
   }
-  // Reclaim uploads interrupted before manifest publication, including process crashes.
+  // Reclaim uploads interrupted before manifest publication, including process
+  // crashes, and the live files of agent datasets.
   const retained = new Set(
     z
       .array(z.object({ name: z.string() }))
@@ -461,7 +452,7 @@ export async function cleanupExports(db: Database, project: string) {
       if (
         object.lastModified &&
         !retained.has(object.key) &&
-        Date.parse(object.lastModified) < Date.now() - 3600_000
+        Date.parse(object.lastModified) < Date.now() - objectRetention
       )
         await objectStore.delete(object.key);
     }

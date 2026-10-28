@@ -21,8 +21,7 @@ export function fieldExpression(
         ? field.name
         : `$.${JSON.stringify(field.name)}`,
     );
-    const column = `${prefix}"properties"`;
-    expression = `COALESCE(json_extract_string(${column}, ${path}), json_extract_string(json_extract_string(${column}, '$'), ${path}))`;
+    expression = `json_extract_string(${prefix}"properties", ${path})`;
   } else if (field.name === "COALESCE(person_id, session_id)") {
     expression = `COALESCE(${prefix}"person_id", ${prefix}"session_id")`;
   } else if (

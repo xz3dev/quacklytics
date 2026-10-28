@@ -32,6 +32,11 @@ export default defineConfig({
         plugins: [
             tailwindcss()
         ],
+        // satteri (used by Starlight's Steps/Tabs/FileTree) loads a platform-specific native
+        // binding, so it must stay external; it's a direct dependency so the build can resolve it.
+        environments: {
+            prerender: {resolve: {external: ['satteri']}},
+        },
         // The injected tracker is a linked workspace package, so Vite's startup scan misses
         // its dependencies and would otherwise reload the first page after discovering them.
         optimizeDeps: {
@@ -52,9 +57,9 @@ export default defineConfig({
             plugins: [
                 starlightImageZoom(),
             ],
-            social: {
-                github: 'https://github.com/xz3dev/quacklytics/',
-            },
+            social: [
+                {icon: 'github', label: 'GitHub', href: 'https://github.com/xz3dev/quacklytics/'},
+            ],
             sidebar: [
                 {
                     label: 'Start Here',
@@ -66,18 +71,19 @@ export default defineConfig({
                 },
                 {
                     label: 'Self-Hosting',
-                    autogenerate: {directory: 'self-hosting'},
+                    items: [{autogenerate: {directory: 'self-hosting'}}],
                 },
                 {
                     label: 'Guides',
                     items: [
                         {slug: 'guides/send-data'},
                         {slug: 'guides/import'},
+                        {slug: 'guides/agents'},
                     ],
                 },
                 {
                     label: 'Reference',
-                    autogenerate: {directory: 'reference'},
+                    items: [{autogenerate: {directory: 'reference'}}],
                 },
             ],
             components: {

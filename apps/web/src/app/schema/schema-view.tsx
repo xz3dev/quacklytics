@@ -81,7 +81,7 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
     ) ?? [];
 
   return (
-    <div className="grid min-w-0 overflow-hidden rounded-xl border border-border/50 bg-card lg:h-[calc(100dvh-7rem)] lg:min-h-[32rem] lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
+    <div className="grid min-w-0 overflow-hidden rounded-xl border border-border/50 bg-card lg:h-[calc(100dvh-7rem)] lg:min-h-128 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
       <section
         aria-label="Events"
         className="flex min-h-0 min-w-0 flex-col border-b border-border/50 lg:border-b-0 lg:border-r"
@@ -113,14 +113,14 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                 aria-pressed={selectedEvent?.name === event.name}
                 onClick={() => setSelectedName(event.name)}
                 className={cn(
-                  "my-1 flex w-full items-center gap-3 rounded-md px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  "my-1 flex w-full items-center gap-3 rounded-md px-4 py-4 text-left transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   selectedEvent?.name === event.name
                     ? "bg-accent"
                     : "hover:bg-muted",
                 )}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                  <p className="text-sm font-medium wrap-anywhere">
                     {event.name}
                   </p>
                   <p className="mt-1.5 text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="group inline-flex max-w-full items-center gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="group inline-flex max-w-full items-center gap-2 rounded-sm text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={async () => {
                         try {
                           await navigator.clipboard.writeText(
@@ -198,7 +198,7 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                         }
                       }}
                     >
-                      <span className="min-w-0 [overflow-wrap:anywhere]">
+                      <span className="min-w-0 wrap-anywhere">
                         {selectedEvent.name}
                       </span>
                       <Copy
@@ -245,7 +245,7 @@ function SchemaBrowser({ schema }: { schema: Schema }) {
                       <TableCell className="max-w-0">
                         <button
                           type="button"
-                          className="rounded-sm text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [overflow-wrap:anywhere]"
+                          className="rounded-sm text-left text-sm font-medium focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring wrap-anywhere"
                         >
                           {field.name}
                         </button>

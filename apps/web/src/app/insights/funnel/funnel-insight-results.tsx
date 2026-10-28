@@ -39,7 +39,7 @@ function BreakdownLabel({ name }: { name: string }) {
       aria-expanded={expanded}
       onClick={() => setExpanded((value) => !value)}
       title={name}
-      className={`block w-full max-w-[calc(100vw-10rem)] rounded-sm text-left font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${expanded ? "whitespace-normal break-words" : "truncate"}`}
+      className={`block w-full max-w-[calc(100vw-10rem)] rounded-sm text-left font-medium focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${expanded ? "whitespace-normal wrap-break-word" : "truncate"}`}
     >
       {name}
     </button>
@@ -180,7 +180,7 @@ function ConfiguredFunnel({ insight }: Props) {
                         >
                           {index + 1}
                         </span>
-                        <span className="min-w-0 break-words font-medium">
+                        <span className="min-w-0 wrap-break-word font-medium">
                           {point.label}
                         </span>
                       </div>

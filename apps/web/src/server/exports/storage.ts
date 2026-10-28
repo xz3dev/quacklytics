@@ -25,13 +25,16 @@ const publicStore = new S3Client({
 });
 export const objectKey = (project: string, name: string) =>
   `projects/${project}/${name}`;
-export function objectAccess(project: string, name: string) {
+// Export cleanup deletes uncatalogued objects this long after they were written,
+// and superseded months this long after they were replaced.
+export const objectRetention = 3600_000;
+export function objectAccess(project: string, name: string, expiresIn = 3600) {
   return {
     url: publicStore.presign(objectKey(project, name), {
       method: "GET",
-      expiresIn: 3600,
+      expiresIn,
     }),
-    expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+    expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
   };
 }
 

@@ -48,10 +48,7 @@ export function NavMain({
           className="flex items-stretch gap-2"
           asChild={!item.isActive}
         >
-          <Link
-            to={item.url}
-            className="flex items-stretch gap-2 flex-shrink-0"
-          >
+          <Link to={item.url} className="flex items-stretch gap-2 shrink-0">
             {item.icon && <item.icon className="w-4 h-4" />}
             <span style={{ lineHeight: "100%" }}>{item.title}</span>
           </Link>

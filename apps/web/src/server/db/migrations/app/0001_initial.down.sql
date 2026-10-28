@@ -1,2 +1,9 @@
+DROP TABLE verification;
+DROP TABLE account;
+DROP TABLE session;
+DROP TABLE user;
+DROP TABLE anonymous_salts;
+DROP TABLE mcp_tokens;
+DROP TABLE api_key_secrets;
 DROP TABLE api_keys;
 DROP TABLE projects;

@@ -45,78 +45,86 @@ export function saveDashboard(db: Database, input: unknown, id?: number) {
   const value = (id === undefined ? dashboardCreate : dashboardUpdate).parse(
     input,
   );
-  return db.transaction(() => {
-    if (id !== undefined) getDashboard(db, id);
-    const insights = insightMap(db);
-    const ids = new Set(value.insights.map((item) => item.id));
-    if (ids.size !== value.insights.length)
-      throw new RequestError(400, "Duplicate insight");
-    if (value.insights.some((item) => !insights.has(item.id)))
-      throw new RequestError(400, "Unknown insight");
-    if (value.layout?.some((item) => !ids.has(item.insightId)))
-      throw new RequestError(
-        409,
-        "Layout references an unknown dashboard insight",
+  return db
+    .transaction(() => {
+      if (id !== undefined) getDashboard(db, id);
+      const insights = insightMap(db);
+      const ids = new Set(value.insights.map((item) => item.id));
+      if (ids.size !== value.insights.length)
+        throw new RequestError(400, "Duplicate insight");
+      if (value.insights.some((item) => !insights.has(item.id)))
+        throw new RequestError(400, "Unknown insight");
+      if (value.layout?.some((item) => !ids.has(item.insightId)))
+        throw new RequestError(
+          409,
+          "Layout references an unknown dashboard insight",
+        );
+      if (value.home) repository.clearHomeDashboards(db);
+      const savedId = repository.writeDashboard(
+        db,
+        dashboardMetadata.parse(value),
+        value.insights.map((item, position) => ({
+          insightId: item.id,
+          position,
+          layout: value.layout?.find((grid) => grid.insightId === item.id),
+        })),
+        id,
       );
-    if (value.home) repository.clearHomeDashboards(db);
-    const savedId = repository.writeDashboard(
-      db,
-      dashboardMetadata.parse(value),
-      value.insights.map((item, position) => ({
-        insightId: item.id,
-        position,
-        layout: value.layout?.find((grid) => grid.insightId === item.id),
-      })),
-      id,
-    );
-    return getDashboard(db, savedId);
-  }).immediate();
+      return getDashboard(db, savedId);
+    })
+    .immediate();
 }
 export function setDashboardInsights(
   db: Database,
   id: number,
   insightIds: number[],
 ) {
-  return db.transaction(() => {
-    const existing = getDashboard(db, id);
-    return saveDashboard(
-      db,
-      {
-        ...existing,
-        insights: insightIds.map((id) => ({ id })),
-        layout: existing.layout?.filter((item) =>
-          insightIds.includes(item.insightId),
-        ),
-      },
-      id,
-    );
-  }).immediate();
+  return db
+    .transaction(() => {
+      const existing = getDashboard(db, id);
+      return saveDashboard(
+        db,
+        {
+          ...existing,
+          insights: insightIds.map((id) => ({ id })),
+          layout: existing.layout?.filter((item) =>
+            insightIds.includes(item.insightId),
+          ),
+        },
+        id,
+      );
+    })
+    .immediate();
 }
 export function setDashboardLayout(
   db: Database,
   id: number,
   layout: DashboardGridItem[],
 ) {
-  return db.transaction(() => {
-    const existing = getDashboard(db, id);
-    if (
-      layout.length !== existing.insights.length ||
-      layout.some(
-        (item) =>
-          !existing.insights.some((insight) => insight.id === item.insightId),
+  return db
+    .transaction(() => {
+      const existing = getDashboard(db, id);
+      if (
+        layout.length !== existing.insights.length ||
+        layout.some(
+          (item) =>
+            !existing.insights.some((insight) => insight.id === item.insightId),
+        )
       )
-    )
-      throw new RequestError(
-        409,
-        "Dashboard insights changed. Reload before adjusting the layout.",
-      );
-    return saveDashboard(db, { ...existing, layout }, id);
-  }).immediate();
+        throw new RequestError(
+          409,
+          "Dashboard insights changed. Reload before adjusting the layout.",
+        );
+      return saveDashboard(db, { ...existing, layout }, id);
+    })
+    .immediate();
 }
 export function setHomeDashboard(db: Database, id: number) {
-  return db.transaction(() =>
-    saveDashboard(db, { ...getDashboard(db, id), home: true }, id),
-  ).immediate();
+  return db
+    .transaction(() =>
+      saveDashboard(db, { ...getDashboard(db, id), home: true }, id),
+    )
+    .immediate();
 }
 export function deleteDashboard(db: Database, id: number) {
   getDashboard(db, id);

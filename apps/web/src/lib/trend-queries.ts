@@ -151,11 +151,13 @@ export type AggregationResult<T extends Aggregation[]> = {
 
 // Final QueryResult type
 export type QueryResult<T extends Query> = {
-  [K in
-    | (T["aggregations"] extends Aggregation[]
-        ? ExtractAliases<T["aggregations"]>
-        : never)
-    | (T["groupBy"] extends Field[]
-        ? ExtractFieldAliases<T["groupBy"]>
-        : never)]: string;
+  [
+    K in
+      | (T["aggregations"] extends Aggregation[]
+          ? ExtractAliases<T["aggregations"]>
+          : never)
+      | (T["groupBy"] extends Field[]
+          ? ExtractFieldAliases<T["groupBy"]>
+          : never)
+  ]: string;
 }[];

@@ -36,12 +36,9 @@ export function readAnalyticsStatus(db: Database, project: string) {
     const destinationMatches = value("parquet_storage") === storageIdentity;
     const committedRevision = Number(setting(db, "revision"));
     const files = destinationMatches ? readCatalog(db, project) : [];
-    // Existing stores predate the explicit publication watermark.
+    // Adopting a destination sets the watermark in the same transaction.
     const exportedRevision = destinationMatches
-      ? Number(
-          value("exported_revision") ??
-            Math.max(0, ...files.map((file) => file.revision)),
-        )
+      ? Number(setting(db, "exported_revision"))
       : 0;
     const job = z
       .object({ error: z.string().nullable() })
