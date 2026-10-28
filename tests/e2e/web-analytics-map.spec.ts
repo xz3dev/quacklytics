@@ -3,7 +3,11 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { dashboard, insight } from "../../packages/contracts/src/index";
+import {
+  catalogAccess,
+  dashboard,
+  insight,
+} from "../../packages/contracts/src/index";
 import { countryDatabase } from "../support/mmdb";
 import { withServer } from "../support/server";
 
@@ -117,6 +121,22 @@ test("the default web analytics dashboard maps SDK visitors by country", async (
         await pageview("8.8.8.8", "/");
         await pageview("192.0.2.1", "/");
         await pageview("198.51.100.7", "/");
+
+        const exported = await api.post(
+          `${origin}/api/${project.id}/events/catalog/gen`,
+          { headers },
+        );
+        expect(exported.ok(), await exported.text()).toBeTruthy();
+        const file = catalogAccess
+          .array()
+          .parse(await exported.json())
+          .at(0);
+        if (!file) throw new Error("Missing country events export");
+        const range = await api.get(file.url, {
+          headers: { Origin: origin, Range: "bytes=0-3" },
+        });
+        expect(range.status()).toBe(206);
+        expect(range.headers()["access-control-allow-origin"]).toBe(origin);
 
         const [home] = dashboard
           .array()

@@ -99,6 +99,26 @@
       "AllowedOrigins": [
         "http://127.0.0.1:4176"
       ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4180"
+      ]
     }
   ]
 }
