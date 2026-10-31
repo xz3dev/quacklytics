@@ -31,12 +31,7 @@ test("value bars compare real periods, handle zero baselines, and survive reload
     { name: "Increase", current: 12, previous: 8, change: "+4 (+50%)" },
     { name: "Decrease", current: 4, previous: 8, change: "-4 (-50%)" },
     { name: "Empty", current: 0, previous: 0, change: "0No change" },
-    {
-      name: "New",
-      current: 3,
-      previous: 0,
-      change: "+3vs. previous period · percentage unavailable from zero",
-    },
+    { name: "New", current: 3, previous: 0, change: "+3vs. previous period" },
     { name: "Equal", current: 8, previous: 8, change: "0 (0%)No change" },
   ];
   const events = cases.flatMap((entry) =>

@@ -249,11 +249,7 @@ function UngroupedValueInsightChart({ insight }: Props) {
                   {percentage !== null && ` (${formatChange(percentage, 1)}%)`}
                 </span>
                 <span className="ml-2 text-muted-foreground">
-                  {change === 0
-                    ? "No change"
-                    : valuePrev === 0
-                      ? "vs. previous period · percentage unavailable from zero"
-                      : "vs. previous period"}
+                  {change === 0 ? "No change" : "vs. previous period"}
                 </span>
               </>
             )}
