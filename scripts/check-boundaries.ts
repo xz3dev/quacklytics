@@ -20,7 +20,8 @@ async function files(dir: string): Promise<string[]> {
 const root = resolve("apps/web/src");
 const server = join(root, "server") + sep;
 const contracts = resolve("packages/contracts/src") + sep;
-const apiRoute = join(root, "routes", "api.$.ts");
+// The Start server entry hands API requests to the gateway; it never ships to browsers.
+const serverEntry = join(root, "server.ts");
 const native = new Set([
   ...builtinModules,
   "bun",
@@ -88,11 +89,11 @@ for (const file of sources) {
       const name = specifier.text;
       const target = ts.resolveModuleName(name, path, compilerOptions, ts.sys)
         .resolvedModule?.resolvedFileName;
-      const routeGateway =
-        path === apiRoute && target === join(root, "server", "gateway.ts");
+      const entryGateway =
+        path === serverEntry && target === join(root, "server", "gateway.ts");
       if (
         !path.startsWith(server) &&
-        !routeGateway &&
+        !entryGateway &&
         (target?.startsWith(server) ||
           native.has(name) ||
           name.startsWith("node:") ||
