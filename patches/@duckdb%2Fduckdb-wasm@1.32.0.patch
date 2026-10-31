@@ -1,4 +1,5 @@
 diff --git a/dist/duckdb-browser-mvp.worker.js b/dist/duckdb-browser-mvp.worker.js
+index 56af500a06a206730889125a1aa8540b09e8d904..e310bbcc4378718e617816679bd609758df725f9 100644
 --- a/dist/duckdb-browser-mvp.worker.js
 +++ b/dist/duckdb-browser-mvp.worker.js
 @@ -1,4 +1,4 @@
@@ -7,3 +8,8 @@ diff --git a/dist/duckdb-browser-mvp.worker.js b/dist/duckdb-browser-mvp.worker.
  /*! Bundled license information:
  
  js-sha256/src/sha256.js:
+@@ -11,4 +11,3 @@ js-sha256/src/sha256.js:
+    * @license MIT
+    *)
+ */
+-//# sourceMappingURL=duckdb-browser-mvp.worker.js.map
