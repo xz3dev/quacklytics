@@ -58,6 +58,11 @@ async function instantiateDb(bundle: duckdb.DuckDBBundle) {
     });
     const conn = await db.connect();
     try {
+      // Autoloaded extensions (ICU, JSON) are self-hosted under public/assets;
+      // their path is versioned, so a DuckDB upgrade needs fresh copies.
+      await conn.query(
+        `SET custom_extension_repository = '${location.origin}/assets/duckdb-extensions';`,
+      );
       await conn.query(`SET TimeZone='UTC';`);
     } finally {
       await conn.close();
