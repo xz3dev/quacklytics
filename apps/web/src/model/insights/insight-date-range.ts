@@ -1,4 +1,5 @@
 import {
+  addDays,
   endOfDay,
   endOfMonth,
   format,
@@ -57,15 +58,15 @@ interface DateRange {
 export const determinePreviousDateRange = (
   range: string | undefined,
 ): DateRange => {
-  const currentRange = determineDateRange(range);
-  const diffInMilliseconds =
-    currentRange.end.getTime() - currentRange.start.getTime() + 1;
-  const newStart = new UTCDate();
-  newStart.setTime(currentRange.start.getTime() - diffInMilliseconds);
+  const { start, end } = determineDateRange(range);
+  const length = end.getTime() - start.getTime() + 1;
+  // A range running into the future has only data up to now, so its
+  // predecessor stops at the same point to compare equal spans of time.
+  const until = Math.min(end.getTime(), Date.now());
   return {
-    start: newStart,
+    start: new UTCDate(start.getTime() - length),
     // Filters include both endpoints, so the periods must not share a millisecond.
-    end: new UTCDate(currentRange.start.getTime() - 1),
+    end: new UTCDate(Math.min(until - length, start.getTime() - 1)),
   };
 };
 
@@ -80,12 +81,13 @@ export const determineDateRange = (range: string | undefined): DateRange => {
     const seconds = iso.toSeconds(duration, end);
     const start = subSeconds(end, seconds);
 
-    // Calendar durations cover complete UTC days; time durations (e.g. PT24H)
-    // remain rolling windows ending now.
+    // Calendar durations cover whole UTC days ending with today, so they keep
+    // their bounds across reloads; time durations (e.g. PT24H) remain rolling
+    // windows ending now.
     if (!duration.hours && !duration.minutes && !duration.seconds) {
       return {
-        start: startOfDay(start),
-        end: endOfDay(subDays(end, 1)),
+        start: startOfDay(addDays(start, 1)),
+        end: endOfDay(end),
       };
     }
 

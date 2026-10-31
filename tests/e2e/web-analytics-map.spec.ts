@@ -91,7 +91,7 @@ test("the default web analytics dashboard maps SDK visitors by country", async (
                 {
                   kind: "event",
                   id: crypto.randomUUID(),
-                  // "Last 30 days" covers complete days, ending yesterday.
+                  // Exports hold completed days, so the visit happens yesterday.
                   timestamp: new Date(Date.now() - 86400000).toISOString(),
                   eventType: "$pageview",
                   properties: {},

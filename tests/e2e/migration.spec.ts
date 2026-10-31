@@ -54,8 +54,7 @@ test("setup, project, durable ingestion, browser analytics and reload", async ({
   // Setup already created a key; only the new one carries its full value.
   const key = keys.find((entry) => !entry.key.endsWith("…"))?.key;
   if (!key) throw new Error("Missing key");
-  // Default calendar charts cover complete UTC days, excluding today.
-  const now = new Date(Date.now() - 86400000);
+  const now = new Date(Date.now() - 1000);
   const payload = {
     requestId: crypto.randomUUID(),
     events: [
@@ -449,7 +448,6 @@ test("all insight definitions persist and dashboards preserve ordering across re
   const { defaultInsights } =
     await import("../../packages/contracts/src/index");
   const fixture = await projectFixture(page, "Insights E2E");
-  // Calendar ranges end yesterday; keep the entire funnel in completed days.
   const yesterday = new Date(Date.now() - 86400000).toISOString();
   const events = [
     event("signup", {
@@ -1201,7 +1199,7 @@ test("S3 analytics use private range reads, refresh revisions, and isolate proje
   ).toBeVisible();
 });
 
-test("dashboard compares complete UTC periods without boundary overlap and keeps labels readable", async ({
+test("dashboard compares equal UTC periods without boundary overlap and keeps labels readable", async ({
   page,
 }, testInfo) => {
   const { insight } = await import("../../packages/contracts/src/index");
@@ -1215,14 +1213,22 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
   const day = 86400000;
   const midnight = today.getTime();
   const name = "demo.trend.task_completed_with_a_long_but_readable_event_name";
-  const current = [midnight - 30 * day, midnight - 15 * day, midnight - 1];
-  const previous = [midnight - 60 * day, midnight - 30 * day - 1];
+  // Last 30 days runs from midnight 29 days ago through today. The previous
+  // period stops at the current time of day, so its last evening is excluded.
+  const current = [
+    midnight - 29 * day,
+    midnight - 15 * day,
+    midnight - 1,
+    midnight,
+  ];
+  const previous = [midnight - 59 * day, midnight - 30 * day];
+  const excluded = [midnight - 59 * day - 1, midnight - 29 * day - 1];
   const ingest = await page.request.post("/api/ingest", {
     headers: { "X-API-KEY": fixture.key },
     data: {
       requestId: crypto.randomUUID(),
-      events: [...current, ...previous, midnight - 60 * day - 1, midnight].map(
-        (time) => event(name, { timestamp: new Date(time).toISOString() }),
+      events: [...current, ...previous, ...excluded].map((time) =>
+        event(name, { timestamp: new Date(time).toISOString() }),
       ),
     },
   });
@@ -1255,8 +1261,8 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
     ).toBeVisible();
     await expect(page.getByText(/^Error:/)).toHaveCount(0);
   }
-  await expectValues(3, 2);
-  await expect(page.getByLabel("Period change")).toContainText("+1 (+50%)");
+  await expectValues(4, 2);
+  await expect(page.getByLabel("Period change")).toContainText("+2 (+100%)");
   const trend = page.getByRole("img", {
     name: "Events over time",
     exact: true,
@@ -1267,12 +1273,12 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
     timeZone: "UTC",
   });
   await expect(trend).toContainText(
-    dateFormat.format(new Date(midnight - 30 * day)),
+    dateFormat.format(new Date(midnight - 29 * day)),
   );
   await expect(trend).not.toContainText("T00:00:00.000Z");
   await expect(page.getByText(name, { exact: true })).toBeVisible();
   await page.reload();
-  await expectValues(3, 2);
+  await expectValues(4, 2);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByText(name, { exact: true })).toBeVisible();
   // Charts resize a frame after the viewport changes; measure settled bounds.
@@ -1299,10 +1305,11 @@ test("dashboard compares complete UTC periods without boundary overlap and keeps
   if (!value || value.type !== "Value")
     throw new Error("Missing value insight");
   for (const [duration, currentCount, previousCount] of [
-    ["today", 1, 1],
+    // Yesterday's comparison stops at the current time of day.
+    ["today", 1, 0],
     ["PT24H", 2, 0],
     [
-      `${new Date(midnight - 30 * day).toISOString().slice(0, 10)} - ${new Date(midnight - day).toISOString().slice(0, 10)}`,
+      `${new Date(midnight - 29 * day).toISOString().slice(0, 10)} - ${new Date(midnight - day).toISOString().slice(0, 10)}`,
       3,
       2,
     ],

@@ -84,7 +84,7 @@ Prices are €9/€29/€79 per month for starter/team/business, or ten months' 
 
 Set the date range to include the generated history (default last 365 days). Property paths into the context use JSON paths, e.g. `$."$context".page.path` or `$."$context".browser`.
 
-Calendar ranges such as Last 30 days include complete UTC days ending yesterday. The value comparison uses the preceding, equally long period with no shared boundary events. Use Today or Last 24 hours to include live activity.
+Calendar ranges such as Last 30 days cover whole UTC days ending with today, so Last 30 days shows 30 daily buckets including today's partial one. The value comparison uses the preceding, equally long period with no shared boundary events; for ranges that include today, the previous period stops at the same time of day.
 
 | Chart     | Events / configuration                                                                                                           | What to expect                                                                                                  |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |

@@ -54,8 +54,8 @@ test("trend charts span the whole selected range when only a few days have data"
     );
   const key = keys.at(-1)?.key;
   if (!key) throw new Error("Missing API key");
-  // Only two of the last 30 complete days hold events.
-  const events = [3, 3, 2].map((daysAgo) => ({
+  // Only two of the last 30 days hold events.
+  const events = [2, 2, 1].map((daysAgo) => ({
     id: crypto.randomUUID(),
     eventType: "signup",
     personId: "person",
@@ -84,12 +84,12 @@ test("trend charts span the whole selected range when only a few days have data"
   await expect(line).toHaveAttribute("d", /^M/);
 
   // The line starts on the first day of the range at zero, not at the first
-  // day with data, and runs through the last complete day.
+  // day with data, and runs through today.
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   for (const [at, date] of [
-    ["start", new Date(today.getTime() - 30 * day)],
-    ["end", new Date(today.getTime() - day)],
+    ["start", new Date(today.getTime() - 29 * day)],
+    ["end", today],
   ] as const) {
     const point = await linePoint(line, at);
     await page.mouse.move(point.x, point.y);
