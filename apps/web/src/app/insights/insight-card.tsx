@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProjectId } from "@/hooks/use-project-id.tsx";
 import { useInsight } from "@/services/insights.ts";
@@ -44,36 +45,32 @@ export function InsightCard({ insightId, timeOverrides }: Props) {
   if (insightData.status === "error")
     return emptyCard("Error", <div>Error: {insightData.error.message}</div>);
 
-  const insight = structuredClone(insightData.data);
-  if (timeOverrides?.duration) {
-    switch (insight.type) {
-      case "Trend":
-        insight.config.trend.duration = timeOverrides.duration;
-        break;
-      case "Value":
-        insight.config.value.duration = timeOverrides.duration;
-        break;
-      case "Funnel":
-        insight.config.funnel.duration = timeOverrides.duration;
-        break;
-      case "Breakdown":
-        insight.config.breakdown.duration = timeOverrides.duration;
-        break;
-      case "Retention":
-        insight.config.retention.duration = timeOverrides.duration;
-        break;
-      case "Path":
-        insight.config.path.duration = timeOverrides.duration;
-        break;
-      case "Map":
-        insight.config.map.duration = timeOverrides.duration;
-        break;
-    }
-  }
-  if (timeOverrides?.timeBucket && insight.type === "Trend") {
-    insight.config.trend.timeBucket = timeOverrides.timeBucket;
-  }
+  return (
+    <LoadedInsightCard
+      insight={insightData.data}
+      duration={timeOverrides?.duration}
+      timeBucket={timeOverrides?.timeBucket}
+    />
+  );
+}
 
+function LoadedInsightCard({
+  insight: saved,
+  duration,
+  timeBucket,
+}: {
+  insight: Insight;
+  duration: string | undefined;
+  timeBucket: TimeBucket | undefined;
+}) {
+  // Charts derive their queries from this object, so it changes only with the
+  // insight or its overrides. A fresh copy on every render, e.g. on resize,
+  // re-ran queries whose bounds include the current time and briefly replaced
+  // charts with spinners.
+  const insight = useMemo(
+    () => withTimeOverrides(saved, duration, timeBucket),
+    [saved, duration, timeBucket],
+  );
   return (
     <Card className="h-full min-w-0 overflow-auto border border-border/50">
       <CardHeader className="mx-5 mb-5 flex-row items-center justify-between gap-3 space-y-0 border-b border-border/40 px-0 py-4">
@@ -82,7 +79,7 @@ export function InsightCard({ insightId, timeOverrides }: Props) {
             {insight.name}
           </ProjectLink>
         </CardTitle>
-        {!timeOverrides?.duration && !timeOverrides?.timeBucket && (
+        {!duration && !timeBucket && (
           <span
             aria-label="Insight timeframe"
             className="ml-auto flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
@@ -97,6 +94,42 @@ export function InsightCard({ insightId, timeOverrides }: Props) {
       </CardContent>
     </Card>
   );
+}
+
+function withTimeOverrides(
+  saved: Insight,
+  duration: string | undefined,
+  timeBucket: TimeBucket | undefined,
+): Insight {
+  const insight = structuredClone(saved);
+  if (duration) {
+    switch (insight.type) {
+      case "Trend":
+        insight.config.trend.duration = duration;
+        break;
+      case "Value":
+        insight.config.value.duration = duration;
+        break;
+      case "Funnel":
+        insight.config.funnel.duration = duration;
+        break;
+      case "Breakdown":
+        insight.config.breakdown.duration = duration;
+        break;
+      case "Retention":
+        insight.config.retention.duration = duration;
+        break;
+      case "Path":
+        insight.config.path.duration = duration;
+        break;
+      case "Map":
+        insight.config.map.duration = duration;
+        break;
+    }
+  }
+  if (timeBucket && insight.type === "Trend")
+    insight.config.trend.timeBucket = timeBucket;
+  return insight;
 }
 
 function insightDuration(insight: Insight) {
