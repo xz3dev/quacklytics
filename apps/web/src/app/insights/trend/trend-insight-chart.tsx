@@ -9,7 +9,10 @@ import { ChartSpace } from "@/components/chart-space";
 import { ChartBreakdown } from "@/app/insights/common/chart-breakdown";
 import { trendRow } from "@quacklytics/contracts";
 import { useDuckDBQueries } from "@/services/duck-db-queries";
-import type { TrendInsight } from "@/model/insights/trend-insight";
+import {
+  trendBuckets,
+  type TrendInsight,
+} from "@/model/insights/trend-insight";
 import { useProjectId } from "@/hooks/use-project-id";
 import { buildQuery, mergeQueries } from "@/lib/trend-queries";
 import { buildGroupByFilter, buildRangeFilters } from "@/model/filters";
@@ -42,7 +45,7 @@ function UngroupedTrendInsightChart({ insight }: { insight: TrendInsight }) {
       ),
     })),
   );
-  const chartSeries = series.flatMap((s, i) =>
+  const parsedSeries = series.flatMap((s, i) =>
     (breakdown?.values ?? [null]).map((value, groupIndex) => ({
       ...s,
       metricUnit: insightMetricUnit(insight, i),
@@ -60,6 +63,24 @@ function UngroupedTrendInsightChart({ insight }: { insight: TrendInsight }) {
         .map((r) => ({ date: r.trend_bucket, value: r.result_value })),
     })),
   );
+  const buckets = trendBuckets(
+    config.timeBucket,
+    config.duration,
+    parsedSeries.flatMap((s) => s.rows.map((row) => row.date)),
+  );
+  // Empty buckets hold no events, so lines drop to zero there instead of
+  // bridging the gap. Bars need no filler: a missing bar already reads as zero.
+  // Averages and extremes are undefined without events, so they keep the gap.
+  const chartSeries = parsedSeries.map((s) => {
+    const fn = s.query?.aggregations?.[0]?.function;
+    if (s.visualisation === "bar" || (fn !== "COUNT" && fn !== "SUM"))
+      return s;
+    const values = new Map(s.rows.map((row) => [row.date, row.value]));
+    return {
+      ...s,
+      rows: buckets.map((date) => ({ date, value: values.get(date) ?? 0 })),
+    };
+  });
   const barSeries = chartSeries.flatMap((s, i) =>
     s.visualisation === "bar" ? [i] : [],
   );
@@ -83,7 +104,7 @@ function UngroupedTrendInsightChart({ insight }: { insight: TrendInsight }) {
   if (results.some((r) => r.isPending)) return <p>Loading chart…</p>;
   const error = results.find((r) => r.error)?.error;
   if (error) return <p role="alert">{error.message}</p>;
-  if (chartSeries.every((series) => series.rows.length === 0))
+  if (parsedSeries.every((series) => series.rows.length === 0))
     return <ChartEmptyState insight={insight} />;
   return (
     <div className="min-w-0 space-y-4">
@@ -96,7 +117,8 @@ function UngroupedTrendInsightChart({ insight }: { insight: TrendInsight }) {
               margin: { top: 12, right: 18 },
               scales: {
                 x: {
-                  scale: () => scaleBand().padding(0.3),
+                  // Span the whole selected range, not only buckets with data.
+                  scale: scaleBand().domain(buckets).padding(0.3),
                   axis: {
                     ...chartAxis,
                     ticks: {

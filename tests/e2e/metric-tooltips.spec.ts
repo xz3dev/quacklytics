@@ -137,6 +137,9 @@ test("tooltips derive units per metric and preserve them after editing and reloa
         config: {
           trend: {
             ...defaultInsights.Trend.config.trend,
+            // Trends span their whole range; one day keeps the grouped bars
+            // wide enough to hover individually.
+            duration: "yesterday",
             series: metrics.map((metric) => ({
               name: metric.name,
               visualisation: "bar",

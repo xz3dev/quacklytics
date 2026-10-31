@@ -77,6 +77,11 @@ test("all charts break down by properties, persist, and restore ungrouped result
     if (configured.type === "Trend") {
       const original = configured.config.trend.series?.[0];
       if (!original) throw new Error("Missing trend series");
+      // Trends span their whole range; cover only the two event days so the
+      // grouped bars stay wide enough to hover individually.
+      const day = (offset: number) =>
+        new Date(Date.now() - offset * 86400000).toISOString().slice(0, 10);
+      configured.config.trend.duration = `${day(3)} - ${day(2)}`;
       configured.config.trend.series = [
         { ...original, name: "Events", visualisation: "bar" },
         {

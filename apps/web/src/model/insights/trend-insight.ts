@@ -2,7 +2,13 @@ import { defaultInsights } from "@quacklytics/contracts";
 import { Insight } from "@/model/insights/insight.ts";
 import { Field } from "@/model/filters.ts";
 import { determineDateRange } from "@/model/insights/insight-date-range.ts";
-import { Duration, differenceInDays } from "date-fns";
+import {
+  Duration,
+  add,
+  differenceInDays,
+  startOfMonth,
+} from "date-fns";
+import { UTCDate } from "@date-fns/utc";
 
 export type TrendInsight = Extract<Insight, { type: "Trend" }>;
 
@@ -89,4 +95,38 @@ interface TimeBucketData {
   label: string;
   canActivate: (dateRange: string) => boolean;
   interval: Duration;
+}
+
+/**
+ * Lists every bucket start the selected range covers, so charts span the whole
+ * range instead of only the buckets that contain data. Mirrors DuckDB's
+ * `time_bucket`: month buckets snap to the first of the month, other buckets
+ * align to the range start. "All time" begins at the earliest data bucket.
+ */
+export function trendBuckets(
+  timeBucket: TimeBucket,
+  duration: string,
+  dataBuckets: readonly string[],
+): string[] {
+  const range = determineDateRange(duration);
+  // ISO timestamps sort chronologically as strings.
+  const sorted = [...dataBuckets].sort();
+  const earliest = sorted[0];
+  const start =
+    duration !== "allTime"
+      ? range.start
+      : earliest
+        ? new UTCDate(earliest)
+        : range.end;
+  const first = timeBucket === "Monthly" ? startOfMonth(start) : start;
+  const buckets = new Set<string>(sorted);
+  for (
+    let cursor = first;
+    cursor <= range.end;
+    cursor = add(cursor, timeBucketData[timeBucket].interval)
+  ) {
+    buckets.add(cursor.toISOString());
+  }
+  // Returned buckets stay included, even if they fall outside the range.
+  return [...buckets].sort();
 }
