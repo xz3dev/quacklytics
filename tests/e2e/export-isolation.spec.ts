@@ -11,6 +11,7 @@ import {
   analyticsStatus,
   analyticsSnapshot,
 } from "../../packages/contracts/src/index";
+import { workerOrigin } from "../support/server";
 
 test("stalled export leaves ingestion and catalog status responsive, then publishes both revisions", async () => {
   const storage = new URL(z.string().parse(process.env.S3_ENDPOINT));
@@ -54,13 +55,13 @@ test("stalled export leaves ingestion and catalog status responsive, then publis
   const directory = mkdtempSync(
     join(tmpdir(), "quacklytics-export-isolation-"),
   );
-  const origin = "http://127.0.0.1:4175";
+  const origin = workerOrigin();
   const server = spawn("bun", ["server.ts"], {
     cwd: resolve("apps/web"),
     env: {
       ...process.env,
       NODE_ENV: "production",
-      PORT: "4175",
+      PORT: new URL(origin).port,
       APP_ORIGIN: origin,
       DATA_DIR: directory,
       S3_ENDPOINT: `http://127.0.0.1:${port}`,

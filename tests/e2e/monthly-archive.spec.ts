@@ -13,6 +13,7 @@ import {
   catalogAccess,
   schemaResponse,
 } from "../../packages/contracts/src/index";
+import { workerOrigin } from "../support/server";
 
 test("complete months leave SQLite a week after they end, once their S3 copy verifies, and change only by backfill", async ({
   page,
@@ -60,8 +61,7 @@ test("complete months leave SQLite a week after they end, once their S3 copy ver
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-archive-"));
   const clock = join(directory, "clock");
   writeFileSync(clock, "2026-10-06T12:00:00.000Z");
-  // Shares hybrid-analytics' port: the dev bucket CORS allows only listed origins.
-  const origin = "http://127.0.0.1:4176";
+  const origin = workerOrigin();
   let log = "";
   const server = spawn(
     "bun",
@@ -71,7 +71,7 @@ test("complete months leave SQLite a week after they end, once their S3 copy ver
       env: {
         ...process.env,
         NODE_ENV: "production",
-        PORT: "4176",
+        PORT: new URL(origin).port,
         APP_ORIGIN: origin,
         DATA_DIR: join(directory, "data"),
         ANALYTICS_TEST_CLOCK: clock,

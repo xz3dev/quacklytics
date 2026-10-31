@@ -549,9 +549,16 @@ test("Bun demo command provisions real chart data and supports an existing inges
         .map((item) => item.personId),
     ).size,
   ).toBe(60);
+  // Other workers create projects concurrently; only demo projects count.
+  const demoIds = (items: z.infer<typeof project>[]) =>
+    items
+      .filter((item) => item.name.startsWith("Demo "))
+      .map((item) => item.id);
   expect(
-    project
-      .array()
-      .parse(await (await page.request.get("/api/projects")).json()),
-  ).toHaveLength(projects.length);
+    demoIds(
+      project
+        .array()
+        .parse(await (await page.request.get("/api/projects")).json()),
+    ),
+  ).toEqual(demoIds(projects));
 });

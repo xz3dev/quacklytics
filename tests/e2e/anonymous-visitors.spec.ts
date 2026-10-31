@@ -7,6 +7,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
 import { loginAsAdmin } from "../support/auth";
+import { workerOrigin } from "../support/server";
 
 const eventRows = z.array(
   z.object({
@@ -25,7 +26,7 @@ test("declined visitors get cookieless daily identities whose salts rotate and e
   const clock = join(directory, "clock");
   const setClock = (time: string) => writeFileSync(clock, time);
   setClock("2026-10-06T23:50:00.000Z");
-  const origin = "http://127.0.0.1:4178";
+  const origin = workerOrigin();
   let log = "";
   const server = spawn(
     "bun",
@@ -35,7 +36,7 @@ test("declined visitors get cookieless daily identities whose salts rotate and e
       env: {
         ...process.env,
         NODE_ENV: "production",
-        PORT: "4178",
+        PORT: new URL(origin).port,
         APP_ORIGIN: origin,
         DATA_DIR: join(directory, "data"),
         ANALYTICS_TEST_CLOCK: clock,

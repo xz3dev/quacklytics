@@ -51,7 +51,6 @@ test("projects page lists, opens and creates projects on a dedicated page", asyn
 
   await page.getByRole("link", { name: "Cancel", exact: true }).click();
   await expect(page).toHaveURL(/\/projects$/);
-  const countBefore = (await read()).length;
 
   await page.getByRole("link", { name: "New project", exact: true }).click();
   await name.fill("  Created in UI  ");
@@ -70,7 +69,8 @@ test("projects page lists, opens and creates projects on a dedicated page", asyn
   await expect(page.getByRole("alert")).toContainText("Creation unavailable");
   await expect(name).toHaveValue("  Created in UI  ");
   await expect(page).toHaveURL(/\/projects\/new$/);
-  expect((await read()).length).toBe(countBefore);
+  // Other workers create projects concurrently, so check by name, not count.
+  expect((await read()).some((p) => p.name === "Created in UI")).toBe(false);
   await page.unroute("**/api/projects");
 
   await submit.click();

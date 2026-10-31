@@ -1,0 +1,20 @@
+name: Install Playwright Chromium
+description: Restores cached Playwright browsers and installs Chromium's system dependencies.
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: echo "version=$(jq -r '.devDependencies["@playwright/test"]' package.json)" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: bunx playwright install --with-deps chromium
+    # System packages live outside the cache; install them on every run.
+    - if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: bunx playwright install-deps chromium

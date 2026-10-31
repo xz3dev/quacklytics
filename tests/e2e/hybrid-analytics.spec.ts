@@ -9,6 +9,7 @@ import {
   analyticsSnapshot,
   catalogAccess,
 } from "../../packages/contracts/src/index";
+import { workerOrigin } from "../support/server";
 
 test("daily monthly snapshots combine with compressed SQLite data across midnight, repairs, and restart", async ({
   page,
@@ -18,7 +19,7 @@ test("daily monthly snapshots combine with compressed SQLite data across midnigh
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-hybrid-"));
   const clock = join(directory, "clock");
   writeFileSync(clock, "2026-10-06T12:00:00.000Z");
-  const origin = "http://127.0.0.1:4176";
+  const origin = workerOrigin();
   let log = "";
   const browserErrors: string[] = [];
   page.on("console", (message) => {
@@ -37,7 +38,7 @@ test("daily monthly snapshots combine with compressed SQLite data across midnigh
         env: {
           ...process.env,
           NODE_ENV: "production",
-          PORT: "4176",
+          PORT: new URL(origin).port,
           APP_ORIGIN: origin,
           DATA_DIR: join(directory, "data"),
           ANALYTICS_TEST_CLOCK: clock,
