@@ -17,7 +17,7 @@ Quacklytics listens on plain HTTP (port `3000`). In production, put a reverse pr
 | `TRUSTED_PROXIES` | Your proxy's IPs/CIDRs, or `private` / `loopback` | Only then is `X-Forwarded-For` trusted to identify visitors. |
 
 <Aside type="caution" title="Forgot TRUSTED_PROXIES?">
-    Without it, every request appears to come from the proxy. Anonymous visitors (those who declined consent) are then counted as a **single** visitor, and sign-in rate limits apply to everyone at once.
+    Without it, every request appears to come from the proxy. Anonymous visitors (those who declined consent or haven't decided yet) are then counted as a **single** visitor, and sign-in rate limits apply to everyone at once.
 </Aside>
 
 | Preset | Trusts |

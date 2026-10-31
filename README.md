@@ -2,7 +2,7 @@
 
 Self-hosted product and web analytics. Your server stores events; analytical queries run in the browser.
 
-- **Collect** events with the `@quacklytics/client` browser SDK (consent-gated pageviews, opt-in autocapture, identify/reset, retries without duplicates) or a plain HTTP API.
+- **Collect** events with the `@quacklytics/client` browser SDK (pageviews that stay anonymous until consent, opt-in autocapture, identify/reset, retries without duplicates) or a plain HTTP API.
 - **Analyze** with insights and dashboards. New projects start with a **Web analytics** dashboard: visitors, pageviews, sessions, a trend, a world map, top pages, referrers, custom events, devices, browsers and operating systems.
 - **Own your data**: everything lives in SQLite on your server and Parquet files in your own S3-compatible bucket.
 

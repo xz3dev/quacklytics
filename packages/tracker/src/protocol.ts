@@ -83,9 +83,24 @@ export const identifyOperation = z
     traits: jsonProperties,
   })
   .strict();
+/**
+ * Moves events a browser sent anonymously while its visitor was undecided onto
+ * the visitor who accepted. Only events still attributed to a daily visitor move.
+ */
+export const claimOperation = z
+  .object({
+    kind: z.literal("claim"),
+    id: z.uuid(),
+    timestamp: z.iso.datetime({ offset: true }),
+    anonymousId: identity,
+    sessionId: identity,
+    eventIds: z.array(z.uuid()).min(1).max(1000),
+  })
+  .strict();
 export const sdkOperation = z.discriminatedUnion("kind", [
   sdkEvent,
   identifyOperation,
+  claimOperation,
 ]);
 export const sdkRequest = z
   .object({

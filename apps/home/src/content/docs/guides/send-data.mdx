@@ -50,7 +50,7 @@ await client.identify("your-user-id", { plan: "pro" });
 client.reset();
 ```
 
-Pageviews are captured from the first page load. While consent is pending, they're buffered and sent once the visitor decides.
+Pageviews are captured from the first page load. While consent is pending, they're sent anonymously and attributed to the visitor if they accept.
 
 </TabItem>
 <TabItem label="Server">
@@ -102,16 +102,18 @@ See [HTTP API](#http-api) below for every field.
 
 ### Consent
 
-The default consent mode is `required`. Until the visitor decides, **nothing is sent**.
+The default consent mode is `required`. Until the visitor decides, events are sent **anonymously**, so visitors who ignore the banner are still counted.
 
 | State | What happens |
 | --- | --- |
-| **Undecided** | Events (including `identify`) are buffered in `localStorage` and survive reloads. |
-| **Granted** — `setConsent("granted")` | Buffered events are sent with the full visitor identity, in order. Collection continues normally. |
-| **Denied** — `setConsent("denied")` | Buffered events are sent **anonymously**. From then on, events carry no identifiers and only the consent choice is stored in the browser. Events wait in memory, so they're lost if the page closes before delivery. `identify` is disabled. |
+| **Undecided** | Events are sent anonymously, as after a denial. The browser keeps only their IDs in `localStorage`, for up to 24 hours. `identify` calls wait in `localStorage` and survive reloads. |
+| **Granted** — `setConsent("granted")` | The browser claims the events it sent while undecided: the server moves them onto the visitor, in the sessions they would have had. Waiting `identify` calls are sent next. Collection continues with the full visitor identity. |
+| **Denied** — `setConsent("denied")` | The kept IDs and waiting `identify` calls are deleted, so earlier events stay anonymous. Events carry no identifiers and only the consent choice is stored in the browser. `identify` is disabled. |
+
+Until consent is granted, unsent events wait in memory, so they're lost if the page closes before delivery. A server that predates claims rejects them; those events then stay anonymous.
 
 <Aside type="tip" title="Anonymous mode still counts visitors">
-    For denied visitors, the server derives a daily visitor ID by hashing the client IP and user agent with a random salt that rotates each UTC day. Salts older than yesterday are deleted the next time such an event is processed, so visitors can be counted per day but not linked across days or traced back. They appear as `anonymous:daily:<hash>`.
+    For undecided and denied visitors, the server derives a daily visitor ID by hashing the client IP and user agent with a random salt that rotates each UTC day. Salts older than yesterday are deleted the next time such an event is processed, so visitors can be counted per day but not linked across days or traced back. They appear as `anonymous:daily:<hash>`.
 </Aside>
 
 Revoking consent later clears the visitor identity and any queued events. Data that was already sent can't be recalled. Passing `consent: "granted"` to `createClient` starts collecting immediately, unless the visitor already denied.
@@ -159,7 +161,7 @@ router.subscribe("onResolved", () => client.page()); // e.g. TanStack Router
 - Each browser gets a persistent **anonymous visitor ID** and a **session ID**. A session ends after 30 minutes of inactivity (`sessionTimeoutMs`).
 - `identify(userId, traits?)` links earlier anonymous activity to that user across sessions, except in [archived months](/guides/import/#how-old-data-is-stored). It isn't counted as an event.
 - Call `reset()` when the user logs out. A visitor can't switch to another user without it.
-- In SQL, actors appear in `person_id` as `anonymous:<id>`, `anonymous:daily:<hash>` (declined consent) or `user:<id>`. A raw HTTP `personId` is stored exactly as sent, so use `user:<id>` to join SDK users.
+- In SQL, actors appear in `person_id` as `anonymous:<id>`, `anonymous:daily:<hash>` (undecided or declined consent) or `user:<id>`. A raw HTTP `personId` is stored exactly as sent, so use `user:<id>` to join SDK users.
 
 ### Typed events
 

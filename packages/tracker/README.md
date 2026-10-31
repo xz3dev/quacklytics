@@ -11,7 +11,7 @@ const analytics = createClient({
   autocapture: true,
 });
 
-// Start from your consent UI. Before a decision, events are buffered locally.
+// Start from your consent UI. Before a decision, events are sent anonymously.
 analytics.setConsent("granted");
 await analytics.track("signup", { plan: "pro" });
 await analytics.identify("account-123", { plan: "pro" });
@@ -50,9 +50,9 @@ The service resolves SDK actors as `anonymous:<id>` and `user:<id>` in its perso
 
 Default consent is `required`. Three modes follow from the visitor's decision:
 
-- **Undecided:** nothing is sent. Captures (including `identify`) are buffered in localStorage, survive reloads, and return `{ status: 'buffered' }`. The buffer is bounded by `maxQueueSize`, `maxQueueBytes` and `maxQueueAgeMs`.
-- **Granted:** buffered captures are released with the persistent visitor/session identity, in order, so pre-consent activity and any buffered `identify` are attributed normally. Collection continues with full identity.
-- **Denied:** buffered events are released anonymously and collection continues in anonymous mode. Events are sent with `anonymous: true` and no identifiers; nothing about the visitor is stored. The service derives a `daily:<hash>` visitor from HMAC-SHA-256 over the project, client IP and user agent, keyed with a random salt per UTC day. Salts older than yesterday are deleted the next time a declined visitor's event is processed, after which an ID can no longer be linked back to anyone. These visitors appear as `anonymous:daily:<hash>` in SQL. A visit continues one session until 30 minutes of inactivity, including across midnight. `identify`/`reset` are disabled and buffered `identify` calls are discarded. Visitors behind the same IP with the same browser are counted as one.
+- **Undecided:** events are sent in anonymous mode (see Denied), so the visitor is counted like one who declined. The browser keeps only the random IDs of those events in localStorage, bounded by `maxQueueSize` and `maxQueueAgeMs`. `identify` calls wait in localStorage, survive reloads, and return `{ status: 'buffered' }`; that buffer is also bounded by `maxQueueBytes`.
+- **Granted:** the browser claims the events it sent while undecided. The service moves them from their daily visitor onto the persistent visitor, split into the sessions they would have had; a visit still in progress continues as the current session. Waiting `identify` calls are sent next, so pre-consent activity is attributed normally. Only events still attributed to a daily visitor move, so identified or already claimed events can't be taken over, and claiming one requires knowing its random ID. Claims travel in their own requests: a service that predates them rejects only the claims (reported through `onError`), and those events stay with their daily visitor. Collection continues with full identity.
+- **Denied:** collection continues in anonymous mode. The kept event IDs are deleted, so events from while the visitor was undecided stay with their daily visitor. Events are sent with `anonymous: true` and no identifiers; only the decision is stored. The service derives a `daily:<hash>` visitor from HMAC-SHA-256 over the project, client IP and user agent, keyed with a random salt per UTC day. Salts older than yesterday are deleted the next time an anonymous event is processed, after which an ID can no longer be linked back to anyone. These visitors appear as `anonymous:daily:<hash>` in SQL. A visit continues one session until 30 minutes of inactivity, including across midnight. `identify`/`reset` are disabled and waiting `identify` calls are discarded. Visitors behind the same IP with the same browser are counted as one.
 
 `setConsent('denied')` after granting clears the visitor identity and pending outbox, cancels delivery, persists the choice and switches to anonymous mode. Already sent data cannot be recalled. Each identity change records the current page once. `consent: 'granted'` explicitly opts into immediate collection, but a persisted denial still takes precedence.
 
@@ -99,4 +99,4 @@ await client.destroy();
 
 Server `send`/`sendBatch` use the first-party importer protocol, including `deferExport`, `backfill` (for archived months) and AbortSignal. They acknowledge committed batches and never collect browser context or create identities. Use `personId: 'user:account-123'` when intentionally joining a server event to the SDK's resolved user actor. `track()` uses the versioned queue and requires an explicit `flush()` in server runtimes. Browser `send`/`sendBatch` are convenience capture-and-flush methods and may split into multiple transactions; a later invalid event can leave earlier events queued. Explicit browser identity fields, `personProperties`, AbortSignal, `deferExport` and `backfill` are rejected: use identify/reset for browser identity and the server importer for explicit batches. Rejection means no collection.
 
-The `/protocol` entrypoint exports Zod schemas and inferred types for versioned events and identify operations. Keep protocol changes backward compatible or introduce a new version.
+The `/protocol` entrypoint exports Zod schemas and inferred types for versioned events, identify and claim operations. Keep protocol changes backward compatible or introduce a new version.

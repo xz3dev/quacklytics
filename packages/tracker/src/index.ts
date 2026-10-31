@@ -98,13 +98,19 @@ const savedQueue = z.object({
   pending: z.array(sdkOperation),
   batches: z.array(savedBatch),
 });
-// Captured before a consent decision; identity is attached once the visitor decides.
+// Held before a consent decision; identity is attached once the visitor decides.
+// This version holds only identify calls; earlier versions also held events.
 const bufferedOperation = z.discriminatedUnion("kind", [
   sdkEvent,
   identifyOperation.omit({ anonymousId: true }),
 ]);
 const savedBuffer = z.array(bufferedOperation);
+// Events sent anonymously while undecided, which accepting moves onto the visitor.
+const savedClaims = z.array(
+  z.object({ id: z.uuid(), timestamp: z.iso.datetime({ offset: true }) }),
+);
 type BufferedOperation = z.infer<typeof bufferedOperation>;
+type Claim = z.infer<typeof savedClaims>[number];
 type Identity = z.infer<typeof savedIdentity>;
 type Batch = z.infer<typeof savedBatch>;
 const instances = new Map<string, AnalyticsClient>();
@@ -235,15 +241,21 @@ export function createClient<
   }
   let bufferInMemory = false,
     memoryBuffer: BufferedOperation[] = [];
+  // This page's claims survive another tab clearing them or storage failing.
+  let ownClaims: Claim[] = [],
+    claimsStored = true;
   /** Full collection: persistent visitor identity, identify, and a stored outbox. */
   function active() {
     if (browser && consent === "granted" && storageRead("consent") === "denied")
       setConsent("denied", false);
     return !dead && consent === "granted";
   }
-  /** Declined collection: the service assigns a cookieless daily visitor; nothing is stored. */
+  /**
+   * Declined or undecided collection: events carry no identifiers and the
+   * service assigns a cookieless daily visitor.
+   */
   function anonymous() {
-    return !active() && !dead && consent === "denied";
+    return !active() && !dead && consent !== "granted";
   }
   function sending() {
     return active() || anonymous();
@@ -267,18 +279,15 @@ export function createClient<
         entries.length ? JSON.stringify(entries) : null,
       );
   }
+  const fresh = (entry: { timestamp: string }) =>
+    Date.now() - Date.parse(entry.timestamp) <= maxAge;
   function buffer(operation: BufferedOperation): CaptureResult {
     const snapshot = bufferedOperation.parse(
       JSON.parse(JSON.stringify(operation)),
     );
     if (bytes(JSON.stringify(snapshot)) > maxEventBytes)
       throw new Error("Analytics event exceeds maxEventBytes");
-    const entries = [
-      ...readBuffer().filter(
-        (entry) => Date.now() - Date.parse(entry.timestamp) <= maxAge,
-      ),
-      snapshot,
-    ];
+    const entries = [...readBuffer().filter(fresh), snapshot];
     if (
       entries.length > maxQueueSize ||
       bytes(JSON.stringify(entries)) > maxQueueBytes
@@ -287,13 +296,85 @@ export function createClient<
     writeBuffer(entries);
     return { status: "buffered", id: snapshot.id };
   }
-  /** Sends pre-consent captures under the identity the visitor's decision allows. */
-  function release() {
-    const entries = readBuffer().filter(
-      (entry) => Date.now() - Date.parse(entry.timestamp) <= maxAge,
+  function readClaims(): Claim[] {
+    try {
+      const parsed = savedClaims.safeParse(
+        JSON.parse(storageRead("claims") ?? "[]"),
+      );
+      return parsed.success ? parsed.data : [];
+    } catch {
+      return [];
+    }
+  }
+  /** Keeps an undecided capture's ID so that accepting can claim it. */
+  function remember(event: SdkEvent) {
+    const entry = { id: event.id, timestamp: event.timestamp };
+    ownClaims = [...ownClaims.filter(fresh), entry].slice(-maxQueueSize);
+    if (claimsStored)
+      claimsStored = storageWrite(
+        "claims",
+        JSON.stringify(
+          [...readClaims().filter(fresh), entry].slice(-maxQueueSize),
+        ),
+      );
+  }
+  /** Moves undecided captures onto the visitor, in the sessions they would have had. */
+  function claim(entries: Claim[]) {
+    const who = currentIdentity();
+    if (!who) return;
+    const byTime = [
+      ...new Map(entries.map((entry) => [entry.id, entry])).values(),
+    ].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+    const visits: Claim[][] = [];
+    let last = -Infinity;
+    for (const entry of byTime) {
+      const time = Date.parse(entry.timestamp);
+      const visit = visits[visits.length - 1];
+      if (visit && time - last < sessionTimeout) visit.push(entry);
+      else visits.push([entry]);
+      last = time;
+    }
+    // Each event ID adds at most 39 bytes to a claim.
+    const size = Math.max(
+      1,
+      Math.min(1000, Math.floor((maxEventBytes - 400) / 39)),
     );
-    if (!entries.length || !sending()) return;
-    writeBuffer([]);
+    for (const [index, visit] of visits.entries()) {
+      // A visit still in progress continues as the current session.
+      const sessionId =
+        index === visits.length - 1 && Date.now() - last < sessionTimeout
+          ? who.sessionId
+          : crypto.randomUUID();
+      for (let start = 0; start < visit.length; start += size)
+        try {
+          enqueue(
+            sdkOperation.parse({
+              kind: "claim",
+              id: crypto.randomUUID(),
+              timestamp: new Date().toISOString(),
+              anonymousId: who.anonymousId,
+              sessionId,
+              eventIds: visit
+                .slice(start, start + size)
+                .map((entry) => entry.id),
+            }),
+          );
+        } catch (error) {
+          report(error);
+        }
+    }
+  }
+  /** Applies the visitor's decision to what was captured before it. */
+  function release() {
+    if (!sending()) return;
+    const stored = readClaims();
+    const claims = [...stored, ...ownClaims].filter(fresh);
+    ownClaims = [];
+    if (stored.length) storageWrite("claims", null);
+    // Declining leaves undecided events with their daily visitor.
+    if (active() && claims.length) claim(claims);
+    const entries = readBuffer().filter(fresh);
+    if (entries.length) writeBuffer([]);
     const full = active();
     for (const entry of entries) {
       try {
@@ -414,8 +495,8 @@ export function createClient<
     properties: EventProperties,
     extra: Partial<SdkEvent> = {},
   ): CaptureResult {
-    const undecided = browser && !dead && consent === "pending";
-    if (!undecided && !sending()) return { status: "disabled" };
+    if (!sending()) return { status: "disabled" };
+    const undecided = browser && consent === "pending";
     const timestamp = extra.timestamp ?? new Date().toISOString();
     const who = active() ? currentIdentity() : undefined;
     const capturedContext = context(allowed, browser);
@@ -451,7 +532,9 @@ export function createClient<
       userId: event.userId,
       anonymous: event.anonymous,
     });
-    return undecided ? buffer(final) : enqueue(final);
+    const result = enqueue(final);
+    if (undecided && result.status === "queued") remember(final);
+    return result;
   }
   async function page(
     properties: EventProperties = {},
@@ -484,6 +567,12 @@ export function createClient<
     const requestId = crypto.randomUUID();
     while (pending[0] && operations.length < batchSize) {
       const next = pending[0];
+      // Services without claims reject the whole request, so claims travel alone.
+      if (
+        operations[0] &&
+        (operations[0].kind === "claim") !== (next.kind === "claim")
+      )
+        break;
       if (
         operations.length &&
         bytes(
@@ -630,13 +719,16 @@ export function createClient<
     if (dead) return;
     const previous = consent;
     consent = state;
+    // Other tabs adopt the stored identity when they see the decision.
+    if (state === "granted") currentIdentity();
     if (save) storageWrite("consent", state);
     if (state === "denied") {
-      clearDelivery();
+      // Undecided captures are already anonymous; only identified ones are withdrawn.
+      if (previous === "granted") clearDelivery();
       identity = undefined;
       storageWrite("identity", null);
     }
-    // Pre-consent pageviews are released below; a new identity needs its own pageview.
+    // Undecided pageviews were already sent and are claimed when granted; a new identity needs its own pageview.
     if (previous !== "pending" && previous !== state) {
       pageUrl = undefined;
       pageViewId = undefined;
@@ -804,7 +896,8 @@ export function createClient<
       if (event.key === `${key}:identity`) {
         const previous = identity?.anonymousId;
         identity = readIdentity();
-        if (previous !== identity?.anonymousId) {
+        // An undecided tab adopting an accepting tab's identity keeps its claimed page.
+        if (consent === "granted" && previous !== identity?.anonymousId) {
           pageUrl = undefined;
           pageViewId = undefined;
         }

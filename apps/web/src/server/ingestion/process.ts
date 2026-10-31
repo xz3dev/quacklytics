@@ -110,6 +110,9 @@ export function processIngestion(
     versioned?.operations.filter(
       (operation) => operation.kind === "identify",
     ) ?? [];
+  const claims =
+    versioned?.operations.filter((operation) => operation.kind === "claim") ??
+    [];
   const fingerprint = hash(
     JSON.stringify(versioned?.operations ?? request.events) +
       (request.deferExport ? "\ndeferExport" : "") +
@@ -390,6 +393,76 @@ export function processIngestion(
         if (time < historyBoundary)
           dirty.add(new Date(time).toISOString().slice(0, 7));
         // Record event types even if their properties are empty.
+        committed++;
+      }
+      // After events, so a claim also reaches events sent in the same request.
+      for (const claim of claims) {
+        const fingerprint = hash(JSON.stringify(claim));
+        const existing = stringRow
+          .nullable()
+          .parse(
+            db
+              .query("SELECT fingerprint FROM identity_operations WHERE id=?")
+              .get(claim.id),
+          );
+        if (existing) {
+          if (existing.fingerprint !== fingerprint)
+            throw new RequestError(
+              409,
+              "Operation ID reused with different content",
+            );
+          duplicates++;
+          continue;
+        }
+        let first = Infinity,
+          last = -Infinity;
+        for (const eventId of claim.eventIds) {
+          // Only events sent before a decision still belong to a daily visitor,
+          // so identified or already claimed events never move.
+          const row = z
+            .object({ timestamp: z.number() })
+            .nullable()
+            .parse(
+              db
+                .query(
+                  "UPDATE events SET anonymous_id=?,session_id=? WHERE id=? AND anonymous_id LIKE 'daily:%' RETURNING timestamp",
+                )
+                .get(claim.anonymousId, claim.sessionId, eventId),
+            );
+          if (!row) continue;
+          first = Math.min(first, row.timestamp);
+          last = Math.max(last, row.timestamp);
+          if (row.timestamp < historyBoundary)
+            dirty.add(new Date(row.timestamp).toISOString().slice(0, 7));
+        }
+        if (first <= last) {
+          db.query(
+            "INSERT INTO sessions VALUES(?,NULL,?,?) ON CONFLICT(id) DO UPDATE SET first_seen=min(first_seen,excluded.first_seen),last_seen=max(last_seen,excluded.last_seen)",
+          ).run(claim.sessionId, first, last);
+          const link = z
+            .object({ user_id: z.string() })
+            .nullable()
+            .parse(
+              db
+                .query(
+                  "SELECT user_id FROM identity_links WHERE anonymous_id=?",
+                )
+                .get(claim.anonymousId),
+            );
+          if (link)
+            mergePerson(
+              db,
+              persons,
+              `user:${link.user_id}`,
+              first,
+              claim.id,
+              {},
+            );
+        }
+        db.query("INSERT INTO identity_operations VALUES(?,?)").run(
+          claim.id,
+          fingerprint,
+        );
         committed++;
       }
       for (const [id, person] of persons)

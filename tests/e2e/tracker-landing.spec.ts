@@ -156,8 +156,7 @@ test("landing consent, SPA pageviews, safe autocapture, identity, logout and per
       if (!window.quacklytics) throw new Error("SDK missing");
       return window.quacklytics.track("before_consent", { plan: "trial" });
     }),
-  ).toMatchObject({ status: "buffered" });
-  expect(requests).toHaveLength(0);
+  ).toMatchObject({ status: "queued" });
   expect(
     await page.evaluate(() =>
       Object.keys(localStorage).filter((key) => key.endsWith(":identity")),
@@ -167,12 +166,17 @@ test("landing consent, SPA pageviews, safe autocapture, identity, logout and per
   await page.evaluate(async () => {
     await window.quacklytics?.flush();
   });
+  // Undecided captures leave without identifiers and are claimed afterwards.
+  const undecided = requests.filter((body) => body.includes("before_consent"));
+  expect(undecided).toHaveLength(1);
+  expect(undecided[0]).toContain('"anonymous":true');
+  expect(undecided[0]).not.toMatch(/anonymousId|sessionId/);
   const initial = await landing.events();
   expect(initial.map((row) => row.eventType).sort()).toEqual([
     "$pageview",
     "before_consent",
   ]);
-  expect(initial[0]?.personId).toMatch(/^anonymous:/);
+  expect(initial[0]?.personId).toMatch(/^anonymous:(?!daily:)/);
   expect(initial[1]?.personId).toBe(initial[0]?.personId);
   expect(initial[1]?.sessionId).toBe(initial[0]?.sessionId);
   expect(JSON.stringify(initial)).not.toContain("private");
@@ -862,6 +866,102 @@ test("service bounds project ingestion independently and exposes Retry-After to 
   ).toBe(200);
 });
 
+test("service claims only undecided events of its own project, once, and replays claims idempotently", async ({
+  page,
+  landing,
+  baseURL,
+}) => {
+  const otherKey = z
+    .array(z.object({ key: z.string() }))
+    .parse(
+      await (
+        await page.request.post(`${baseURL}/api/${landing.other}/apikeys`)
+      ).json(),
+    )
+    .at(-1)?.key;
+  if (!otherKey) throw new Error("Missing other key");
+  const acknowledgment = z.object({
+    committed: z.number(),
+    duplicates: z.number(),
+  });
+  const send = async (
+    key: string,
+    operations: unknown[],
+    requestId: string = crypto.randomUUID(),
+  ) => {
+    const response = await page.request.post(`${baseURL}/api/ingest`, {
+      headers: { "X-API-KEY": key },
+      data: { protocolVersion: 1, requestId, operations },
+    });
+    return response.ok()
+      ? acknowledgment.parse(await response.json())
+      : response.status();
+  };
+  const event = (identity: Record<string, unknown>) => ({
+    kind: "event",
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    eventType: "claim_target",
+    properties: {},
+    context: { sdk: { name: "@quacklytics/client", version: "0.4.0" } },
+    ...identity,
+  });
+  const undecided = event({ anonymous: true });
+  const identified = event({ anonymousId: "known", sessionId: "known-visit" });
+  const elsewhere = event({ anonymous: true });
+  expect(await send(landing.key, [undecided, identified])).toMatchObject({
+    committed: 2,
+  });
+  expect(await send(otherKey, [elsewhere])).toMatchObject({ committed: 1 });
+  const claim = {
+    kind: "claim",
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    anonymousId: "claimer",
+    sessionId: "claimed-visit",
+    eventIds: [undecided.id, identified.id, elsewhere.id, crypto.randomUUID()],
+  };
+  const requestId = crypto.randomUUID();
+  expect(await send(landing.key, [claim], requestId)).toEqual({
+    committed: 1,
+    duplicates: 0,
+  });
+  expect(await send(landing.key, [claim], requestId)).toEqual({
+    committed: 1,
+    duplicates: 0,
+  });
+  expect(await send(landing.key, [claim])).toEqual({
+    committed: 0,
+    duplicates: 1,
+  });
+  expect(
+    await send(landing.key, [{ ...claim, eventIds: [undecided.id] }]),
+  ).toBe(409);
+  // A claimed event belongs to its visitor; later claims can't take it.
+  expect(
+    await send(landing.key, [
+      { ...claim, id: crypto.randomUUID(), anonymousId: "intruder" },
+    ]),
+  ).toEqual({ committed: 1, duplicates: 0 });
+  const rows = await landing.events();
+  expect(rows.find((row) => row.id === undecided.id)).toMatchObject({
+    personId: "anonymous:claimer",
+    sessionId: "claimed-visit",
+  });
+  expect(rows.find((row) => row.id === identified.id)).toMatchObject({
+    personId: "anonymous:known",
+    sessionId: "known-visit",
+  });
+  const other = eventRows.parse(
+    await (
+      await page.request.get(`${baseURL}/api/${landing.other}/events`)
+    ).json(),
+  );
+  expect(other.find((row) => row.id === elsewhere.id)?.personId).toMatch(
+    /^anonymous:daily:/,
+  );
+});
+
 test("website traffic template reports real landing-page visitors and pages without changing existing dashboards", async ({
   page,
   landing,
@@ -1015,63 +1115,188 @@ test("landing tabs honor rapid consent changes and account reset without reusing
   expect(actor).toMatch(/^anonymous:/);
 });
 
-test("landing buffers undecided visitors locally across reloads and releases them with full attribution on accept", async ({
+test("landing counts undecided visitors anonymously and claims their events with full attribution on accept", async ({
   page,
   landing,
 }) => {
-  let requests = 0;
+  const bodies: string[] = [];
   page.on("request", (request) => {
-    if (request.url().endsWith("/api/ingest")) requests++;
+    if (request.url().endsWith("/api/ingest"))
+      bodies.push(request.postData() ?? "");
   });
   const storedKeys = () =>
     page.evaluate(() =>
       Object.keys(localStorage)
         .filter((key) => key.startsWith("ql:"))
-        .map((key) => key.split(":").at(-1)),
+        .map((key) => key.split(":").at(-1))
+        .sort(),
     );
   await page.goto(landing.origin);
   await expect(
     page.getByRole("button", { name: "Accept", exact: true }),
   ).toBeVisible();
-  await page.evaluate(async () => {
+  const statuses = await page.evaluate(async () => {
     const sdk = window.quacklytics;
     if (!sdk) throw new Error("SDK missing");
-    await sdk.track("chose_plan", { plan: "pro" });
-    await sdk.identify("grace", { plan: "pro" });
+    // A visit that ended longer than the session timeout ago.
+    const earlier = await sdk.track(
+      "earlier_visit",
+      {},
+      { timestamp: Date.now() - 45 * 60 * 1000 },
+    );
+    const tracked = await sdk.track("chose_plan", { plan: "pro" });
+    const identified = await sdk.identify("grace", { plan: "pro" });
     await sdk.flush();
+    return [earlier.status, tracked.status, identified.status];
   });
-  // A navigation before deciding must keep the earlier captures.
+  expect(statuses).toEqual(["queued", "queued", "buffered"]);
+  // A navigation before deciding keeps the earlier captures claimable.
   await page.reload();
   await page.evaluate(async () => {
     await window.quacklytics?.track("after_reload");
     await window.quacklytics?.flush();
   });
-  expect(requests).toBe(0);
-  expect(await storedKeys()).toEqual(["buffer"]);
-  expect(await landing.events()).toEqual([]);
-
-  await page.getByRole("button", { name: "Accept", exact: true }).click();
-  await page.evaluate(async () => {
-    await window.quacklytics?.flush();
-  });
-  const rows = await landing.events();
-  expect(rows.map((row) => row.eventType).sort()).toEqual([
+  // Until they decide, visitors count like those who declined.
+  const undecided = await landing.events();
+  expect(undecided.map((row) => row.eventType).sort()).toEqual([
     "$pageview",
     "$pageview",
     "after_reload",
     "chose_plan",
+    "earlier_visit",
   ]);
+  const daily = undecided[0]?.personId;
+  expect(daily).toMatch(/^anonymous:daily:[0-9a-f]{64}$/);
+  expect(undecided.every((row) => row.personId === daily)).toBe(true);
+  expect(bodies.join("\n")).not.toMatch(/grace|anonymousId|sessionId|userId/);
+  expect(await storedKeys()).toEqual(["buffer", "claims"]);
+
+  await page.getByRole("button", { name: "Accept", exact: true }).click();
+  await page.evaluate(async () => {
+    const sdk = window.quacklytics;
+    if (!sdk) throw new Error("SDK missing");
+    await sdk.flush();
+    await sdk.track("after_accept");
+    await sdk.flush();
+  });
+  const rows = await landing.events();
+  // Accepting moves the events already sent instead of sending them again.
+  expect(
+    rows
+      .filter((row) => row.eventType !== "after_accept")
+      .map((row) => row.id)
+      .sort(),
+  ).toEqual(undecided.map((row) => row.id).sort());
   expect(rows.every((row) => row.personId === "user:grace")).toBe(true);
-  expect(new Set(rows.map((row) => row.sessionId)).size).toBe(1);
+  // The earlier visit keeps its own session; the one in progress continues.
+  const earlier = rows.find((row) => row.eventType === "earlier_visit");
+  const visit = rows.filter((row) => row !== earlier);
+  expect(new Set(visit.map((row) => row.sessionId)).size).toBe(1);
+  expect(earlier?.sessionId).not.toBe(visit[0]?.sessionId);
   expect(
     rows.find((row) => row.eventType === "chose_plan")?.properties,
-  ).toMatchObject({
-    plan: "pro",
-  });
-  expect(await storedKeys()).not.toContain("buffer");
+  ).toMatchObject({ plan: "pro" });
+  // Claims travel alone, so a service without them rejects nothing else.
+  const claims = bodies.filter((body) => body.includes('"kind":"claim"'));
+  expect(claims.length).toBeGreaterThan(0);
+  for (const body of claims) {
+    const kinds = z
+      .object({ operations: z.array(z.object({ kind: z.string() })) })
+      .parse(JSON.parse(body))
+      .operations.map((operation) => operation.kind);
+    expect([...new Set(kinds)]).toEqual(["claim"]);
+  }
+  expect(await storedKeys()).toEqual(["consent", "identity"]);
 });
 
-test("landing rejection releases buffered events anonymously under a daily identity without person data", async ({
+test("landing claims undecided events from every open tab when one tab accepts", async ({
+  page,
+  landing,
+  context,
+}) => {
+  await page.goto(landing.origin);
+  await page.evaluate(async () => {
+    await window.quacklytics?.track("first_tab");
+    await window.quacklytics?.flush();
+  });
+  const second = await context.newPage();
+  await second.goto(landing.origin);
+  // Not flushed: the second tab still holds it when the first tab accepts.
+  await second.evaluate(async () => {
+    await window.quacklytics?.track("second_tab");
+  });
+  await page.getByRole("button", { name: "Accept", exact: true }).click();
+  await expect
+    .poll(() => second.evaluate(() => window.quacklytics?.getConsent()))
+    .toBe("granted");
+  for (const tab of [page, second])
+    await tab.evaluate(async () => {
+      await window.quacklytics?.flush();
+      await window.quacklytics?.track("after_accept");
+      await window.quacklytics?.flush();
+    });
+  const rows = await landing.events();
+  expect(rows.map((row) => row.eventType).sort()).toEqual([
+    "$pageview",
+    "$pageview",
+    "after_accept",
+    "after_accept",
+    "first_tab",
+    "second_tab",
+  ]);
+  const visitor = rows[0]?.personId;
+  expect(visitor).toMatch(/^anonymous:(?!daily:)/);
+  expect(rows.every((row) => row.personId === visitor)).toBe(true);
+  expect(new Set(rows.map((row) => row.sessionId)).size).toBe(1);
+});
+
+test("landing degrades to anonymous undecided events against a service that predates claims", async ({
+  page,
+  landing,
+}) => {
+  let claimAttempts = 0;
+  // Older services reject unknown operations like any invalid request.
+  await page.route("**/api/ingest", async (route) => {
+    if (!route.request().postData()?.includes('"kind":"claim"'))
+      return route.continue();
+    claimAttempts++;
+    return route.fulfill({
+      status: 400,
+      headers: {
+        "Access-Control-Allow-Origin": landing.origin,
+        "Content-Type": "application/json",
+      },
+      body: '{"error":"Invalid input"}',
+    });
+  });
+  await page.goto(landing.origin);
+  await page.evaluate(async () => {
+    await window.quacklytics?.identify("legacy-user");
+  });
+  await page.getByRole("button", { name: "Accept", exact: true }).click();
+  await page.evaluate(async () => {
+    const sdk = window.quacklytics;
+    if (!sdk) throw new Error("SDK missing");
+    // The rejected claim fails whichever flush delivers it.
+    await sdk.flush().catch(() => undefined);
+    await sdk.track("after_accept");
+    await sdk.flush();
+  });
+  expect(claimAttempts).toBe(1);
+  const rows = await landing.events();
+  expect(rows.map((row) => row.eventType).sort()).toEqual([
+    "$pageview",
+    "after_accept",
+  ]);
+  expect(rows.find((row) => row.eventType === "$pageview")?.personId).toMatch(
+    /^anonymous:daily:/,
+  );
+  expect(rows.find((row) => row.eventType === "after_accept")?.personId).toBe(
+    "user:legacy-user",
+  );
+});
+
+test("landing rejection keeps undecided events anonymous under a daily identity without person data", async ({
   page,
   landing,
   browser,
