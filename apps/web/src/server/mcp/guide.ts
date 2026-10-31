@@ -1,11 +1,12 @@
 // Loaded automatically by MCP clients; keep it to what every session needs.
-export const instructions = `Quacklytics product analytics for one project. Use it to answer questions about how people use the product (traffic, signups, conversion, retention, feature usage), to explain or reproduce the team's saved charts, and to dig deeper than the dashboards go. You query the raw events yourself with DuckDB.
+export const instructions = `Quacklytics product analytics for every project you can read, one per tracked site or app. Use it to answer questions about how people use the product (traffic, signups, conversion, retention, feature usage), to explain or reproduce the team's saved charts, and to dig deeper than the dashboards go. You query the raw events yourself with DuckDB.
 
-1. Call get_dataset. Run its setupSql in DuckDB (CLI, Python or Node); it defines the view \`events\` over signed HTTPS Parquet URLs. No credentials or extensions to configure: DuckDB autoloads httpfs.
-2. Columns: id VARCHAR, timestamp TIMESTAMP (UTC), event_type VARCHAR, session_id VARCHAR, person_id VARCHAR, properties JSON.
-3. Read properties with JSON operators, e.g. properties->>'$.plan' (text) or (properties->>'$.amount')::DOUBLE. Call get_schema for event types and property names.
-4. setupSql covers every event exactly once. Never combine it with data from another get_dataset call, and never add your own "recent events" on top. A snapshot is reused for up to 10 minutes (see capturedAt), so the newest events can be a few minutes late. URLs expire at expiresAt: for newer data or when reads fail with 403, call get_dataset again and rerun its setupSql.
-5. To learn which metrics matter to the team, browse list_dashboards and list_insights, and open a chart with get_insight; follow its definition when your numbers should match the team's. Call get_query_guide for example queries and help with failing or slow queries.`;
+1. Call list_projects and pick the project the question is about; ask the user when that is unclear. Every other tool except get_query_guide takes its id as \`project\`.
+2. Call get_dataset. Run its setupSql in DuckDB (CLI, Python or Node); it defines the view \`events\` over signed HTTPS Parquet URLs. No credentials or extensions to configure: DuckDB autoloads httpfs.
+3. Columns: id VARCHAR, timestamp TIMESTAMP (UTC), event_type VARCHAR, session_id VARCHAR, person_id VARCHAR, properties JSON.
+4. Read properties with JSON operators, e.g. properties->>'$.plan' (text) or (properties->>'$.amount')::DOUBLE. Call get_schema for event types and property names.
+5. setupSql covers every event exactly once. Never combine it with data from another get_dataset call, and never add your own "recent events" on top. A snapshot is reused for up to 10 minutes (see capturedAt), so the newest events can be a few minutes late. URLs expire at expiresAt: for newer data or when reads fail with 403, call get_dataset again and rerun its setupSql.
+6. To learn which metrics matter to the team, browse list_dashboards and list_insights, and open a chart with get_insight; follow its definition when your numbers should match the team's. Call get_query_guide for example queries and help with failing or slow queries.`;
 
 export const queryGuide = `# Querying Quacklytics events with DuckDB
 
@@ -19,6 +20,7 @@ Python:
 Node (@duckdb/node-api):
   const conn = await (await DuckDBInstance.create("analytics.duckdb")).connect(); await conn.run(setupSql);
 eventCount is the number of rows in events; use it to check the setup.
+Every project's setupSql defines the same view name, so keep one database file per project (e.g. <project id>.duckdb) when working with several.
 
 ## Freshness
 - One get_dataset call is one consistent snapshot. Never mix its data with data from another call, including tables copied from an earlier view, and never add events yourself: that counts events twice or misses them.

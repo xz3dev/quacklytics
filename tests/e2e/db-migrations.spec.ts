@@ -49,10 +49,10 @@ test("migration CLI applies, reports and rolls back each database scope independ
       JSON.parse(
         await sql(app, "SELECT count(*) AS count FROM schema_migrations"),
       ),
-    ).toEqual([{ count: 1 }]);
+    ).toEqual([{ count: 2 }]);
     expect(await command("status", "app", app)).toContain('"applied": true');
     // Rolling back the app database leaves project databases untouched.
-    await command("down", "app", app);
+    await command("down", "app", app, "0");
     expect(
       JSON.parse(
         await sql(
@@ -89,7 +89,7 @@ test("migration CLI applies, reports and rolls back each database scope independ
       JSON.parse(
         await sql(app, "SELECT count(*) AS count FROM schema_migrations"),
       ),
-    ).toEqual([{ count: 1 }]);
+    ).toEqual([{ count: 2 }]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -176,7 +176,7 @@ test("dev lifecycle migrates fresh and existing databases before starting Vite a
       JSON.parse(
         await sql(app, "SELECT max(version) AS version FROM schema_migrations"),
       ),
-    ).toEqual([{ version: 1 }]);
+    ).toEqual([{ version: 2 }]);
     await sql(
       app,
       "INSERT INTO projects(id,name) VALUES('existing','Retained project') RETURNING id",
@@ -193,7 +193,7 @@ test("dev lifecycle migrates fresh and existing databases before starting Vite a
       JSON.parse(
         await sql(app, "SELECT max(version) AS version FROM schema_migrations"),
       ),
-    ).toEqual([{ version: 1 }]);
+    ).toEqual([{ version: 2 }]);
     expect(JSON.parse(await sql(app, "SELECT name FROM projects"))).toEqual([
       { name: "Retained project" },
     ]);

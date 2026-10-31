@@ -14,16 +14,19 @@ export function CodeSnippet({
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  // The button sits beside the scrolling code so long lines never run under it.
   return (
-    <div className={cn("relative", className)}>
-      <pre className="overflow-x-auto rounded-md border bg-muted px-4 py-3 pr-12 font-mono text-xs">
+    <div
+      className={cn("flex items-start rounded-md border bg-muted", className)}
+    >
+      <pre className="min-w-0 flex-1 overflow-x-auto py-3 pl-4 pr-2 font-mono text-xs">
         {children}
       </pre>
       <Button
         variant="ghost"
         size="icon"
         aria-label={label ? `Copy ${label}` : "Copy"}
-        className="absolute right-1 top-1 size-8"
+        className="m-1 size-8 shrink-0"
         onClick={() => {
           void navigator.clipboard.writeText(children).then(() => {
             setCopied(true);

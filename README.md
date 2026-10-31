@@ -73,13 +73,13 @@ Add your site's origin (or `*`) to the project's allowed origins. See [the clien
 
 ## AI agents (MCP)
 
-Each project exposes a read-only [MCP](https://modelcontextprotocol.io) server at `/api/mcp`. Create an access token under **Ingestion → Agent access (MCP)**, then, for example:
+Quacklytics exposes a read-only [MCP](https://modelcontextprotocol.io) server at `/api/mcp`. Create an access token on the **Projects** page under **Agent access (MCP)**, then, for example:
 
 ```sh
 claude mcp add --transport http quacklytics https://analytics.example.com/api/mcp --header "Authorization: Bearer qmcp_…"
 ```
 
-The agent runs its own DuckDB queries. `get_dataset` returns setup SQL that reads the monthly Parquet files plus one Parquet file with every event not yet in them through signed URLs. Both come from the same snapshot, so together they cover each event exactly once. A snapshot is reused for up to 10 minutes. Other tools return the schema, saved insights, dashboards and a DuckDB query guide. Tokens are shown once; ingestion keys never grant read access.
+A token belongs to the user who created it and reads every project; the agent picks one with `list_projects` and passes its id as `project` to the other tools. The agent runs its own DuckDB queries. `get_dataset` returns setup SQL that reads the monthly Parquet files plus one Parquet file with every event not yet in them through signed URLs. Both come from the same snapshot, so together they cover each event exactly once. A snapshot is reused for up to 10 minutes. Other tools return the schema, saved insights, dashboards and a DuckDB query guide. Tokens can be revealed again by the user who created them; ingestion keys never grant read access.
 
 ## Deploying
 

@@ -239,13 +239,14 @@ export const apiKey = z.object({
   project: z.string(),
   key: z.string(),
 });
-// Read access for agents. Only the creation response carries the secret.
+// Read access for agents. Lists carry the prefix; creating or revealing one
+// token returns its secret.
 export const mcpToken = z.object({
   id: z.number(),
   prefix: z.string(),
   createdAt: z.number(),
 });
-export const createdMcpToken = mcpToken.extend({ token: z.string() });
+export const revealedMcpToken = mcpToken.extend({ token: z.string() });
 export const user = z.object({
   id: z.string(),
   email: z.string(),

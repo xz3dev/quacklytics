@@ -5,14 +5,14 @@ description: Let an AI agent query your events with DuckDB through the Quacklyti
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-Every Quacklytics instance serves a read-only [Model Context Protocol](https://modelcontextprotocol.io) endpoint at `/api/mcp`. An agent connected to it can read all of a project's events, its schema, and its saved insights and dashboards, and then run its own analytical queries with DuckDB.
+Every Quacklytics instance serves a read-only [Model Context Protocol](https://modelcontextprotocol.io) endpoint at `/api/mcp`. An agent connected to it can read the events, schema, saved insights and dashboards of all your projects, and then run its own analytical queries with DuckDB.
 
 ## Connect an agent
 
 <Steps>
 
-1. Open your project, go to **Ingestion**, and under **Agent access (MCP)** select **Create access token**.
-2. Copy the token. It is shown only once; Quacklytics stores just a hash of it.
+1. Open the **Projects** page and, under **Agent access (MCP)** below the project list, select **Create access token**.
+2. The new token opens revealed, with setup instructions for Claude Code and Codex. You can reveal it again later with the eye button.
 3. Add the server to your agent. For Claude Code:
 
     ```sh
@@ -20,11 +20,23 @@ Every Quacklytics instance serves a read-only [Model Context Protocol](https://m
       --header "Authorization: Bearer qmcp_…"
     ```
 
+    For Codex, add it to `~/.codex/config.toml`:
+
+    ```toml
+    [mcp_servers.quacklytics]
+    url = "https://analytics.example.com/api/mcp"
+    http_headers = { Authorization = "Bearer qmcp_…" }
+    ```
+
     Other clients need the same two things: the endpoint URL with the Streamable HTTP transport, and an `Authorization: Bearer` header.
 
 </Steps>
 
-A token is tied to one project. Revoking it on the same page rejects its next request. Dataset URLs the agent already received stay valid until they expire, at most an hour later, and data it already downloaded stays with the agent.
+A token belongs to the user who created it and reads every project, so one connection covers all of them. Revoking it on the same page rejects its next request. Dataset URLs the agent already received stay valid until they expire, at most an hour later, and data it already downloaded stays with the agent.
+
+<Aside>
+    Before 0.6.0, tokens were created per project on the ingestion page. Upgrading deletes them, so create a new token and update your agent's configuration.
+</Aside>
 
 <Aside type="caution">
     Ingestion keys are public, since they are embedded in your website, so they never grant read access. Treat MCP tokens like passwords.
@@ -32,8 +44,11 @@ A token is tied to one project. Revoking it on the same page rejects its next re
 
 ## Tools
 
+Every tool except `get_query_guide` takes a `project` argument: a project id from `list_projects`.
+
 | Tool | Returns |
 | --- | --- |
+| `list_projects` | Ids and names of the projects the token can read |
 | `get_dataset` | `setupSql` that defines the DuckDB view `events` over signed Parquet URLs covering every event |
 | `get_schema` | Event types with their property names and types |
 | `list_insights`, `get_insight` | Saved insights and their full definitions |

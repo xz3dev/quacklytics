@@ -109,7 +109,7 @@ async function queryDataset(setupSql: string) {
     .parse(JSON.parse(stdout));
 }
 
-test("an agent reads every event exactly once and the saved insights through MCP, scoped to its token's project", async ({
+test("an agent reads every event exactly once and the saved insights of each of its user's projects through MCP", async ({
   page,
 }) => {
   test.setTimeout(120000);
@@ -265,26 +265,34 @@ test("an agent reads every event exactly once and the saved insights through MCP
     await shop.ingest([lateSeptember], true);
     await other.ingest([event("other-only", "2026-10-06T09:00:00.000Z")]);
 
-    // The admin creates a token in the UI; it is shown once.
+    // The admin creates a token below the project list; it opens revealed,
+    // with setup instructions for Claude Code and Codex.
     await page.context().addCookies((await api.storageState()).cookies);
-    await page.goto(`${origin}/app/${shop.id}/ingestion`);
+    await page.goto(`${origin}/projects`);
     const section = page.getByRole("region", { name: "Agent access (MCP)" });
-    await expect(section.getByText(`${origin}/api/mcp`)).toBeVisible();
+    await expect(
+      section.getByText(`${origin}/api/mcp`, { exact: true }),
+    ).toBeVisible();
     await expect(section.getByText("No access tokens.")).toBeVisible();
+    // Setup instructions show a placeholder until a token is shown.
+    await expect(
+      section.getByText('--header "Authorization: Bearer <access token>"'),
+    ).toBeVisible();
     const create = section.getByRole("button", { name: "Create access token" });
     const shownSecret = section.locator("pre", {
       hasText: /^qmcp_[0-9a-f]{64}$/,
     });
-    const showSecret = async () => {
-      await create.click();
+    const readShownSecret = async () => {
       await expect(shownSecret).toBeVisible();
       return z
         .string()
         .regex(/^qmcp_[0-9a-f]{64}$/)
         .parse(await shownSecret.textContent());
     };
+    const row = (secret: string) =>
+      section.getByRole("listitem").filter({ hasText: secret.slice(0, 12) });
     // A failed creation is reported rather than silently ignored.
-    const tokensRoute = `**/api/${shop.id}/mcptokens`;
+    const tokensRoute = "**/api/mcptokens";
     await page.route(tokensRoute, (route) =>
       route.request().method() === "POST"
         ? route.fulfill({
@@ -298,56 +306,69 @@ test("an agent reads every event exactly once and the saved insights through MCP
     await expect(page.getByText("Server busy; retry later")).toBeVisible();
     await page.unroute(tokensRoute);
     await expect(section.getByText("No access tokens.")).toBeVisible();
-    const token = await showSecret();
-    await expect(section.getByText(token.slice(0, 12) + "…")).toBeVisible();
-    // A shown secret stays on its own project's page across project switches.
-    const switchProject = async (name: string, id: string) => {
-      await page
-        .getByRole("button", { name: "Select project", exact: true })
-        .click();
-      await page
-        .getByRole("menu", { name: "Select project" })
-        .getByRole("menuitem")
-        .filter({ hasText: name })
-        .click();
-      await expect(page).toHaveURL(`${origin}/app/${id}/ingestion`);
-    };
-    await switchProject("Other", other.id);
-    await expect(section.getByText("No access tokens.")).toBeVisible();
-    await expect(page.getByText(token)).toHaveCount(0);
-    await switchProject("Shop", shop.id);
-    await expect(section.getByText(token.slice(0, 12) + "…")).toBeVisible();
-    await expect(page.getByText(token)).toHaveCount(0);
-    // Only the prefix is retrievable afterwards.
+    await create.click();
+    const token = await readShownSecret();
+    await expect(
+      section.getByText(
+        `claude mcp add --transport http quacklytics ${origin}/api/mcp --header "Authorization: Bearer ${token}"`,
+      ),
+    ).toBeVisible();
+    await section.getByRole("tab", { name: "Codex" }).click();
+    await expect(
+      section.getByText(`http_headers = { Authorization = "Bearer ${token}" }`),
+    ).toBeVisible();
+    // After a reload the token is masked but its owner can reveal it again.
     await page.reload();
-    await expect(section.getByText(token.slice(0, 12) + "…")).toBeVisible();
-    await expect(section.getByText(token)).toHaveCount(0);
-    // Revoking the token whose secret is still shown removes the secret too.
-    const revoked = await showSecret();
+    await expect(row(token)).toContainText(token.slice(0, 12) + "•");
+    await expect(page.getByText(token)).toHaveCount(0);
+    await row(token).getByRole("button", { name: "Show access token" }).click();
+    expect(await readShownSecret()).toBe(token);
+    await row(token).getByRole("button", { name: "Hide access token" }).click();
+    await expect(page.getByText(token)).toHaveCount(0);
+    // Revoking a shown token removes its secret from the page.
+    await create.click();
+    const revoked = await readShownSecret();
     page.once("dialog", (dialog) => void dialog.accept());
-    await section
-      .getByRole("listitem")
-      .filter({ hasText: revoked.slice(0, 12) + "…" })
-      .getByRole("button", { name: "Revoke" })
+    await row(revoked)
+      .getByRole("button", { name: "Revoke access token" })
       .click();
     await expect(page.getByText(revoked)).toHaveCount(0);
     await expect(section.getByRole("listitem")).toHaveCount(1);
+    // Only existing tokens of the signed-in user can be revealed.
+    expect(
+      (await api.get(`/api/mcptokens/${Number.MAX_SAFE_INTEGER}`)).status(),
+    ).toBe(404);
 
-    const shopAgent = await connect(origin, token);
-    expect(shopAgent.initialized.serverInfo.name).toBe("quacklytics");
-    expect(shopAgent.initialized.instructions).toContain("get_dataset");
-    expect((await shopAgent.tools()).sort()).toEqual([
+    // One token reads every project; each call names the project it reads.
+    const agent = await connect(origin, token);
+    expect(agent.initialized.serverInfo.name).toBe("quacklytics");
+    expect(agent.initialized.instructions).toContain("list_projects");
+    expect((await agent.tools()).sort()).toEqual([
       "get_dataset",
       "get_insight",
       "get_query_guide",
       "get_schema",
       "list_dashboards",
       "list_insights",
+      "list_projects",
     ]);
+    expect(await agent.call("list_projects")).toEqual(
+      expect.arrayContaining([
+        { id: shop.id, name: "Shop" },
+        { id: other.id, name: "Other" },
+      ]),
+    );
+    expect(await agent.call("list_projects")).toHaveLength(2);
+    const inShop = { project: shop.id };
+    const inOther = { project: other.id };
+    await expect(agent.call("get_schema")).rejects.toThrow("project");
+    await expect(
+      agent.call("get_schema", { project: "missing" }),
+    ).rejects.toThrow("Project not found");
 
     // Sorted IDs match exactly, so the stale September file is not read
     // alongside the SQLite rows that replace it.
-    const first = dataset.parse(await shopAgent.call("get_dataset"));
+    const first = dataset.parse(await agent.call("get_dataset", inShop));
     expect(first.eventCount).toBe(7);
     const all = [...august, ...september, october, today, lateSeptember];
     const rows = await queryDataset(first.setupSql);
@@ -361,7 +382,7 @@ test("an agent reads every event exactly once and the saved insights through MCP
     // after new events, so nothing is uploaded again.
     const later = event("visit", "2026-10-06T11:00:00.000Z");
     await shop.ingest([later], true);
-    const repeated = dataset.parse(await shopAgent.call("get_dataset"));
+    const repeated = dataset.parse(await agent.call("get_dataset", inShop));
     expect(liveUploads).toHaveLength(1);
     expect(repeated.capturedAt).toBe(first.capturedAt);
     expect(repeated.eventCount).toBe(7);
@@ -372,7 +393,7 @@ test("an agent reads every event exactly once and the saved insights through MCP
     // Once the snapshot is 10 minutes old the next call captures a new one.
     // Months may be republished from now on; the union stays exact regardless.
     writeFileSync(clock, "2026-10-06T12:10:00.000Z");
-    const second = dataset.parse(await shopAgent.call("get_dataset"));
+    const second = dataset.parse(await agent.call("get_dataset", inShop));
     expect(second.capturedAt).toBe("2026-10-06T12:10:00.000Z");
     expect(second.eventCount).toBe(8);
     expect(liveUploads).toHaveLength(2);
@@ -381,13 +402,13 @@ test("an agent reads every event exactly once and the saved insights through MCP
     ).toEqual([...all, later].map((item) => item.id).sort());
     expect(await queryDataset(first.setupSql)).toHaveLength(7);
 
-    expect(Object.keys(await shopAgent.call("get_schema")).sort()).toEqual([
+    expect(Object.keys(await agent.call("get_schema", inShop)).sort()).toEqual([
       "purchase",
       "refund",
       "signup",
       "visit",
     ]);
-    expect(await shopAgent.call("get_schema")).toMatchObject({
+    expect(await agent.call("get_schema", inShop)).toMatchObject({
       signup: { plan: "string" },
     });
     const restInsights = z
@@ -400,7 +421,7 @@ test("an agent reads every event exactly once and the saved insights through MCP
       )
       .parse(await (await api.get(`/api/${shop.id}/insights`)).json());
     expect(restInsights.length).toBeGreaterThan(0);
-    expect(await shopAgent.call("list_insights")).toEqual(
+    expect(await agent.call("list_insights", inShop)).toEqual(
       restInsights.map((insight) =>
         expect.objectContaining({
           id: insight.id,
@@ -412,15 +433,15 @@ test("an agent reads every event exactly once and the saved insights through MCP
     const firstInsight = restInsights[0];
     if (!firstInsight) throw new Error("Missing insight");
     expect(
-      await shopAgent.call("get_insight", { id: firstInsight.id }),
+      await agent.call("get_insight", { ...inShop, id: firstInsight.id }),
     ).toEqual(
       await (
         await api.get(`/api/${shop.id}/insights/${firstInsight.id}`)
       ).json(),
     );
-    await expect(shopAgent.call("get_insight", { id: 999999 })).rejects.toThrow(
-      "Insight not found",
-    );
+    await expect(
+      agent.call("get_insight", { ...inShop, id: 999999 }),
+    ).rejects.toThrow("Insight not found");
     const restDashboards = z
       .array(
         z.object({
@@ -430,7 +451,7 @@ test("an agent reads every event exactly once and the saved insights through MCP
         }),
       )
       .parse(await (await api.get(`/api/${shop.id}/dashboards`)).json());
-    expect(await shopAgent.call("list_dashboards")).toEqual(
+    expect(await agent.call("list_dashboards", inShop)).toEqual(
       restDashboards.map((dashboard) =>
         expect.objectContaining({
           id: dashboard.id,
@@ -441,20 +462,28 @@ test("an agent reads every event exactly once and the saved insights through MCP
         }),
       ),
     );
-    expect(await shopAgent.text("get_query_guide")).toContain("read_parquet");
+    expect(await agent.text("get_query_guide")).toContain("read_parquet");
 
-    // Each token reads only its own project.
-    const otherToken = z
-      .object({ token: z.string() })
-      .parse(await (await api.post(`/api/${other.id}/mcptokens`)).json()).token;
-    const otherAgent = await connect(origin, otherToken);
+    // The same token reads the other project, and nothing of the shop leaks in.
     const otherRows = await queryDataset(
-      dataset.parse(await otherAgent.call("get_dataset")).setupSql,
+      dataset.parse(await agent.call("get_dataset", inOther)).setupSql,
     );
     expect(otherRows.map((row) => row.event_type)).toEqual(["other-only"]);
-    expect(Object.keys(await otherAgent.call("get_schema"))).toEqual([
+    expect(Object.keys(await agent.call("get_schema", inOther))).toEqual([
       "other-only",
     ]);
+    // Tokens are managed by the user, not under a project.
+    expect((await api.get(`/api/${shop.id}/mcptokens`)).status()).toBe(404);
+    const anonymous = await request.newContext({
+      baseURL: origin,
+      extraHTTPHeaders: { Origin: origin },
+    });
+    expect((await anonymous.get("/api/mcptokens")).status()).toBe(401);
+    expect((await anonymous.post("/api/mcptokens")).status()).toBe(401);
+    await anonymous.dispose();
+    const secondToken = z
+      .object({ token: z.string() })
+      .parse(await (await api.post("/api/mcptokens")).json()).token;
 
     // Missing, unknown and revoked tokens are rejected before any MCP handling.
     const post = (api: APIRequestContext, authorization?: string) =>
@@ -472,11 +501,16 @@ test("an agent reads every event exactly once and the saved insights through MCP
       (await post(api, `Bearer ${await ingestionKey(shop.id)}`)).status(),
     ).toBe(401);
     expect((await post(api, `Bearer ${token}`)).status()).toBe(200);
+    await page.reload();
+    await expect(row(secondToken)).toBeVisible();
     page.once("dialog", (dialog) => void dialog.accept());
-    await section.getByRole("button", { name: "Revoke" }).click();
-    await expect(section.getByText("No access tokens.")).toBeVisible();
+    await row(token)
+      .getByRole("button", { name: "Revoke access token" })
+      .click();
+    await expect(row(token)).toHaveCount(0);
+    await expect(row(secondToken)).toBeVisible();
     expect((await post(api, `Bearer ${token}`)).status()).toBe(401);
-    expect((await post(api, `Bearer ${otherToken}`)).status()).toBe(200);
+    expect((await post(api, `Bearer ${secondToken}`)).status()).toBe(200);
   } finally {
     await api.dispose();
     if (server.exitCode === null && server.signalCode === null) {

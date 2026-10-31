@@ -1,59 +1,79 @@
 import { z } from "zod";
 import { appDb } from "../db/database";
+import { RequestError } from "../errors";
 import { hash } from "../ingestion/process";
 
 const tokenRow = z.object({
   id: z.number(),
-  prefix: z.string(),
+  secret: z.string(),
   created_at: z.number(),
 });
+// Lists show only the prefix; the full secret is revealed one token at a time.
+const prefix = (secret: string) => secret.slice(0, 12);
 
-export function listMcpTokens(projectId: string) {
+export function listMcpTokens(userId: string) {
   return z
     .array(tokenRow)
     .parse(
       appDb
         .query(
-          "SELECT id,prefix,created_at FROM mcp_tokens WHERE project=? ORDER BY id",
+          "SELECT id,secret,created_at FROM mcp_tokens WHERE user_id=? ORDER BY id",
         )
-        .all(projectId),
+        .all(userId),
     )
     .map((row) => ({
       id: row.id,
-      prefix: row.prefix,
+      prefix: prefix(row.secret),
       createdAt: row.created_at,
     }));
 }
 
-/** The secret is returned only here; afterwards only its digest exists. */
-export function createMcpToken(projectId: string) {
+export function revealMcpToken(userId: string, id: number) {
+  const row = tokenRow
+    .nullable()
+    .parse(
+      appDb
+        .query(
+          "SELECT id,secret,created_at FROM mcp_tokens WHERE id=? AND user_id=?",
+        )
+        .get(id, userId),
+    );
+  if (!row) throw new RequestError(404, "Access token not found");
+  return {
+    id: row.id,
+    prefix: prefix(row.secret),
+    createdAt: row.created_at,
+    token: row.secret,
+  };
+}
+
+export function createMcpToken(userId: string) {
   const secret =
     "qmcp_" + (crypto.randomUUID() + crypto.randomUUID()).replaceAll("-", "");
   const createdAt = Date.now();
   const id = Number(
     appDb
       .query(
-        "INSERT INTO mcp_tokens(project,digest,prefix,created_at) VALUES(?,?,?,?)",
+        "INSERT INTO mcp_tokens(user_id,digest,secret,created_at) VALUES(?,?,?,?)",
       )
-      .run(projectId, hash(secret), secret.slice(0, 12), createdAt)
-      .lastInsertRowid,
+      .run(userId, hash(secret), secret, createdAt).lastInsertRowid,
   );
-  return { id, prefix: secret.slice(0, 12), createdAt, token: secret };
+  return { id, prefix: prefix(secret), createdAt, token: secret };
 }
 
-export function deleteMcpToken(projectId: string, id: number) {
+export function deleteMcpToken(userId: string, id: number) {
   appDb
-    .query("DELETE FROM mcp_tokens WHERE id=? AND project=?")
-    .run(id, projectId);
+    .query("DELETE FROM mcp_tokens WHERE id=? AND user_id=?")
+    .run(id, userId);
 }
 
-export function mcpTokenProject(token: string) {
+export function mcpTokenUser(token: string) {
   return z
-    .object({ project: z.string() })
+    .object({ user_id: z.string() })
     .nullable()
     .parse(
       appDb
-        .query("SELECT project FROM mcp_tokens WHERE digest=?")
+        .query("SELECT user_id FROM mcp_tokens WHERE digest=?")
         .get(hash(token)),
-    )?.project;
+    )?.user_id;
 }

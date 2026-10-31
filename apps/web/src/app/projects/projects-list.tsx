@@ -4,11 +4,13 @@ import { useProjects } from "@/services/projects";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectAvatar, ProjectsShell } from "./projects-shell";
+import { AgentAccess } from "./agent-access";
 
 export function ProjectsList() {
   return (
     <ProjectsShell>
       <ProjectsOverview />
+      <AgentAccess />
     </ProjectsShell>
   );
 }
