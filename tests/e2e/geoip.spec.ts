@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { z } from "zod";
 import { countryDatabase } from "../support/mmdb";
+import { workerOrigin } from "../support/server";
 
 const eventRows = z.array(
   z.object({
@@ -21,14 +22,14 @@ test("browser events gain the visitor's country from the trusted client address"
     database,
     countryDatabase({ "8.8.8.0/24": "US", "203.0.113.0/24": "DE" }),
   );
-  const origin = "http://127.0.0.1:4179";
+  const origin = workerOrigin();
   let log = "";
   const server = spawn("bun", ["server.ts"], {
     cwd: resolve("apps/web"),
     env: {
       ...process.env,
       NODE_ENV: "production",
-      PORT: "4179",
+      PORT: new URL(origin).port,
       APP_ORIGIN: origin,
       DATA_DIR: join(directory, "data"),
       GEOIP: "on",

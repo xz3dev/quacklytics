@@ -77,26 +77,6 @@
       ],
       "MaxAgeSeconds": 3600,
       "AllowedOrigins": [
-        "http://127.0.0.1:4174"
-      ]
-    },
-    {
-      "AllowedMethods": [
-        "GET",
-        "HEAD"
-      ],
-      "AllowedHeaders": [
-        "Range"
-      ],
-      "ExposeHeaders": [
-        "Content-Length",
-        "Content-Range",
-        "Accept-Ranges",
-        "ETag",
-        "Last-Modified"
-      ],
-      "MaxAgeSeconds": 3600,
-      "AllowedOrigins": [
         "http://127.0.0.1:4176"
       ]
     },
@@ -117,7 +97,307 @@
       ],
       "MaxAgeSeconds": 3600,
       "AllowedOrigins": [
-        "http://127.0.0.1:4180"
+        "http://127.0.0.1:4200"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4201"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4202"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4203"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4204"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4205"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4206"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4207"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4208"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4209"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4210"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4211"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4212"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4213"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4214"
+      ]
+    },
+    {
+      "AllowedMethods": [
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "Range"
+      ],
+      "ExposeHeaders": [
+        "Content-Length",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+        "Last-Modified"
+      ],
+      "MaxAgeSeconds": 3600,
+      "AllowedOrigins": [
+        "http://127.0.0.1:4215"
       ]
     }
   ]

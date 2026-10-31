@@ -1,5 +1,5 @@
 import { existsSync, mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { availableParallelism, tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadEnvFile } from "node:process";
 import { defineConfig } from "@playwright/test";
@@ -9,8 +9,13 @@ process.env.GEOIP ??= "off";
 export default defineConfig({
   testDir: "./tests/e2e",
   testIgnore: "**/production-image.spec.ts",
+  globalSetup: "./tests/support/global-setup.ts",
+  // Files run in parallel; tests within a file stay ordered on one worker.
+  // dev/cors.json allows spawned-server origins for up to 16 workers.
   fullyParallel: false,
-  workers: 1,
+  workers: process.env.CI
+    ? 2
+    : Math.min(16, Math.max(1, Math.floor(availableParallelism() / 2))),
   timeout: 90000,
   expect: { timeout: 20000 },
   use: {
@@ -18,7 +23,10 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  reporter: [["list"], ["html", { open: "never" }]],
+  // CI shards emit blobs that a follow-up job merges into one HTML report.
+  reporter: process.env.CI
+    ? [["list"], ["blob"]]
+    : [["list"], ["html", { open: "never" }]],
   webServer: {
     command:
       process.env.E2E_DEV === "1"

@@ -6,8 +6,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { z } from "zod";
 import { loginAsAdmin } from "../support/auth";
+import { workerOrigin } from "../support/server";
 
-const origin = "http://127.0.0.1:4179";
 const proxyCheck = z.object({ status: z.string(), clientIp: z.string() });
 const guide = (page: Page) =>
   page.getByRole("dialog", { name: /proxy|forward the visitor/i });
@@ -15,11 +15,12 @@ const guide = (page: Page) =>
 // TRUSTED_PROXIES is read at startup, so the flow restarts a dedicated service
 // on one data directory, the way an operator would after editing the config.
 async function startServer(dataDir: string, trustedProxies?: string) {
+  const origin = workerOrigin();
   let log = "";
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: "production",
-    PORT: "4179",
+    PORT: new URL(origin).port,
     APP_ORIGIN: origin,
     DATA_DIR: dataDir,
   };
@@ -57,6 +58,7 @@ async function stopServer(server: ChildProcess) {
 test("the proxy setup guide explains the fix and clears after the operator trusts the proxy", async ({
   browser,
 }) => {
+  const origin = workerOrigin();
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-proxy-check-"));
   const dataDir = join(directory, "data");
   // Test traffic arrives over loopback; the header makes it look proxied.

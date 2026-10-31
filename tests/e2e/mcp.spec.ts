@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
+import { workerOrigin } from "../support/server";
 
 const dataset = z.object({
   setupSql: z.string(),
@@ -140,8 +141,7 @@ test("an agent reads every event exactly once and the saved insights through MCP
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-mcp-"));
   const clock = join(directory, "clock");
   writeFileSync(clock, "2026-10-06T12:00:00.000Z");
-  // Shares hybrid-analytics' port: the dev bucket CORS allows only listed origins.
-  const origin = "http://127.0.0.1:4176";
+  const origin = workerOrigin();
   let log = "";
   const server = spawn(
     "bun",
@@ -151,7 +151,7 @@ test("an agent reads every event exactly once and the saved insights through MCP
       env: {
         ...process.env,
         NODE_ENV: "production",
-        PORT: "4176",
+        PORT: new URL(origin).port,
         APP_ORIGIN: origin,
         DATA_DIR: join(directory, "data"),
         ANALYTICS_TEST_CLOCK: clock,

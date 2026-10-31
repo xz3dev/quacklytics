@@ -10,12 +10,13 @@ import {
   insight,
   dashboard as dashboardSchema,
 } from "../../packages/contracts/src/index";
+import { workerOrigin } from "../support/server";
 
 test("failed S3 exports retry after SIGKILL while events, credentials and dashboards persist", async ({
   page,
 }) => {
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-recovery-"));
-  const origin = "http://127.0.0.1:4174";
+  const origin = workerOrigin();
   let process: ChildProcess | undefined;
   let log = "";
   let storageSecret = "deliberately-invalid-test-secret";
@@ -25,7 +26,7 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
       env: {
         ...globalThis.process.env,
         NODE_ENV: "production",
-        PORT: "4174",
+        PORT: new URL(origin).port,
         APP_ORIGIN: origin,
         DATA_DIR: directory,
         S3_SECRET_ACCESS_KEY: storageSecret,

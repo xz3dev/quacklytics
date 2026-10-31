@@ -1,25 +1,34 @@
-import { expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+/**
+ * Origin for a server spawned by the current test. A worker runs its tests one
+ * at a time, so each worker owns one port; dev/cors.json lists these origins
+ * for browser reads from the bucket.
+ */
+export function workerOrigin() {
+  return `http://127.0.0.1:${4200 + test.info().parallelIndex}`;
+}
+
 /** Runs a production server with its own data directory and environment. */
 export async function withServer<T>(
-  port: number,
   env: Record<string, string>,
   run: (origin: string, directory: string) => Promise<T>,
 ) {
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-server-"));
-  const origin = `http://127.0.0.1:${port}`;
+  const origin = workerOrigin();
+  const port = new URL(origin).port;
   let log = "";
   const server = spawn("bun", ["server.ts"], {
     cwd: resolve("apps/web"),
     env: {
       ...process.env,
       NODE_ENV: "production",
-      PORT: String(port),
+      PORT: port,
       APP_ORIGIN: origin,
       DATA_DIR: join(directory, "data"),
       ...env,

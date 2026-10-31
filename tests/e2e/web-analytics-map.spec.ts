@@ -27,7 +27,6 @@ test("the default web analytics dashboard maps SDK visitors by country", async (
   );
   try {
     await withServer(
-      4180,
       {
         GEOIP: "on",
         GEOIP_DB_PATH: database,
