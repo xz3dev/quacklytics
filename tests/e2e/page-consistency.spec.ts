@@ -2,33 +2,34 @@ import { loginAsAdmin } from "../support/auth";
 import { expect, test } from "@playwright/test";
 import { project } from "../../packages/contracts/src/index";
 
-test("project pages share insight spacing in both themes and remain usable on mobile", async ({
-  page,
-  baseURL,
-}, testInfo) => {
-  if (!baseURL) throw new Error("Missing origin");
-  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
-  const created = project.parse(
-    await (
-      await page.request.post("/api/projects", {
-        data: { name: "Page consistency" },
-      })
-    ).json(),
-  );
-  const routes = [
-    ["insights", "Insights"],
-    ["dashboards", "Dashboards"],
-    ["schema", "Event Schema"],
-    ["events", "Events"],
-    ["queries", "Queries"],
-    ["ingestion", "Ingestion"],
-  ];
-  for (const theme of ["light", "dark"]) {
-    await page.addInitScript(
-      (value) => localStorage.setItem("ui-theme", value),
-      theme,
-    );
-    for (const width of [1280, 390]) {
+const routes = [
+  ["insights", "Insights"],
+  ["dashboards", "Dashboards"],
+  ["schema", "Event Schema"],
+  ["events", "Events"],
+  ["queries", "Queries"],
+  ["ingestion", "Ingestion"],
+];
+// One test per theme and width, each against its own project.
+for (const theme of ["light", "dark"])
+  for (const width of [1280, 390])
+    test(`project pages share insight spacing in the ${theme} theme at ${width}px`, async ({
+      page,
+      baseURL,
+    }, testInfo) => {
+      if (!baseURL) throw new Error("Missing origin");
+      await loginAsAdmin(page, baseURL);
+      const created = project.parse(
+        await (
+          await page.request.post("/api/projects", {
+            data: { name: `Page consistency ${theme} ${width}` },
+          })
+        ).json(),
+      );
+      await page.addInitScript(
+        (value) => localStorage.setItem("ui-theme", value),
+        theme,
+      );
       await page.setViewportSize({ width, height: 900 });
       let reference: { x: number; y: number; font: string } | undefined;
       for (const [route, title] of routes) {
@@ -105,6 +106,4 @@ test("project pages share insight spacing in both themes and remain usable on mo
           fullPage: true,
         });
       }
-    }
-  }
-});
+    });

@@ -6,27 +6,29 @@ import {
   project,
 } from "../../packages/contracts/src/index";
 
-test("insight modes isolate temporary timeframes, save defaults, and retain failed edits", async ({
-  page,
-  baseURL,
-}) => {
-  if (!baseURL) throw new Error("Missing test origin");
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await loginAsAdmin(page, baseURL ?? "http://127.0.0.1:4173");
-  const created = project.parse(
-    await (
-      await page.request.post("/api/projects", {
-        data: { name: "Insight modes" },
-      })
-    ).json(),
-  );
-  const base = `/api/${created.id}/insights`;
-  const originals = insight
-    .array()
-    .parse(await (await page.request.get(base)).json());
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
-  for (const definition of Object.values(defaultInsights)) {
+// One test per insight type: each walks its own view, edit, save and failure
+// flows against a fresh project.
+for (const definition of Object.values(defaultInsights)) {
+  test(`${definition.type} insight modes isolate temporary timeframes, save defaults, and retain failed edits`, async ({
+    page,
+    baseURL,
+  }) => {
+    if (!baseURL) throw new Error("Missing test origin");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await loginAsAdmin(page, baseURL);
+    const created = project.parse(
+      await (
+        await page.request.post("/api/projects", {
+          data: { name: `Insight modes ${definition.type}` },
+        })
+      ).json(),
+    );
+    const base = `/api/${created.id}/insights`;
+    const originals = insight
+      .array()
+      .parse(await (await page.request.get(base)).json());
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
     const response = await page.request.post(base, {
       data: { ...definition, name: `Modes ${definition.type}` },
     });
@@ -247,12 +249,14 @@ test("insight modes isolate temporary timeframes, save defaults, and retain fail
     await expect(button("Last 14 days")).toBeVisible();
     await expect(timeframeHint).toHaveCount(0);
     expect(await read()).toEqual(persisted);
-  }
-  const all = insight
-    .array()
-    .parse(await (await page.request.get(base)).json());
-  expect(
-    all.filter((item) => originals.some((original) => original.id === item.id)),
-  ).toEqual(originals);
-  expect(errors).toEqual([]);
-});
+    const all = insight
+      .array()
+      .parse(await (await page.request.get(base)).json());
+    expect(
+      all.filter((item) =>
+        originals.some((original) => original.id === item.id),
+      ),
+    ).toEqual(originals);
+    expect(errors).toEqual([]);
+  });
+}

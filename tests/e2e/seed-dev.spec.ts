@@ -206,37 +206,50 @@ test("Bun demo command provisions real chart data and supports an existing inges
   const serverEvents = parsed.filter((event) => !event.context.page);
   expect(count("$pageview")).toBeGreaterThan(count("signed_up"));
   expect(count("$click")).toBeGreaterThan(0);
-  for (const event of browserEvents) {
-    expect(event.sessionId).toBeTruthy();
-    expect(event.personId).toMatch(/^(user|anonymous):/);
-    expect(event.properties.$country).toMatch(/^[A-Z]{2}$/);
-    expect(event.context.browser).toBeTruthy();
-    if (event.eventType === "$click")
-      expect(typeof event.properties.tagName).toBe("string");
-  }
+  // Each invariant is one assertion over all events that lists every
+  // violation; thousands of per-event assertions would dominate the runtime.
+  expect(
+    browserEvents.filter(
+      (event) =>
+        !event.sessionId ||
+        !/^(user|anonymous):/.test(event.personId ?? "") ||
+        !/^[A-Z]{2}$/.test(String(event.properties.$country)) ||
+        !event.context.browser ||
+        (event.eventType === "$click" &&
+          typeof event.properties.tagName !== "string"),
+    ),
+  ).toEqual([]);
   // Billing comes from the server SDK: no page, browser or session.
   expect(new Set(serverEvents.map((event) => event.eventType))).toContain(
     "invoice_paid",
   );
-  for (const event of serverEvents) {
-    expect(event.personId).toMatch(/^user:usr_/);
-    expect(event.sessionId).toBeNull();
-    expect(event.properties.$country).toBeUndefined();
-  }
+  expect(
+    serverEvents.filter(
+      (event) =>
+        !/^user:usr_/.test(event.personId ?? "") ||
+        event.sessionId !== null ||
+        "$country" in event.properties,
+    ),
+  ).toEqual([]);
   // A session belongs to one browser in one place.
-  const sessionProfiles = new Map<string, string>();
+  const sessionProfiles = new Map<string, Set<string>>();
   for (const event of browserEvents) {
-    const profile = JSON.stringify([
-      event.context.browser,
-      event.context.os,
-      event.context.deviceType,
-      event.context.timezone,
-      event.properties.$country,
-    ]);
     const key = event.sessionId ?? "";
-    expect(sessionProfiles.get(key) ?? profile).toBe(profile);
-    sessionProfiles.set(key, profile);
+    const profiles = sessionProfiles.get(key) ?? new Set<string>();
+    profiles.add(
+      JSON.stringify([
+        event.context.browser,
+        event.context.os,
+        event.context.deviceType,
+        event.context.timezone,
+        event.properties.$country,
+      ]),
+    );
+    sessionProfiles.set(key, profiles);
   }
+  expect(
+    [...sessionProfiles].filter(([, profiles]) => profiles.size > 1),
+  ).toEqual([]);
   for (const field of ["browser", "os", "deviceType"] as const)
     expect(
       new Set(browserEvents.map((event) => event.context[field])).size,
