@@ -507,10 +507,12 @@ test("landing enforces queue bounds, snapshots context before batching, and appl
   expect(outcomes.full).toContain("outbox is full");
   expect(outcomes.oversized).toContain("maxEventBytes");
   const rows = await landing.events();
-  expect(rows.map((row) => row.eventType)).toEqual([
+  // "snapshot" and "second" are often tracked in the same millisecond, and
+  // events of equal timestamp come back in event ID order.
+  expect(rows.map((row) => row.eventType).sort()).toEqual([
     "$pageview",
-    "snapshot",
     "second",
+    "snapshot",
   ]);
   const snapshot = rows.find((row) => row.eventType === "snapshot");
   expect(snapshot?.properties.nested).toEqual({ amount: 7 });
