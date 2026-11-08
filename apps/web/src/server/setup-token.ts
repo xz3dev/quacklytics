@@ -1,7 +1,9 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { appDb } from "./db/database";
 
-export const appOrigin = process.env.APP_ORIGIN ?? "http://127.0.0.1:3000";
+export const appOrigin = new URL(
+  process.env.APP_ORIGIN ?? "http://127.0.0.1:3000",
+).origin;
 
 // Kept in memory only: unless SETUP_TOKEN fixes it for automated setups, each
 // backend start issues a fresh link. It stops working once the admin exists.

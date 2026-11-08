@@ -1,6 +1,7 @@
 import { ingestionRetryAfter } from "./ingestion/rate-limit";
 import { z } from "zod";
-import { auth, authReady } from "./auth";
+import { auth, authReady, mcpResource } from "./auth";
+import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
 import { appDb, setting } from "./db/database";
 import {
   listProjects,
@@ -29,7 +30,8 @@ import { insightsHandler } from "./handlers/insights";
 import { dashboardsHandler } from "./handlers/dashboards";
 import { schemaHandler } from "./handlers/schema";
 import { eventsHandler } from "./handlers/events";
-import { mcpTokensHandler } from "./handlers/mcp-tokens";
+import { agentsHandler } from "./handlers/agents";
+import { pruneAgentAuthorizations } from "./domain/agents";
 import { handleMcp } from "./mcp/server";
 const proxyCheckFor = (request: Request) =>
   proxyCheck({
@@ -37,6 +39,70 @@ const proxyCheckFor = (request: Request) =>
     forwardedFor: request.headers.get("x-forwarded-for"),
     host: request.headers.get("host"),
   });
+/**
+ * OAuth discovery for MCP agents: the protected resource metadata (RFC 9728)
+ * names this app as the authorization server, whose metadata (RFC 8414) lives
+ * at the issuer path /api/auth. Better Auth answers both; the root alias of the
+ * server metadata serves agents that only look at the origin.
+ */
+async function oauthDiscovery(request: Request, path: string) {
+  if (mcpResource) {
+    if (
+      path === "/.well-known/oauth-authorization-server/api/auth" ||
+      path === "/.well-known/oauth-protected-resource" ||
+      path === "/.well-known/oauth-protected-resource/api/mcp"
+    )
+      return auth.handler(request);
+    if (path === "/.well-known/oauth-authorization-server")
+      return oauthProviderAuthServerMetadata(auth)(request);
+  }
+  throw new RequestError(404, "Route not found");
+}
+
+// Where agents register, without credentials, and refresh their tokens.
+const AGENT_ENDPOINTS = new Set([
+  "/api/auth/oauth2/register",
+  "/api/auth/oauth2/token",
+]);
+// Real registrations are a few hundred bytes; anyone may register an agent.
+const MAX_REGISTRATION_BYTES = 16 * 1024;
+
+/**
+ * Agent requests run one at a time. MCP clients refresh from several requests
+ * at once; run in turn, a duplicate refresh becomes a retry that Better Auth
+ * answers with the same tokens instead of rejecting the rotated refresh token.
+ * Pruning also deletes rows that token issuance may still be referencing.
+ */
+let agentQueue: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(task: () => Promise<T>) {
+  const run = agentQueue.then(task, task);
+  agentQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function authRequest(request: Request, path: string) {
+  if (!mcpResource || request.method !== "POST" || !AGENT_ENDPOINTS.has(path))
+    return auth.handler(request);
+  if (
+    path === "/api/auth/oauth2/register" &&
+    (await request.clone().arrayBuffer()).byteLength > MAX_REGISTRATION_BYTES
+  )
+    throw new RequestError(413, "Client registration too large");
+  return oneAtATime(async () => {
+    const response = await auth.handler(request);
+    // Agents register without credentials and refresh tokens hourly. Requests
+    // that passed Better Auth's rate limits are a good moment to drop what
+    // expired or was never used; failing to do so never fails the request.
+    if (response.status !== 429)
+      try {
+        pruneAgentAuthorizations();
+      } catch (error) {
+        console.error("Pruning agent authorizations failed", error);
+      }
+    return response;
+  });
+}
+
 export async function handleApi(request: Request): Promise<Response> {
   let ingestionOrigin: string | null = null;
   try {
@@ -44,14 +110,17 @@ export async function handleApi(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const segments = url.pathname.replace(/^\/api\/?/, "").split("/");
     const [projectId, resource, idText, action] = segments;
-    if (url.pathname.startsWith("/api/auth/")) return auth.handler(request);
+    if (url.pathname.startsWith("/.well-known/"))
+      return await oauthDiscovery(request, url.pathname);
+    if (url.pathname.startsWith("/api/auth/"))
+      return await authRequest(request, url.pathname);
     if (projectId === "setup")
       return json({
         adminRegistered: adminRegistered(),
         geoip: geoipSource(),
       });
     if (projectId === "health") return json({ ok: true });
-    // Agents authenticate with a user's bearer token instead of a session.
+    // Agents authenticate with an OAuth access token instead of a session.
     if (projectId === "mcp" && !resource) return await handleMcp(request);
     // Backfill shares ingestion's key, CORS and rate limits, but may write into
     // archived months and responds only after they are merged into S3.
@@ -164,8 +233,8 @@ export async function handleApi(request: Request): Promise<Response> {
     if (projectId === "proxy-check") return json(proxyCheckFor(request));
     if (projectId === "me")
       return json({ id: session.user.id, email: session.user.email });
-    if (projectId === "mcptokens")
-      return mcpTokensHandler(request, session.user.id, resource);
+    if (projectId === "agents")
+      return agentsHandler(request, session.user.id, resource);
     if (projectId === "projects") {
       if (request.method === "GET") return json(await listProjects());
       if (request.method === "POST")

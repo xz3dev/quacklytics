@@ -1,6 +1,11 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { request, HttpError } from "@/client/api/http";
 import { setupTokenHeader, user as userSchema } from "@quacklytics/contracts";
+import {
+  authorizationFailure,
+  continuationUrl,
+  signedAuthorization,
+} from "@/services/oauth";
 export const sessionQuery = queryOptions({
   queryKey: ["session"],
   queryFn: async ({ signal }) => {
@@ -17,12 +22,22 @@ export const sessionQuery = queryOptions({
 export function useAuth() {
   const client = useQueryClient();
   const session = useQuery(sessionQuery);
+  /** Signs in and returns where an agent's authorization continues, if any. */
   async function authenticate(
     path: string,
-    body: unknown,
+    body: Record<string, unknown>,
     headers?: Record<string, string>,
   ) {
-    await request("POST", path, body, undefined, headers);
+    const oauthQuery = signedAuthorization();
+    const response = await request(
+      "POST",
+      path,
+      oauthQuery ? { ...body, oauth_query: oauthQuery } : body,
+      undefined,
+      headers,
+    ).catch((error: unknown) => {
+      throw authorizationFailure(error);
+    });
     await client.cancelQueries({ queryKey: sessionQuery.queryKey });
     await client.invalidateQueries({
       queryKey: sessionQuery.queryKey,
@@ -33,6 +48,7 @@ export function useAuth() {
       throw new Error(
         "Unable to establish your session. Please sign in again.",
       );
+    return continuationUrl(response);
   }
   return {
     user: session.data,

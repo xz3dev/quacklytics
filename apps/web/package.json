@@ -12,6 +12,8 @@
     "predev": "NODE_ENV=development bun src/server/db/predev.ts"
   },
   "dependencies": {
+    "@better-auth/mcp": "1.7.10",
+    "@better-auth/oauth-provider": "1.7.10",
     "@codemirror/lang-sql": "6.10.0",
     "@date-fns/utc": "2.1.1",
     "@dnd-kit/core": "6.3.1",
