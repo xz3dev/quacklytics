@@ -686,11 +686,32 @@ test("an agent signs in with OAuth and reads every event exactly once and the sa
     expect(insufficient.headers.get("www-authenticate")).toContain(
       'error="insufficient_scope", scope="mcp:read"',
     );
-    const manualAccess = await manualToken(
-      "mcp:read offline_access",
-      `${origin}/api/mcp`,
+    const manualGrant = await redeem(
+      await manualCode("mcp:read offline_access", `${origin}/api/mcp`),
     );
+    expect(manualGrant.status).toBe(200);
+    const manualTokens = z
+      .object({ access_token: z.string(), refresh_token: z.string() })
+      .parse(await manualGrant.json());
+    const manualAccess = manualTokens.access_token;
     expect((await rawCall(`Bearer ${manualAccess}`)).status).toBe(200);
+    // Agents refresh from several requests at once with the same refresh
+    // token. The duplicate receives the same rotation instead of revoking it.
+    const refresh = () =>
+      fetch(`${origin}/api/auth/oauth2/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: manualTokens.refresh_token,
+          client_id: manualClient,
+          resource: `${origin}/api/mcp`,
+        }),
+      });
+    const [rotated, duplicate] = await Promise.all([refresh(), refresh()]);
+    const rotatedAccess = await accessToken(rotated);
+    expect(await accessToken(duplicate)).toBe(rotatedAccess);
+    expect((await rawCall(`Bearer ${rotatedAccess}`)).status).toBe(200);
     // Bearer tokens are not DPoP-bound, and ingestion keys are public and
     // must never grant read access.
     expect((await rawCall(`DPoP ${manualAccess}`)).status).toBe(401);
@@ -734,7 +755,7 @@ test("an agent signs in with OAuth and reads every event exactly once and the sa
     );
     expect(agentAuth.pendingAuthorization).toBeInstanceOf(URL);
     // Other agents keep their access.
-    expect((await rawCall(`Bearer ${manualAccess}`)).status).toBe(200);
+    expect((await rawCall(`Bearer ${rotatedAccess}`)).status).toBe(200);
 
     // Agent access belongs to the signed-in user, not to a project.
     expect((await api.get("/api/agents")).ok()).toBeTruthy();
@@ -791,7 +812,7 @@ test("an agent signs in with OAuth and reads every event exactly once and the sa
         })
       ).ok(),
     ).toBeTruthy();
-    expect((await rawCall(`Bearer ${manualAccess}`)).status).toBe(401);
+    expect((await rawCall(`Bearer ${rotatedAccess}`)).status).toBe(401);
     const lateToken = await accessToken(await redeem(earlierGrant));
     expect((await rawCall(`Bearer ${lateToken}`)).status).toBe(401);
     // Disconnecting also invalidates codes the agent has not redeemed yet.

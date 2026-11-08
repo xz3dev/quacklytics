@@ -55,6 +55,11 @@ export function mcpOAuthPlugins(resource: string) {
     disableJwtPlugin: true,
     scopes: MCP_SCOPES,
     grantTypes: ["authorization_code", "refresh_token"],
+    // MCP clients refresh from several requests at once with the same refresh
+    // token. Agent requests are serialized (see http.ts), so a duplicate that
+    // arrives within this many seconds gets the rotation's response instead
+    // of revoking it. mcp() defaults to 30; plain oauthProvider() to 0.
+    refreshTokenReuseInterval: 30,
     // Agents register themselves (RFC 7591). The login and consent pages are
     // what grants access, so registration itself needs no credentials.
     allowDynamicClientRegistration: true,
