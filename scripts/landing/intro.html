@@ -1,0 +1,811 @@
+<!doctype html>
+<!--
+  Storyboard for the landing page's overview video. Every animation is created
+  with the Web Animations API on one shared timeline, so render-intro.ts can
+  seek to any frame deterministically. Open this file in a browser to preview
+  it in real time; render-intro.ts loads it with ?render.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Quacklytics overview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Geist+Mono:wght@400;500&display=block"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #08080a;
+        --panel: #131316;
+        --panel-2: #19191d;
+        --line: rgb(255 255 255 / 0.09);
+        --line-strong: rgb(255 255 255 / 0.16);
+        --fg: #f5f5f6;
+        --muted: #a1a1aa;
+        --subtle: #71717a;
+        --duck: #ffd84d;
+        --sky: #4f8cff;
+        --violet: #8b5cf6;
+        --green: #34d399;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        background: #000;
+        overflow: hidden;
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ink);
+        color: var(--fg);
+        font-family: Geist, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        transform-origin: 0 0;
+      }
+      .mono {
+        font-family: "Geist Mono", ui-monospace, monospace;
+      }
+      .abs {
+        position: absolute;
+      }
+
+      /* Background: drifting colour fields, dot grid and vignette. */
+      .blob {
+        position: absolute;
+        width: 1400px;
+        height: 1400px;
+        border-radius: 50%;
+        left: 0;
+        top: 0;
+      }
+      #blob-a {
+        background: radial-gradient(closest-side, rgb(79 140 255 / 0.22), transparent);
+      }
+      #blob-b {
+        background: radial-gradient(closest-side, rgb(139 92 246 / 0.16), transparent);
+      }
+      #blob-c {
+        background: radial-gradient(closest-side, rgb(255 216 77 / 0.09), transparent);
+      }
+      .grid-bg {
+        position: absolute;
+        inset: -64px;
+        background-image: radial-gradient(rgb(255 255 255 / 0.07) 1.5px, transparent 1.5px);
+        background-size: 32px 32px;
+        mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, black, transparent);
+      }
+      .vignette {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 85% 80% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.65));
+        pointer-events: none;
+      }
+
+      .scene,
+      .cam {
+        position: absolute;
+        inset: 0;
+      }
+      .scene {
+        opacity: 0;
+      }
+      .center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .big {
+        font-size: 112px;
+        font-weight: 660;
+        letter-spacing: -0.05em;
+        line-height: 1.05;
+      }
+      .head {
+        position: absolute;
+        left: 140px;
+        top: 96px;
+      }
+      .kicker {
+        font-family: "Geist Mono", monospace;
+        font-size: 24px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--duck);
+      }
+      .title {
+        margin-top: 16px;
+        font-size: 80px;
+        font-weight: 650;
+        letter-spacing: -0.045em;
+        line-height: 1.04;
+      }
+      .hl {
+        background: linear-gradient(100deg, #ffe27a, #ffc53d);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-style: normal;
+      }
+      /* Word and character masks for kinetic type. */
+      .w {
+        display: inline-block;
+        overflow: hidden;
+        vertical-align: bottom;
+        padding: 0 0.03em 0.14em;
+        margin-bottom: -0.14em;
+      }
+      .wi {
+        display: inline-block;
+      }
+      .w.char {
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .card {
+        position: absolute;
+        border: 1.5px solid var(--line-strong);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: 0 50px 120px -30px rgb(0 0 0 / 0.95), 0 0 0 1px rgb(0 0 0 / 0.4);
+        overflow: hidden;
+      }
+      .bar-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 50px;
+        padding: 0 22px;
+        border-bottom: 1.5px solid var(--line);
+        background: var(--panel-2);
+      }
+      .bar-top i {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: rgb(255 255 255 / 0.16);
+      }
+      .bar-top span {
+        margin: 0 auto;
+        padding: 5px 22px;
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.05);
+        font-family: "Geist Mono", monospace;
+        font-size: 17px;
+        color: var(--subtle);
+      }
+      .tile {
+        position: absolute;
+        padding: 34px 38px;
+        border: 1.5px solid var(--line-strong);
+        border-radius: 24px;
+        background: linear-gradient(180deg, #17171b, #111114);
+        box-shadow: 0 40px 100px -30px rgb(0 0 0 / 0.9);
+      }
+      .label {
+        font-family: "Geist Mono", monospace;
+        font-size: 21px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--subtle);
+      }
+      .chip {
+        display: inline-block;
+        padding: 7px 16px;
+        border: 1.5px solid var(--line-strong);
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.04);
+        font-family: "Geist Mono", monospace;
+        font-size: 20px;
+        color: #d4d4d8;
+      }
+      .ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 260px;
+        height: 260px;
+        margin: -130px 0 0 -130px;
+        border-radius: 50%;
+        border: 2px solid rgb(255 216 77 / 0.6);
+      }
+      .particle {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--sky);
+        box-shadow: 0 0 16px 2px rgb(79 140 255 / 0.8);
+        offset-rotate: 0deg;
+        opacity: 0;
+      }
+      .file {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 300px;
+        height: 60px;
+        padding: 0 20px;
+        border: 1.5px solid rgb(79 140 255 / 0.5);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #15203a, #101829);
+        box-shadow: 0 12px 40px -10px rgb(79 140 255 / 0.4);
+        font-family: "Geist Mono", monospace;
+        font-size: 20px;
+        color: #c7dbff;
+        offset-rotate: 0deg;
+        offset-anchor: 0 0;
+      }
+      svg.i {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      table.t {
+        border-collapse: collapse;
+        font-family: "Geist Mono", monospace;
+      }
+      table.t th {
+        font-weight: 400;
+        color: var(--subtle);
+        text-align: left;
+        border-bottom: 1.5px solid var(--line-strong);
+      }
+      #world {
+        position: absolute;
+        inset: 0;
+      }
+      #flash {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 60% 55% at 50% 50%, rgb(255 236 170 / 0.55), rgb(255 216 77 / 0.08) 60%, transparent);
+        opacity: 0;
+        pointer-events: none;
+      }
+      #streak {
+        position: absolute;
+        top: -20%;
+        left: 0;
+        width: 420px;
+        height: 140%;
+        rotate: 14deg;
+        background: linear-gradient(90deg, transparent, rgb(124 176 255 / 0.18), rgb(255 255 255 / 0.22), rgb(124 176 255 / 0.18), transparent);
+        filter: blur(30px);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .burst {
+        position: absolute;
+        left: 50%;
+        top: 37%;
+        width: 10px;
+        height: 10px;
+        margin: -5px 0 0 -5px;
+        border-radius: 50%;
+        background: var(--duck);
+        box-shadow: 0 0 14px 2px rgb(255 216 77 / 0.7);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute">
+      <defs>
+        <symbol id="i-server" viewBox="0 0 24 24">
+          <path d="M4 3h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM4 13h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1zM7 7h.01M7 17h.01" />
+        </symbol>
+        <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" /></symbol>
+      </defs>
+    </svg>
+
+    <div id="stage">
+      <div class="blob" id="blob-a"></div>
+      <div class="blob" id="blob-b"></div>
+      <div class="blob" id="blob-c"></div>
+      <div class="grid-bg" id="grid"></div>
+
+      <!-- 1 · Logo -->
+      <section class="scene" id="s1">
+        <div class="cam">
+          <div class="ring" id="r1"></div>
+          <div class="ring" id="r2"></div>
+          <div class="ring" id="r3"></div>
+          <div id="s1-burst"></div>
+          <div class="center">
+            <img id="logo" src="../../apps/home/src/assets/birb.svg" alt="" style="width: 240px; height: 240px" />
+            <h1 id="logo-name" style="margin-top: 18px; font-size: 140px; font-weight: 700; letter-spacing: -0.05em">Quacklytics</h1>
+            <p id="logo-tag" style="margin-top: 18px; font-size: 44px; color: var(--muted)">Analytics your AI agent can read</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 · Ask in plain words -->
+      <section class="scene" id="s2">
+        <div class="cam" style="perspective: 2400px">
+          <div class="head">
+            <div class="kicker">Ask your AI agent</div>
+            <h2 class="title">Ask in plain words</h2>
+          </div>
+          <div class="card" id="s2-term" style="left: 300px; top: 330px; width: 1320px; height: 660px; background: #0d0d10">
+            <div class="bar-top"><i></i><i></i><i></i><span>Your AI agent</span></div>
+            <div class="mono" style="padding: 40px 50px; font-size: 27px; line-height: 1.6; color: #d4d4d8">
+              <p><span style="color: var(--duck)">&gt;</span> <span id="s2-q">Which websites sent us the most sign-ups last month?</span></p>
+              <p id="s2-t1" style="margin-top: 22px; color: var(--subtle)"><span style="color: var(--green)">●</span> Reading every event from Quacklytics</p>
+              <table class="t" style="margin-top: 22px; width: 1000px; font-size: 26px">
+                <thead><tr id="s2-th"><th style="padding: 6px 0">came from</th><th style="padding: 6px 0; text-align: right">sign-ups</th><th style="width: 380px"></th></tr></thead>
+                <tbody id="s2-rows"></tbody>
+              </table>
+              <p id="s2-sum" style="margin-top: 22px; font-family: Geist, sans-serif; font-size: 28px; color: #e4e4e7">
+                <span style="color: var(--green)">●</span> October had 19 sign-ups. Most came straight to your site or from Google.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 · Any question -->
+      <section class="scene" id="s3">
+        <div class="cam">
+          <div id="s3-chips"></div>
+          <div class="center"><h1 class="big" id="s3-t" style="max-width: 1350px">Any question. Not just the ones you planned for.</h1></div>
+        </div>
+      </section>
+
+      <!-- 4 · Straight from your storage -->
+      <section class="scene" id="s4">
+        <div class="cam">
+          <div class="head">
+            <div class="kicker">No export needed</div>
+            <h2 class="title">Read straight from <em class="hl">your own storage</em></h2>
+          </div>
+          <svg id="s4-bucket" class="abs" style="left: 170px; top: 360px" width="460" height="540" viewBox="0 0 560 660">
+            <defs>
+              <linearGradient id="bk2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1c1c22" /><stop offset="1" stop-color="#121216" /></linearGradient>
+            </defs>
+            <path d="M30 90 L70 600 Q72 630 280 630 Q488 630 490 600 L530 90" fill="url(#bk2)" stroke="rgb(255 255 255 / .18)" stroke-width="3" />
+            <ellipse cx="280" cy="90" rx="250" ry="52" fill="#202027" stroke="rgb(255 255 255 / .22)" stroke-width="3" />
+          </svg>
+          <div id="s4-files"></div>
+          <p class="label abs" id="s4-bl" style="left: 170px; width: 460px; top: 916px; text-align: center">Your storage</p>
+          <div id="s4-stream" class="abs" style="inset: 0"></div>
+          <div class="card" id="s4-agent" style="left: 1180px; top: 450px; width: 600px; height: 320px; background: #0d0d10">
+            <div class="bar-top"><i></i><i></i><i></i><span>Your AI agent</span></div>
+            <div class="mono" style="padding: 32px 36px; font-size: 24px; line-height: 1.7; color: #d4d4d8">
+              <p><span style="color: var(--duck)">&gt;</span> Which features do teams use most?</p>
+              <p style="color: var(--subtle)">Reading <span id="s4-months">0</span> months of events…</p>
+              <p id="s4-done" style="color: var(--green)">● Done</p>
+            </div>
+          </div>
+          <p class="label abs" id="s4-al" style="left: 1180px; width: 600px; top: 796px; text-align: center">Your AI agent</p>
+        </div>
+      </section>
+
+      <!-- 5 · Server won't budge -->
+      <section class="scene" id="s5">
+        <div class="cam">
+          <div class="head" style="left: 0; right: 0; text-align: center">
+            <div class="kicker">No extra load</div>
+            <h2 class="title">Ask fifty follow-ups. Your server won't budge.</h2>
+          </div>
+          <div class="tile" id="s5-q" style="left: 300px; top: 380px; width: 620px; height: 480px">
+            <div class="label">Questions asked</div>
+            <div class="mono" id="s5-count" style="font-size: 96px; margin-top: 16px; letter-spacing: -0.04em">0</div>
+            <div id="s5-dots" style="margin-top: 26px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 12px"></div>
+          </div>
+          <div class="tile" id="s5-s" style="left: 1000px; top: 380px; width: 620px; height: 480px">
+            <div class="label">Your server</div>
+            <div style="display: flex; align-items: center; gap: 16px; margin-top: 26px">
+              <i style="width: 18px; height: 18px; border-radius: 50%; background: var(--green); box-shadow: 0 0 18px var(--green)"></i>
+              <span style="font-size: 48px; font-weight: 600">Relaxed</span>
+            </div>
+            <svg width="544" height="150" viewBox="0 0 544 150" style="position: absolute; left: 38px; bottom: 96px; overflow: visible">
+              <path d="M0 140 H544" stroke="rgb(255 255 255 / .1)" stroke-width="2" />
+              <polyline id="s5-line" points="0,128 60,126 120,129 180,127 240,128 300,126 360,129 420,127 480,128 544,127" fill="none" stroke="#34d399" stroke-width="4" pathLength="1" stroke-dasharray="1" />
+            </svg>
+            <div class="label" style="position: absolute; left: 38px; bottom: 40px; font-size: 18px">The work happens on the agent's computer</div>
+          </div>
+        </div>
+      </section>
+
+      <div id="streak"></div>
+      <div id="flash"></div>
+      <div class="vignette"></div>
+    </div>
+
+    <script>
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+      const EXPO = "cubic-bezier(.16,1,.3,1)";
+      const BACK = "cubic-bezier(.34,1.56,.64,1)";
+      const IN_OUT = "cubic-bezier(.65,0,.35,1)";
+      // document.getAnimations() drops finished animations, so seeking backwards
+      // would lose them; every animation is kept here instead.
+      const animations = [];
+      const seekers = [];
+      let seed = 7;
+      const random = () => {
+        seed = (seed + 0x6d2b79f5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+      const el = (tag, props = {}, parent) => {
+        const { style, ...rest } = props;
+        const node = Object.assign(document.createElement(tag), rest);
+        if (style) node.setAttribute("style", style);
+        parent?.append(node);
+        return node;
+      };
+      const targets = (target) =>
+        typeof target === "string" ? $$(target) : Array.isArray(target) ? target.flatMap(targets) : [target];
+
+      function at(target, start, duration, keyframes, options = {}) {
+        for (const node of targets(target)) {
+          const animation = node.animate(keyframes, {
+            delay: start * 1000,
+            duration: duration * 1000,
+            fill: "both",
+            easing: EXPO,
+            ...options,
+          });
+          animation.persist();
+          animations.push(animation);
+        }
+      }
+      /** Fades and slides elements in, optionally one after another. */
+      function rise(target, start, { y = 50, x = 0, blur = 12, scale = 1, duration = 0.9, stagger = 0 } = {}) {
+        targets(target).forEach((node, index) =>
+          at(node, start + index * stagger, duration, [
+            { opacity: 0, translate: `${x}px ${y}px`, scale: String(scale), filter: `blur(${blur}px)` },
+            { opacity: 1, translate: "0 0", scale: "1", filter: "blur(0px)" },
+          ]),
+        );
+      }
+      /** Splits text into masked words or characters, keeping inline elements whole. */
+      function split(node, mode = "word") {
+        const pieces = [];
+        const wrap = (content) => {
+          const outer = el("span", { className: mode === "char" ? "w char" : "w" });
+          const inner = el("span", { className: "wi" }, outer);
+          inner.append(content);
+          pieces.push(inner);
+          return outer;
+        };
+        const parts = [];
+        for (const child of [...node.childNodes]) {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const tokens = mode === "char" ? [...child.textContent.trim()] : child.textContent.split(/(\s+)/);
+            for (const token of tokens) {
+              if (!token) continue;
+              parts.push(/^\s+$/.test(token) ? document.createTextNode(" ") : wrap(document.createTextNode(token)));
+            }
+          } else parts.push(wrap(child));
+        }
+        node.replaceChildren(...parts);
+        return pieces;
+      }
+      function words(target, start, { stagger = 0.07, duration = 1 } = {}) {
+        for (const node of targets(target))
+          split(node).forEach((piece, index) =>
+            at(piece, start + index * stagger, duration, [
+              { translate: "0 135%", rotate: "4deg" },
+              { translate: "0 0", rotate: "0deg" },
+            ]),
+          );
+      }
+      function chars(target, start, { stagger = 0.035, duration = 0.9 } = {}) {
+        for (const node of targets(target))
+          split(node, "char").forEach((piece, index) =>
+            at(piece, start + index * stagger, duration, [{ translate: "0 135%" }, { translate: "0 0" }]),
+          );
+      }
+      function draw(target, start, duration, { stagger = 0 } = {}) {
+        targets(target).forEach((node, index) =>
+          at(
+            node,
+            start + index * stagger,
+            duration,
+            [
+              { strokeDashoffset: 1, opacity: 0 },
+              { opacity: 1, offset: 0.02 },
+              { strokeDashoffset: 0, opacity: 1 },
+            ],
+            { easing: IN_OUT },
+          ),
+        );
+      }
+      function count(target, start, duration, to) {
+        const node = $(target);
+        seekers.push((t) => {
+          const p = Math.min(1, Math.max(0, (t - start) / duration));
+          node.textContent = Math.round(to * (1 - Math.pow(1 - p, 4))).toLocaleString("en-US");
+        });
+      }
+      /** Types an element's text; returns the time typing ends. */
+      function type(target, start, perSecond, caret) {
+        const node = $(target);
+        const texts = [];
+        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) texts.push([walker.currentNode, walker.currentNode.textContent]);
+        const total = texts.reduce((sum, [, text]) => sum + text.length, 0);
+        const end = start + total / perSecond;
+        seekers.push((t) => {
+          let left = Math.max(0, Math.floor((t - start) * perSecond));
+          for (const [textNode, text] of texts) {
+            textNode.textContent = text.slice(0, left);
+            left = Math.max(0, left - text.length);
+          }
+          if (caret) $(caret).style.opacity = t < end || Math.floor((t - end) * 2.5) % 2 === 0 ? "1" : "0";
+        });
+        return end;
+      }
+      /** Moves an element along an SVG path given in stage coordinates. */
+      function along(node, path, start, duration, { fade = true, easing = "cubic-bezier(.45,0,.2,1)" } = {}) {
+        node.style.offsetPath = `path("${path}")`;
+        at(
+          node,
+          start,
+          duration,
+          fade
+            ? [
+                { offsetDistance: "0%", opacity: 0 },
+                { opacity: 1, offset: 0.15 },
+                { opacity: 1, offset: 0.85 },
+                { offsetDistance: "100%", opacity: 0 },
+              ]
+            : [{ offsetDistance: "0%" }, { offsetDistance: "100%" }],
+          { easing },
+        );
+      }
+      // Scenes live in #world so camera kicks can shake them without the background.
+      const world = el("div", { id: "world" });
+      $("#streak").before(world);
+      world.append(...$$(".scene"));
+
+      // How a scene leaves and the next one arrives. Both sides of a cut share a type.
+      const TRANSITIONS = {
+        push: [
+          { opacity: 0, scale: "0.78", translate: "0 0", filter: "blur(16px)" },
+          { opacity: 0, scale: "1.4", translate: "0 0", filter: "blur(18px)" },
+        ],
+        pull: [
+          { opacity: 0, scale: "1.35", translate: "0 0", filter: "blur(18px)" },
+          { opacity: 0, scale: "0.8", translate: "0 0", filter: "blur(16px)" },
+        ],
+        left: [
+          { opacity: 0, scale: "1", translate: "1100px 0", filter: "blur(26px)" },
+          { opacity: 0, scale: "1", translate: "-1100px 0", filter: "blur(26px)" },
+        ],
+        fade: [
+          { opacity: 0, scale: "1", translate: "0 0", filter: "blur(0px)" },
+          { opacity: 0, scale: "1.03", translate: "0 0", filter: "blur(10px)" },
+        ],
+        up: [
+          { opacity: 0, scale: "1", translate: "0 760px", filter: "blur(22px)" },
+          { opacity: 0, scale: "1", translate: "0 -760px", filter: "blur(22px)" },
+        ],
+      };
+      const REST = { opacity: 1, scale: "1", translate: "0 0", filter: "blur(0px)" };
+      const ACCEL = "cubic-bezier(.6,0,.9,.35)";
+      /** A scene's entrance and exit, plus a camera that keeps moving while it's on screen. */
+      function scene(id, start, end, enter, exit, cam) {
+        const length = end - start;
+        const a = 0.5 / length;
+        const b = 0.36 / length;
+        at(`#${id}`, start, length, [
+          { ...(enter ? TRANSITIONS[enter][0] : REST), offset: 0, easing: EXPO },
+          { ...REST, offset: enter ? a : 0 },
+          { ...REST, offset: 1 - b, easing: ACCEL },
+          { ...(exit ? TRANSITIONS[exit][1] : REST), offset: 1 },
+        ], { easing: "linear" });
+        at(`#${id} > .cam`, start, length, cam, { easing: "cubic-bezier(.3,0,.7,1)" });
+      }
+      /** A short camera jolt on a beat. */
+      function kick(start, amount = 0.035) {
+        at("#world", start, 0.55, [{ scale: "1" }, { scale: String(1 + amount), offset: 0.18 }, { scale: "1" }], {
+          fill: "none",
+          easing: "cubic-bezier(.2,.7,.3,1)",
+        });
+      }
+      function flash(start, peak = 1) {
+        at("#flash", start, 0.7, [{ opacity: 0 }, { opacity: peak, offset: 0.12 }, { opacity: 0 }], { fill: "none", easing: "ease-out" });
+      }
+      function streak(start, direction) {
+        const [from, to] = direction === "left" ? ["2100px", "-600px"] : ["-600px", "2100px"];
+        at("#streak", start, 0.6, [
+          { translate: `${from} 0`, opacity: 0 },
+          { opacity: 1, offset: 0.3 },
+          { opacity: 1, offset: 0.7 },
+          { translate: `${to} 0`, opacity: 0 },
+        ], { fill: "none", easing: "cubic-bezier(.5,0,.5,1)" });
+      }
+      const headIn = (id, start) => {
+        rise(`#${id} .kicker`, start, { y: 20, blur: 6, duration: 0.6 });
+        words(`#${id} .title`, start + 0.06, { stagger: 0.04, duration: 0.8 });
+      };
+
+      // ---- Timeline (seconds) -----------------------------------------------
+      // [scene, seconds on screen, how it hands over to the next one]
+      const plan = [
+        ["s1", 3.2, "up"],
+        ["s2", 6.2, "push"],
+        ["s3", 3.6, "left"],
+        ["s4", 5.0, "up"],
+        ["s5", 4.6, "fade"],
+      ];
+      const OVERLAP = 0.3;
+      const S = {};
+      let clock = 0;
+      plan.forEach(([id, length, exit], index) => {
+        S[id] = [clock, clock + length];
+        const enter = plan[index - 1]?.[2];
+        // Alternate the camera's drift so consecutive scenes don't move alike.
+        const dir = index % 2 ? 1 : -1;
+        const cam = [
+          { scale: "1", translate: `${-36 * dir}px 14px`, rotate: `${-0.6 * dir}deg` },
+          { scale: "1.09", translate: `${36 * dir}px -14px`, rotate: `${0.6 * dir}deg` },
+        ];
+        scene(id, clock, clock + length, enter, exit, cam);
+        if (exit === "left") streak(clock + length - 0.4, "left");
+        clock += length - OVERLAP;
+      });
+      const DURATION = Math.round((clock + OVERLAP) * 10) / 10;
+
+      // Background drift for the whole film.
+      const drift = (id, points) => at(id, 0, DURATION, points.map((p) => ({ translate: p })), { easing: "ease-in-out" });
+      drift("#blob-a", ["-300px -400px", "700px 100px", "100px -200px", "800px -300px", "-200px 0px", "600px 200px"]);
+      drift("#blob-b", ["900px 200px", "-100px -300px", "600px 0px", "-200px 100px", "700px -200px", "0px 0px"]);
+      drift("#blob-c", ["300px 300px", "900px -200px", "-200px 0px", "400px -400px", "800px 200px", "200px -100px"]);
+      at("#grid", 0, DURATION, [{ translate: "0 0" }, { translate: "-160px -320px" }], { easing: "linear" });
+
+      // 1 · Logo
+      const t1 = S.s1[0];
+      ["#r1", "#r2", "#r3"].forEach((ring, index) =>
+        at(ring, t1 + 0.15 + index * 0.12, 1.2, [{ scale: "0.3", opacity: 0.9 }, { scale: String(3.6 + index * 1.2), opacity: 0 }], {
+          easing: "cubic-bezier(.2,.6,.3,1)",
+        }),
+      );
+      for (let i = 0; i < 28; i++) {
+        const angle = (i / 28) * Math.PI * 2 + random() * 0.2;
+        const distance = 380 + random() * 420;
+        const dot = el("div", { className: "burst" }, $("#s1-burst"));
+        at(dot, t1 + 0.2 + random() * 0.1, 1.1 + random() * 0.4, [
+          { opacity: 1, translate: "0 0", scale: "1.4" },
+          { opacity: 0, translate: `${(Math.cos(angle) * distance).toFixed(0)}px ${(Math.sin(angle) * distance).toFixed(0)}px`, scale: "0.4" },
+        ], { easing: "cubic-bezier(.1,.8,.3,1)" });
+      }
+      at("#logo", t1 + 0.1, 0.8, [
+        { opacity: 0, scale: "0.1", rotate: "-40deg" },
+        { opacity: 1, scale: "1", rotate: "0deg" },
+      ], { easing: BACK });
+      kick(t1 + 0.25, 0.04);
+      flash(t1 + 0.05, 0.9);
+      chars("#logo-name", t1 + 0.35, { stagger: 0.03, duration: 0.7 });
+      words("#logo-tag", t1 + 0.85, { stagger: 0.045, duration: 0.7 });
+
+      // 2 · Ask in plain words (real Orbit demo values, October 2026)
+      const t2 = S.s2[0];
+      headIn("s2", t2 + 0.12);
+      rise("#s2-term", t2 + 0.2, { y: 120, blur: 16, duration: 0.8 });
+      at("#s2-term", t2, S.s2[1] - t2, [
+        { transform: "rotateY(-24deg) rotateX(10deg) translateZ(-240px)", easing: EXPO },
+        { transform: "rotateY(-5deg) rotateX(3deg) translateZ(0px)", offset: 0.28, easing: "linear" },
+        { transform: "rotateY(4deg) rotateX(1deg) translateZ(40px)" },
+      ], { easing: "linear" });
+      const ask2 = type("#s2-q", t2 + 0.55, 72);
+      rise("#s2-t1", ask2 + 0.1, { y: 10, blur: 4, duration: 0.4 });
+      rise("#s2-th", ask2 + 0.4, { y: 10, blur: 4, duration: 0.4 });
+      [["direct visits", 7], ["google.com", 6], ["youtube.com", 2], ["producthunt.com", 2]].forEach(([name, value], index) => {
+        const row = el("tr", {}, $("#s2-rows"));
+        row.innerHTML = `<td style="padding:5px 0; color:#7cb4ff">${name}</td><td style="padding:5px 0; text-align:right">${value}</td><td style="padding:5px 0 5px 40px"><div class="bar" style="height:22px; width:${(value / 7) * 340}px; border-radius:6px; background:linear-gradient(90deg,#2f6cf0,#7cb0ff); transform-origin:0 50%"></div></td>`;
+        rise(row, ask2 + 0.5 + index * 0.08, { x: -40, y: 0, blur: 6, duration: 0.45 });
+        at($(".bar", row), ask2 + 0.6 + index * 0.08, 0.7, [{ scale: "0 1" }, { scale: "1 1" }]);
+      });
+      rise("#s2-sum", ask2 + 1.1, { y: 14, blur: 6, duration: 0.6 });
+      kick(ask2 + 0.5, 0.012);
+
+      // 3 · Any question: questions burst out of the centre at different depths.
+      const t3 = S.s3[0];
+      const questions = [
+        ["Which pages bring paying customers?", 170, 150],
+        ["Did last week's launch work?", 1060, 120],
+        ["Who stopped using the app?", 640, 270],
+        ["Which features do teams use most?", 1240, 300],
+        ["How many trials turn into customers?", 140, 800],
+        ["Where do phone visitors give up?", 760, 760],
+        ["What do people do right before they cancel?", 1060, 900],
+        ["Which blog posts lead to sign-ups?", 250, 940],
+      ];
+      questions.forEach(([text, x, y], index) => {
+        const depth = [1, 0.8, 0.9, 1.05, 0.85, 1, 0.9, 0.8][index];
+        const chip = el("div", { className: "chip abs", textContent: text, style: `left:${x}px; top:${y}px; font-family:Geist,sans-serif; font-size:26px; padding:12px 24px; background:#141418; border-color:rgb(124 176 255 / .35); color:#dbe7ff; white-space:nowrap; opacity:${depth}` }, $("#s3-chips"));
+        const begin = t3 + 0.15 + index * 0.06;
+        at(chip, begin, 0.9, [
+          { opacity: 0, translate: `${960 - x - 220}px ${540 - y}px`, scale: "0.2", filter: "blur(12px)" },
+          { opacity: depth, translate: "0 0", scale: String(depth), filter: `blur(${((1 - depth) * 6).toFixed(1)}px)` },
+        ]);
+        // Nearer questions drift further, which reads as depth.
+        const push = 80 * depth * depth;
+        at(chip, t3, S.s3[1] - t3, [{ translate: "0 0" }, { translate: `${((x + 220 - 960) / 960) * push}px ${((y - 540) / 540) * push}px` }], { easing: "linear", composite: "add" });
+      });
+      words("#s3-t", t3 + 0.45, { stagger: 0.05, duration: 0.8 });
+
+      // 4 · Straight from your storage
+      const t4 = S.s4[0];
+      headIn("s4", t4 + 0.08);
+      rise("#s4-bucket", t4 + 0.2, { x: -120, y: 0, duration: 0.7 });
+      rise("#s4-bl", t4 + 0.35, { y: 10, blur: 4, duration: 0.5 });
+      ["2026-07", "2026-08", "2026-09", "2026-10"].forEach((month, index) => {
+        const file = el("div", { className: "file", style: `left:${250}px; top:${790 - index * 72}px; width:300px` }, $("#s4-files"));
+        file.innerHTML = `<svg class="i" width="26" height="26"><use href="#i-file"/></svg>${month}.parquet`;
+        rise(file, t4 + 0.3 + index * 0.07, { y: -80, blur: 6, duration: 0.55 });
+        at(file, t4, S.s4[1] - t4, [0, -8, 0, 8, 0].map((y) => ({ translate: `0 ${y}px` })), { easing: "ease-in-out", composite: "add" });
+      });
+      rise("#s4-agent", t4 + 0.35, { x: 140, y: 0, duration: 0.7 });
+      rise("#s4-al", t4 + 0.5, { y: 10, blur: 4, duration: 0.5 });
+      for (let i = 0; i < 110; i++) {
+        const dot = el("div", { className: "particle", style: "width:12px; height:16px; border-radius:3px; background:#7cb0ff" }, $("#s4-stream"));
+        const y0 = 560 + random() * 260;
+        along(dot, `M 560 ${y0.toFixed(0)} C 800 ${(y0 - 240).toFixed(0)}, 960 ${(500 + random() * 200).toFixed(0)}, 1190 ${(560 + random() * 140).toFixed(0)}`, t4 + 0.7 + random() * 2.0, 0.65 + random() * 0.25);
+      }
+      count("#s4-months", t4 + 0.8, 1.9, 12);
+      at("#s4-done", t4 + 2.7, 0.35, [{ opacity: 0 }, { opacity: 1 }]);
+      at("#s4-agent", t4 + 2.7, 0.5, [{ boxShadow: "0 0 0 0 rgb(52 211 153 / 0)" }, { boxShadow: "0 0 80px 4px rgb(52 211 153 / .35)", offset: 0.3 }, { boxShadow: "0 0 0 0 rgb(52 211 153 / 0)" }], { fill: "none" });
+      kick(t4 + 2.7, 0.015);
+
+      // 5 · Your server won't budge
+      const t5 = S.s5[0];
+      headIn("s5", t5 + 0.08);
+      rise("#s5-q", t5 + 0.2, { x: -160, y: 0, duration: 0.7 });
+      rise("#s5-s", t5 + 0.3, { x: 160, y: 0, duration: 0.7 });
+      count("#s5-count", t5 + 0.5, 1.6, 50);
+      for (let i = 0; i < 50; i++) {
+        const dot = el("div", { style: "height:26px; border-radius:7px; background:#4f8cff; box-shadow:0 0 14px -2px rgb(79 140 255 / .8)" }, $("#s5-dots"));
+        at(dot, t5 + 0.5 + i * 0.03, 0.35, [{ opacity: 0.08, scale: "0.4" }, { opacity: 1, scale: "1" }], { easing: BACK });
+      }
+      draw("#s5-line", t5 + 0.4, 1.8);
+
+      // ---- Playback ---------------------------------------------------------
+      window.DURATION = DURATION;
+      window.seek = (seconds) => {
+        for (const animation of animations) {
+          animation.pause();
+          animation.currentTime = seconds * 1000;
+        }
+        for (const seeker of seekers) seeker(seconds);
+      };
+      if (new URLSearchParams(location.search).has("render")) window.seek(0);
+      else {
+        const stage = $("#stage");
+        const fit = () => (stage.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`);
+        addEventListener("resize", fit);
+        fit();
+        const startedAt = performance.now();
+        const tick = () => {
+          window.seek(((performance.now() - startedAt) / 1000) % DURATION);
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }
+    </script>
+  </body>
+</html>

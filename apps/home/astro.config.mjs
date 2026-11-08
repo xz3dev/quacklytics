@@ -1,5 +1,5 @@
 // @ts-check
-import {defineConfig} from 'astro/config';
+import {defineConfig, fontProviders} from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightImageZoom from 'starlight-image-zoom';
 import tailwindcss from "@tailwindcss/vite";
@@ -24,6 +24,10 @@ export default defineConfig({
     redirects: {
         '/start-here/docker': '/start-here/local/',
     },
+    fonts: [
+        {provider: fontProviders.google(), name: 'Geist', cssVariable: '--font-geist', weights: ['400 700']},
+        {provider: fontProviders.google(), name: 'Geist Mono', cssVariable: '--font-geist-mono', weights: ['400 500']},
+    ],
     server: {
         host: '0.0.0.0',
         port: homePort,

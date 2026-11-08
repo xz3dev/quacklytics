@@ -1,0 +1,45 @@
+---
+import Icon from "./icon.astro";
+
+interface Props {
+  code: string;
+  label?: string;
+  class?: string;
+}
+const { code, label, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "group relative overflow-hidden rounded-lg border border-line bg-black/40",
+    className,
+  ]}
+>
+  {
+    label && (
+      <div class="border-b border-line px-4 py-2 font-mono text-[11px] text-subtle">
+        {label}
+      </div>
+    )
+  }
+  <pre
+    class="overflow-x-auto px-4 py-3 pr-12 font-mono text-[13px] leading-6 text-zinc-300"><code>{code}</code></pre>
+  <button
+    type="button"
+    data-copy={code}
+    aria-label="Copy to clipboard"
+    class="absolute top-2 right-2 rounded-md p-1.5 text-subtle opacity-60 transition hover:bg-white/10 hover:text-fg group-hover:opacity-100 focus-visible:opacity-100"
+  >
+    <Icon name="copy" class="size-4" />
+  </button>
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+    button.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(button.dataset.copy ?? "");
+      button.classList.add("text-duck");
+      setTimeout(() => button.classList.remove("text-duck"), 1200);
+    });
+  }
+</script>

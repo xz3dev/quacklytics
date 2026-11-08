@@ -1,0 +1,164 @@
+---
+// Three illustrated steps: collect → archive → query.
+const steps = [
+  { title: "Collect", text: "Your product sends events to your server, which saves them right away." },
+  { title: "Store", text: "Once a day, your history moves into files in your own storage." },
+  { title: "Ask", text: "Your dashboards and your AI agent read those files directly and do the math." },
+];
+const line = "rgb(255 255 255 / 0.16)";
+const box = "#1b1b1f";
+const sky = "#4f8cff";
+const duck = "#ffd84d";
+const label = "font-family: var(--font-mono); font-size: 11px; fill: #71717a";
+---
+
+<ol class="grid gap-5 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch lg:gap-0">
+  {
+    steps.map((step, index) => (
+      <>
+        <li class="flex flex-col overflow-hidden rounded-2xl border border-line bg-panel">
+          <div class="border-b border-line bg-[radial-gradient(ellipse_at_center,rgb(79_140_255/0.08),transparent_70%)] px-4 pt-4">
+            {index === 0 && (
+              <svg viewBox="0 0 320 170" class="w-full" role="img" aria-label="Events travel from your product to the server">
+                <rect x="20" y="40" width="96" height="78" rx="10" fill={box} stroke={line} stroke-width="1.5" />
+                <path d="M20 56h96" stroke={line} stroke-width="1.5" />
+                <circle cx="30" cy="48" r="2.5" fill={line} />
+                <circle cx="39" cy="48" r="2.5" fill={line} />
+                <rect x="32" y="68" width="56" height="6" rx="3" fill="rgb(255 255 255 / 0.12)" />
+                <rect x="32" y="81" width="38" height="6" rx="3" fill="rgb(255 255 255 / 0.12)" />
+                <rect x="32" y="96" width="34" height="12" rx="6" fill={sky} fill-opacity="0.5" />
+                <path d="M124 79h76" stroke={line} stroke-width="1.5" stroke-dasharray="4 5" />
+                {[0, 0.6, 1.2].map((begin) => (
+                  <circle class="motion" r="4.5" fill={sky} opacity="0">
+                    <animateMotion path="M124 79h76" dur="1.8s" begin={`${begin}s`} repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0;1;1;0" dur="1.8s" begin={`${begin}s`} repeatCount="indefinite" />
+                  </circle>
+                ))}
+                <rect x="208" y="44" width="92" height="32" rx="8" fill={box} stroke={line} stroke-width="1.5" />
+                <rect x="208" y="82" width="92" height="32" rx="8" fill={box} stroke={line} stroke-width="1.5" />
+                <circle cx="224" cy="60" r="3.5" fill="#34d399" />
+                <circle cx="224" cy="98" r="3.5" fill="#34d399" />
+                <rect x="236" y="57" width="48" height="6" rx="3" fill="rgb(255 255 255 / 0.12)" />
+                <rect x="236" y="95" width="36" height="6" rx="3" fill="rgb(255 255 255 / 0.12)" />
+                <text x="68" y="146" text-anchor="middle" style={label}>your product</text>
+                <text x="254" y="146" text-anchor="middle" style={label}>your server</text>
+              </svg>
+            )}
+            {index === 1 && (
+              <svg viewBox="0 0 320 170" class="w-full" role="img" aria-label="Files move from the server into your S3 bucket">
+                <rect x="20" y="44" width="92" height="32" rx="8" fill={box} stroke={line} stroke-width="1.5" />
+                <rect x="20" y="82" width="92" height="32" rx="8" fill={box} stroke={line} stroke-width="1.5" />
+                <circle cx="36" cy="60" r="3.5" fill="#34d399" />
+                <circle cx="36" cy="98" r="3.5" fill="#34d399" />
+                <rect x="48" y="57" width="48" height="6" rx="3" fill="rgb(255 255 255 / 0.12)" />
+                <rect x="48" y="95" width="36" height="6" rx="3" fill="rgb(255 255 255 / 0.12)" />
+                <path d="M118 62C150 22 180 22 206 46" fill="none" stroke={line} stroke-width="1.5" stroke-dasharray="4 5" />
+                <text x="162" y="22" text-anchor="middle" style={label}>once a day</text>
+                <path d="M200 48l10 76c1 7 18 12 40 12s39-5 40-12l10-76" fill={box} stroke={line} stroke-width="1.5" />
+                <ellipse cx="250" cy="48" rx="50" ry="10" fill="#202025" stroke={line} stroke-width="1.5" />
+                {["Aug", "Sep"].map((month, row) => (
+                  <g transform={`translate(216 ${110 - row * 20})`}>
+                    <rect width="68" height="16" rx="4" fill="#121a2b" stroke={sky} stroke-opacity="0.5" />
+                    <text x="34" y="11.5" text-anchor="middle" style="font-family: var(--font-mono); font-size: 9px; fill: #bcd3ff">
+                      {month}.parquet
+                    </text>
+                  </g>
+                ))}
+                <g class="motion" opacity="0">
+                  <rect width="68" height="16" rx="4" fill="#121a2b" stroke={sky} />
+                  <text x="34" y="11.5" text-anchor="middle" style="font-family: var(--font-mono); font-size: 9px; fill: #bcd3ff">
+                    Oct.parquet
+                  </text>
+                  <animateMotion path="M60 62C120 0 190 0 216 70" dur="3s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.55;1" calcMode="linear" />
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.8;1" dur="3s" repeatCount="indefinite" />
+                </g>
+                <text x="66" y="146" text-anchor="middle" style={label}>your server</text>
+                <text x="250" y="158" text-anchor="middle" style={label}>your S3 bucket</text>
+              </svg>
+            )}
+            {index === 2 && (
+              <svg viewBox="0 0 320 170" class="w-full" role="img" aria-label="Your browser draws the charts from the files">
+                {[52, 104].map((y) => (
+                  <g transform={`translate(16 ${y - 12})`}>
+                    <path d="M0 2a2 2 0 0 1 2-2h14l8 8v14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2z" fill="#121a2b" stroke={sky} stroke-opacity="0.6" stroke-width="1.5" />
+                  </g>
+                ))}
+                {[52, 104].map((y, row) => (
+                  <>
+                    <path d={`M46 ${y}h22`} stroke={line} stroke-width="1.5" stroke-dasharray="4 5" />
+                    <circle class="motion" r="4" fill={sky} opacity="0">
+                      <animateMotion path={`M46 ${y}h22`} dur="1.4s" begin={`${row * 0.7}s`} repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0;1;0" dur="1.4s" begin={`${row * 0.7}s`} repeatCount="indefinite" />
+                    </circle>
+                  </>
+                ))}
+                <rect x="76" y="22" width="226" height="118" rx="10" fill={box} stroke={duck} stroke-opacity="0.55" stroke-width="1.5" />
+                <path d="M76 38h226" stroke={line} stroke-width="1.5" />
+                <circle cx="86" cy="30" r="2.5" fill={line} />
+                <circle cx="95" cy="30" r="2.5" fill={line} />
+                <rect x="88" y="48" width="56" height="16" rx="4" fill={duck} fill-opacity="0.14" stroke={duck} stroke-opacity="0.5" />
+                <text x="116" y="59.5" text-anchor="middle" style={`font-family: var(--font-mono); font-size: 9px; fill: ${duck}`}>DuckDB</text>
+                <path d="M92 128h196" stroke={line} stroke-width="1.5" />
+                {[34, 52, 44, 66, 58, 80].map((height, bar) => (
+                  <rect
+                    class="bar"
+                    x={100 + bar * 30}
+                    y={128 - height}
+                    width="18"
+                    height={height}
+                    rx="3"
+                    fill={sky}
+                    fill-opacity={0.75 + bar * 0.05}
+                    style={`animation-delay: ${bar * 0.12}s`}
+                  />
+                ))}
+                <text x="189" y="160" text-anchor="middle" style={label}>your browser or agent</text>
+              </svg>
+            )}
+          </div>
+          <div class="p-6">
+            <p class="font-mono text-xs text-duck">0{index + 1}</p>
+            <h3 class="mt-1.5 text-lg font-semibold">{step.title}</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-muted">{step.text}</p>
+          </div>
+        </li>
+        {index < steps.length - 1 && (
+          <li aria-hidden="true" class="hidden items-center justify-center px-3 text-subtle lg:flex">
+            <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </li>
+        )}
+      </>
+    ))
+  }
+</ol>
+
+<style>
+  .bar {
+    transform-box: fill-box;
+    transform-origin: bottom;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bar {
+      animation: grow 4s cubic-bezier(0.2, 0.7, 0.2, 1) infinite both;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .motion {
+      display: none;
+    }
+  }
+  @keyframes grow {
+    from {
+      transform: scaleY(0);
+    }
+    25%,
+    85% {
+      transform: scaleY(1);
+    }
+    to {
+      transform: scaleY(0);
+    }
+  }
+</style>
