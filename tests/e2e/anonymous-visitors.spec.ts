@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
-import { loginAsAdmin } from "../support/auth";
+import { loginAsAdmin, setupTokenHeaders } from "../support/auth";
 import { workerOrigin } from "../support/server";
 
 const eventRows = z.array(
@@ -72,6 +72,7 @@ test("declined visitors get cookieless daily identities whose salts rotate and e
     expect(
       (
         await api.post("/api/auth/sign-up/email", {
+          headers: setupTokenHeaders,
           data: {
             email: "anonymous@example.com",
             password: "Anonymous-password-123",

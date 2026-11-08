@@ -6,7 +6,12 @@ import {
 } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
+import { setupTokenHeader } from "../../packages/contracts/src/index";
 const sessions = new Map<string, Cookie[]>();
+/** Lets a test server's admin account be created; see SETUP_TOKEN in playwright.config.ts. */
+export const setupTokenHeaders = {
+  [setupTokenHeader]: process.env.SETUP_TOKEN ?? "",
+};
 const sharedSession = z.object({
   origin: z.string(),
   cookies: z
@@ -34,7 +39,7 @@ export async function signInAsAdmin(api: APIRequestContext, origin: string) {
     api.post(
       `${origin}/api/auth/${setup.adminRegistered ? "sign-in" : "sign-up"}/email`,
       {
-        headers: { Origin: origin },
+        headers: { Origin: origin, ...setupTokenHeaders },
         data: {
           email: "migration@example.com",
           password: "Migration-test-password-42",

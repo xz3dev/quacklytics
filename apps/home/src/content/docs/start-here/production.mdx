@@ -51,10 +51,14 @@ import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components"
 
 3. **Put a reverse proxy in front** that terminates HTTPS and forwards to port `3000`. See [Reverse Proxy](/self-hosting/reverse-proxy/).
 
-4. **Register the administrator** at your domain right away. Passwords need at least 12 characters.
+4. **Register the administrator** through the one-time setup link in the server log. Passwords need at least 12 characters.
 
-    <Aside type="caution" title="Only one account">
-        Registration closes after the first account. Whoever registers first becomes the administrator.
+    ```sh
+    docker compose logs analytics | grep register
+    ```
+
+    <Aside type="note" title="Only one account">
+        Only the setup link can create the account, and it stops working once the account exists. Each restart prints a new link until then.
     </Aside>
 
 </Steps>

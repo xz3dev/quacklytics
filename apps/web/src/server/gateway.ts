@@ -189,9 +189,13 @@ export function createGateway({
     }
     pending.clear();
   }
-  return { gateway, shutdownBackend };
+  /** Starts the backend before its first request, e.g. to log the setup link. */
+  function startBackend() {
+    getWorker();
+  }
+  return { gateway, startBackend, shutdownBackend };
 }
-export const { gateway, shutdownBackend } = createGateway({
+export const { gateway, startBackend, shutdownBackend } = createGateway({
   createWorker: () =>
     new Worker(
       resolve(

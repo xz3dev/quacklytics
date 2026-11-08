@@ -18,6 +18,7 @@ import {
   recordRejectedOrigin,
 } from "./ingestion/diagnostics";
 import { projectSetup } from "./domain/setup";
+import { adminRegistered } from "./setup-token";
 import { RequestError } from "./errors";
 import { requestExport } from "./exports/client";
 import { parseJson, projectEmoji } from "@quacklytics/contracts";
@@ -46,7 +47,7 @@ export async function handleApi(request: Request): Promise<Response> {
     if (url.pathname.startsWith("/api/auth/")) return auth.handler(request);
     if (projectId === "setup")
       return json({
-        adminRegistered: !!appDb.query("SELECT id FROM user LIMIT 1").get(),
+        adminRegistered: adminRegistered(),
         geoip: geoipSource(),
       });
     if (projectId === "health") return json({ ok: true });

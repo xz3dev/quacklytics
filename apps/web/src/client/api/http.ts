@@ -12,12 +12,13 @@ export async function request(
   url: string,
   body?: unknown,
   signal?: AbortSignal,
+  headers?: Record<string, string>,
 ): Promise<unknown> {
   const response = await fetch("/api/" + url.replace(/^\//, ""), {
     method,
     ...(signal ? { signal } : {}),
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const value: unknown = await response.json().catch(() => null);

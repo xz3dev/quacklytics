@@ -102,10 +102,12 @@ Version 0.4.0 starts a new database schema baseline and requires a fresh `DATA_D
 | `HOST` | `0.0.0.0` | Bind address |
 | `TRUSTED_PROXIES` | None | Comma-separated IPs/CIDRs of your reverse proxies, or the presets `loopback` and `private`. Required behind a proxy so visitors and auth rate limits use the real client address |
 | `AUTH_SECRET` | Generated and stored in `DATA_DIR/auth-secret` | Optional stable authentication secret |
+| `SETUP_TOKEN` | Random on every start | Token of the one-time setup link for creating the admin account. Set it only to provision the account automatically |
 | `INGEST_REQUESTS_PER_MINUTE` | `600` | Ingestion requests allowed per project per minute; excess requests get 429 with `Retry-After` |
 
 ### Checklist
 
+- **Admin account:** until it exists, the server logs a one-time setup link on startup (`docker logs <container>`). The admin account can only be created through that link.
 - **S3 bucket:** use a private bucket. Configure CORS to allow your app origin with `GET`/`HEAD` and `Range`, and expose `Content-Range`, `Content-Length`, `Accept-Ranges`, `ETag` and `Last-Modified` (see [`dev/cors.json`](dev/cors.json)). `S3_PUBLIC_ENDPOINT` must be reachable by your users, over HTTPS if the app is served over HTTPS.
 - **Reverse proxy:** set `APP_ORIGIN` to your external HTTPS origin and `TRUSTED_PROXIES` to the proxy's address (for example `private` when it reaches the app over a Docker network). `GET /api/proxy-check` reports whether this matches, and the app shows a hint when it doesn't.
 - **Storage:** run one app process per data directory, on a local filesystem.
