@@ -1,6 +1,6 @@
 import { resolve, sep } from "node:path";
 import { z } from "zod";
-import { gateway, shutdownBackend } from "./src/server/gateway";
+import { gateway, shutdownBackend, startBackend } from "./src/server/gateway";
 const modulePath = resolve("dist/server/server.js");
 const rawModule: unknown = await import(modulePath);
 const module = z
@@ -45,6 +45,7 @@ const server = Bun.serve({
   },
 });
 console.log(`Quacklytics listening on ${server.url}`);
+startBackend();
 async function shutdown() {
   server.stop();
   await shutdownBackend();

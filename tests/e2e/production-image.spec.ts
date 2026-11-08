@@ -118,6 +118,19 @@ test("published image initializes beside a GeoIP cache, exports history, queries
     expect((await page.request.get("/api/projects")).status()).toBe(401);
     const password = `Image-test-${crypto.randomUUID()}`;
     await page.goto("/register");
+    await expect(page.getByRole("status")).toContainText(
+      "Check the server logs for the URL with the one-time setup link",
+    );
+    // The image logs the admin setup link on startup.
+    const setupLink = z
+      .url()
+      .parse(
+        (await docker("logs", container)).match(
+          /\S+\/register\?token=\S+/,
+        )?.[0],
+      );
+    expect(new URL(setupLink).origin).toBe(origin);
+    await page.goto(setupLink);
     await page.getByLabel("Email", { exact: true }).fill("image@example.com");
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByLabel("Confirm password", { exact: true }).fill(password);

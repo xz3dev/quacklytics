@@ -3,8 +3,10 @@ import { workerRequest } from "./worker-protocol";
 import { closeDatabases, evictIdleDatabases } from "./db/database";
 import { recoverProjects } from "./domain/projects";
 import { startExports, shutdownExports } from "./exports/client";
+import { announceSetupLink } from "./setup-token";
 await recoverProjects();
 startExports();
+announceSetupLink();
 let active = 0;
 function finished() {
   active--;

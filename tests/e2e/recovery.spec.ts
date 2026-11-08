@@ -1,4 +1,5 @@
 import { test, expect, request } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { promisify } from "node:util";
 import { once } from "node:events";
@@ -67,6 +68,7 @@ test("failed S3 exports retry after SIGKILL while events, credentials and dashbo
   try {
     await start();
     const register = await api.post("/api/auth/sign-up/email", {
+      headers: setupTokenHeaders,
       data: {
         name: "Recovery",
         email: "recovery@example.com",

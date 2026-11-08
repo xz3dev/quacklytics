@@ -1,4 +1,5 @@
 import { test, expect, request } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -65,6 +66,7 @@ test("browser events gain the visitor's country from the trusted client address"
     expect(
       (
         await api.post("/api/auth/sign-up/email", {
+          headers: setupTokenHeaders,
           data: {
             email: "geoip@example.com",
             password: "Geoip-password-123",

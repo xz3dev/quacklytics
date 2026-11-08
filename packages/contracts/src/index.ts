@@ -9,6 +9,8 @@ import { dashboardLayout } from "./dashboard-layout";
 export * from "./dashboard-layout";
 import { z } from "zod";
 
+/** Request header carrying the one-time setup link's token to registration. */
+export const setupTokenHeader = "x-quacklytics-setup-token";
 export const jsonValue = z.json();
 export const properties = z.record(z.string(), jsonValue);
 export type JsonValue = z.infer<typeof jsonValue>;

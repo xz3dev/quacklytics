@@ -6,6 +6,9 @@ import { defineConfig } from "@playwright/test";
 if (existsSync("apps/web/.env.local")) loadEnvFile("apps/web/.env.local");
 // Test servers, including spawned ones, must not download the GeoIP database.
 process.env.GEOIP ??= "off";
+// Test servers, including spawned ones, accept this token for creating the
+// admin account instead of only a random one printed to their log.
+process.env.SETUP_TOKEN ??= "e2e-setup-token";
 export default defineConfig({
   testDir: "./tests/e2e",
   testIgnore: "**/production-image.spec.ts",

@@ -4,6 +4,7 @@ import {
   request,
   type APIRequestContext,
 } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer, request as httpRequest } from "node:http";
@@ -187,6 +188,7 @@ test("an agent reads every event exactly once and the saved insights of each of 
     expect(
       (
         await api.post("/api/auth/sign-up/email", {
+          headers: setupTokenHeaders,
           data: {
             email: "mcp@example.com",
             password: "Mcp-test-password-123",

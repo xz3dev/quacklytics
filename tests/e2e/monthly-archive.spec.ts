@@ -1,4 +1,5 @@
 import { test, expect, request } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer, request as httpRequest } from "node:http";
@@ -107,6 +108,7 @@ test("complete months leave SQLite a week after they end, once their S3 copy ver
     expect(
       (
         await api.post("/api/auth/sign-up/email", {
+          headers: setupTokenHeaders,
           data: {
             email: "archive@example.com",
             password: "Archive-password-123",

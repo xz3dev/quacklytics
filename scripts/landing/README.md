@@ -15,10 +15,10 @@ The landing page (`apps/home/src/pages/index.astro`) uses real screenshots of th
 
 Images are written to `apps/home/src/assets/screenshots` at 2× scale in dark mode. Astro converts them to responsive WebP at build time.
 
-The first-run screens in "Get started" (registration, new project, setup guide) need an instance without an administrator, such as a fresh `DATA_DIR`. The script registers one:
+The first-run screens in "Get started" (registration, new project, setup guide) need an instance without an administrator, such as a fresh `DATA_DIR`. The script registers one through the one-time setup link the server logs on startup:
 
 ```sh
-node scripts/landing/capture-setup.ts --url http://127.0.0.1:3000
+node scripts/landing/capture-setup.ts --setup-link "http://127.0.0.1:3000/register?token=…"
 ```
 
 ## Overview video

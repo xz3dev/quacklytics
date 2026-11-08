@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -44,7 +45,7 @@ test("the default web analytics dashboard maps SDK visitors by country", async (
         expect(
           (
             await api.post(`${origin}/api/auth/sign-up/email`, {
-              headers,
+              headers: { ...headers, ...setupTokenHeaders },
               data: {
                 email: "map@example.com",
                 password: "Map-password-123",

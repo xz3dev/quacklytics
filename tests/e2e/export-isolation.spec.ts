@@ -1,4 +1,5 @@
 import { test, expect, request } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { createServer, request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { spawn } from "node:child_process";
@@ -94,6 +95,7 @@ test("stalled export leaves ingestion and catalog status responsive, then publis
       )
       .toBe(200);
     const registration = await api.post("/api/auth/sign-up/email", {
+      headers: setupTokenHeaders,
       data: {
         email: "isolation@example.com",
         password: "Isolation-password-123",

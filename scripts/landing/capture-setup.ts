@@ -1,6 +1,7 @@
 // Captures the first-run screens shown in the landing page's "Get started"
 // section: admin registration, project creation and the setup guide. Needs a
-// fresh instance without an administrator. See scripts/landing/README.md.
+// fresh instance without an administrator and the one-time setup link from its
+// log. See scripts/landing/README.md.
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -8,12 +9,15 @@ import { chromium } from "@playwright/test";
 
 const { values } = parseArgs({
   options: {
-    url: { type: "string", default: "http://127.0.0.1:3000" },
+    "setup-link": { type: "string" },
     out: { type: "string", default: "apps/home/src/assets/screenshots" },
   },
   strict: true,
 });
-const origin = new URL(values.url).origin;
+if (!values["setup-link"])
+  throw new Error("Pass --setup-link with the link from the server log");
+const setupLink = new URL(values["setup-link"]);
+const origin = setupLink.origin;
 const out = resolve(values.out);
 await mkdir(out, { recursive: true });
 
@@ -28,7 +32,7 @@ const settle = async () => {
   await page.waitForTimeout(600);
 };
 
-await page.goto(`${origin}/register`);
+await page.goto(setupLink.href);
 await settle();
 await page.screenshot({
   path: `${out}/setup-register.png`,
