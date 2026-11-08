@@ -2,7 +2,7 @@
 
 Orbit is a fictional team project-management product with a marketing website and a web app at `https://orbit.example`. The generator simulates its traffic as the Quacklytics SDKs would record it and sends it in the SDK's versioned wire format (`protocolVersion: 1`) through `/api/backfill`, exercising validation, identity linking, SQLite persistence, schema inference and Parquet export. It never writes databases directly.
 
-Start the local application with `bun run dev` and register your administrator in the browser first.
+Start the local application with `bun run dev` and register your administrator first through the one-time setup link printed in the server log.
 
 ## Create a project and chart playground
 

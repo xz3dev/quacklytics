@@ -1,0 +1,637 @@
+---
+import { Font, Image } from "astro:assets";
+import "../styles/landing.css";
+import birb from "../assets/birb.svg";
+import webAnalytics from "../assets/screenshots/web-analytics.png";
+import funnel from "../assets/screenshots/funnel.png";
+import sql from "../assets/screenshots/sql.png";
+import cardMap from "../assets/screenshots/card-map.png";
+import cardReferrers from "../assets/screenshots/card-referrers.png";
+import cardRetention from "../assets/screenshots/card-retention.png";
+import setupRegister from "../assets/screenshots/setup-register.png";
+import setupProject from "../assets/screenshots/setup-project.png";
+import setupGuide from "../assets/screenshots/setup-guide.png";
+import BrowserFrame from "../components/landing/browser-frame.astro";
+import CodeBlock from "../components/landing/code-block.astro";
+import HowItWorks from "../components/landing/how-it-works.astro";
+import Icon from "../components/landing/icon.astro";
+
+const github = "https://github.com/xz3dev/quacklytics";
+const title = "Quacklytics: self-hosted analytics your AI agent can read";
+const description =
+  "Open-source web and product analytics on your own server. Ask your AI agent anything about your product: it can read every event you've collected, straight from your own storage.";
+const video = "/video/quacklytics-overview";
+const card =
+  "overflow-hidden rounded-xl border border-line-strong shadow-[0_24px_60px_-12px_rgb(0_0_0/0.85)]";
+
+const benefits = [
+  {
+    icon: "coins",
+    title: "A small hosting bill",
+    text: "The server accepts events and hands out files. It doesn't run a database cluster or a warehouse, so a small VPS and a bucket are enough for most products.",
+  },
+  {
+    icon: "files",
+    title: "Your data in open formats",
+    text: "Your history is stored as regular files in your own storage. Use it with AI agents, DuckDB, Python or anything else. Moving away means copying files.",
+  },
+  {
+    icon: "shield",
+    title: "No third party in between",
+    text: "Visitor data goes to your server and your own storage. No analytics vendor sees it. Pageviews stay anonymous until a visitor consents, and a consent banner is included.",
+  },
+  {
+    icon: "wrench",
+    title: "Little to operate",
+    text: "One container. Database migrations run on startup. A backup is a copy of the data directory plus the bucket.",
+  },
+  {
+    icon: "check",
+    title: "Events don't get lost",
+    text: "Ingestion only answers after an event is committed to disk. The client retries failed requests, and retries never create duplicates.",
+  },
+  {
+    icon: "heart",
+    title: "Open source",
+    text: "MIT licensed. Read the code, change it and run it wherever you like. Issues and pull requests are welcome on GitHub.",
+  },
+] as const;
+
+const tradeoffs = [
+  "Queries run on the device of whoever opens a dashboard. Long time ranges take longer on a slow connection or an older phone.",
+  "A browser tab gives DuckDB up to 4 GB of memory. That limits how much data one query can load at once, not how much you can store.",
+  "One administrator account and one server process per instance. It's made for a team looking at its own products, not for hosting analytics for many customers.",
+  "It's young software. Versions before 1.0 can include breaking changes, so read the release notes before upgrading.",
+];
+
+const steps = [
+  {
+    title: "Start the app",
+    text: "Starts Quacklytics together with a local S3 bucket on port 3000.",
+    code: "git clone https://github.com/xz3dev/quacklytics.git\ncd quacklytics\ndocker compose up --build",
+  },
+  {
+    title: "Create a project",
+    text: "Open the one-time setup link from the server log, create the admin account and name your project. The setup guide then shows a snippet with your project's key and waits for your first event.",
+    code: undefined,
+    shots: [
+      { src: setupRegister, caption: "Create the admin account" },
+      { src: setupProject, caption: "Name your project" },
+      { src: setupGuide, caption: "Copy your snippet" },
+    ],
+  },
+  {
+    title: "Send events",
+    text: "Use the browser client, the server client for Node, or plain HTTP from any language.",
+    code: 'npm install @quacklytics/client\n\nconst client = createClient({\n  hostname: "http://localhost:3000",\n  apiKey: "your-project-key",\n})\nclient.track("signup", { plan: "pro" })',
+  },
+];
+
+// Real results from the Orbit demo data (scripts/demo) for October 2026.
+const referrers = [
+  ["direct visits", 7],
+  ["google.com", 6],
+  ["youtube.com", 2],
+  ["producthunt.com", 2],
+] as const;
+const features = [
+  ["Boards", 6248],
+  ["Comments", 3239],
+  ["Search", 2326],
+  ["Reports", 1694],
+  ["Automations", 487],
+] as const;
+const funnelSteps = [
+  ["Viewed pricing", 1409],
+  ["Signed up", 208],
+  ["Invited a teammate", 134],
+  ["Subscribed", 48],
+] as const;
+
+const agentPoints = [
+  {
+    icon: "chat",
+    title: "Any question",
+    text: "Not just the ones your dashboard was built for.",
+  },
+  {
+    icon: "files",
+    title: "Every event",
+    text: "Your whole history. Nothing sampled or left out.",
+  },
+  {
+    icon: "bucket",
+    title: "Nothing to export",
+    text: "Your agent reads straight from your own storage.",
+  },
+  {
+    icon: "server",
+    title: "No load on your server",
+    text: "Fifty follow-ups won't slow anything down.",
+  },
+] as const;
+
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(`${video}.jpg`, Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0b0b0c" />
+    <Font cssVariable="--font-geist" preload />
+    <Font cssVariable="--font-geist-mono" />
+  </head>
+  <body class="overflow-x-hidden">
+    <header class="sticky top-0 z-40 border-b border-line bg-ink/75 backdrop-blur-xl">
+      <nav class="container-page flex h-16 items-center gap-6">
+        <a href="#top" class="flex items-center gap-2.5 font-semibold tracking-tight">
+          <Image src={birb} alt="" class="size-8" />
+          Quacklytics
+        </a>
+        <div class="ml-auto hidden items-center gap-7 text-sm text-muted md:flex">
+          <a href="#overview" class="transition hover:text-fg">Overview</a>
+          <a href="#agents" class="transition hover:text-fg">AI agents</a>
+          <a href="#features" class="transition hover:text-fg">Features</a>
+          <a href="#how-it-works" class="transition hover:text-fg">How it works</a>
+          <a href="/start-here/introduction/" class="transition hover:text-fg">Docs</a>
+        </div>
+        <div class="ml-auto flex items-center gap-2 md:ml-0">
+          <a
+            href={github}
+            aria-label="Quacklytics on GitHub"
+            class="rounded-lg p-2 text-muted transition hover:bg-white/5 hover:text-fg"
+          >
+            <Icon name="github" />
+          </a>
+          <a
+            href="#get-started"
+            class="rounded-lg bg-fg px-3.5 py-2 text-sm font-medium text-ink transition hover:bg-white"
+            >Get started</a
+          >
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <!-- Hero -->
+      <section class="relative isolate pt-20 sm:pt-28">
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <div class="dot-grid absolute inset-0"></div>
+          <div
+            class="absolute top-[28rem] left-1/2 h-[40rem] w-[70rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(79_140_255/0.16),transparent)]"
+          >
+          </div>
+        </div>
+        <div class="container-page text-center">
+          <p class="eyebrow">Open source · Self-hosted · MIT</p>
+          <h1
+            class="mx-auto mt-5 max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl sm:leading-[1.05]"
+          >
+            Analytics your AI agent can actually read
+          </h1>
+          <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-pretty text-muted">
+            Track your website and product on your own server. Then ask your agent anything: it sees every event, not
+            just the charts you built.
+          </p>
+          <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="#get-started"
+              class="inline-flex items-center gap-2 rounded-lg bg-duck px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-105"
+            >
+              Get started <Icon name="arrowRight" class="size-4" />
+            </a>
+            <a
+              href="#overview"
+              class="inline-flex items-center gap-2 rounded-lg border border-line-strong px-5 py-2.5 text-sm font-medium transition hover:bg-white/5"
+            >
+              <Icon name="play" class="size-3.5" /> Watch the overview
+            </a>
+          </div>
+        </div>
+
+        <div class="container-page relative mt-16 sm:mt-20">
+          <BrowserFrame
+            src={webAnalytics}
+            alt="The Web Analytics Overview dashboard with visitors, pageviews, sessions and a daily trend"
+            sizes="(min-width: 1152px) 1088px, 100vw"
+            priority
+          />
+          <div class:list={[card, "absolute -bottom-16 -left-6 hidden w-[34%] lg:block xl:-left-14"]}>
+            <Image
+              src={cardRetention}
+              alt="Retention by signup cohort"
+              widths={[480, 960]}
+              sizes="380px"
+              class="block h-auto w-full"
+            />
+          </div>
+          <div
+            class:list={[
+              card,
+              "absolute -right-6 -bottom-20 hidden w-[38%] bg-[#0e0e10] font-mono text-[12.5px] leading-6 lg:block xl:-right-14",
+            ]}
+          >
+            <div class="flex h-8 items-center gap-1.5 border-b border-line bg-panel-2 px-3">
+              <span class="size-2 rounded-full bg-white/15"></span>
+              <span class="size-2 rounded-full bg-white/15"></span>
+              <span class="size-2 rounded-full bg-white/15"></span>
+              <span class="mx-auto text-[10.5px] text-subtle">Your AI agent</span>
+            </div>
+            <div class="space-y-3 p-4 text-zinc-300">
+              <p><span class="text-duck">&gt;</span> Which features do teams use most?</p>
+              <div class="space-y-1.5">
+                {
+                  features.map(([name, value]) => (
+                    <div class="flex items-center gap-3">
+                      <span class="w-28 shrink-0 truncate text-zinc-500">{name}</span>
+                      <span class="h-2.5 flex-1 overflow-hidden rounded bg-white/5">
+                        <span class="block h-full rounded bg-sky" style={`width: ${(value / 6248) * 100}%`} />
+                      </span>
+                      <span class="w-12 text-right">{value.toLocaleString("en-US")}</span>
+                    </div>
+                  ))
+                }
+              </div>
+              <p class="font-sans text-[13px] leading-relaxed">
+                <span class="font-mono text-emerald-400">●</span> Boards, by a wide margin. Automations are used least,
+                so they might be hard to find.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Video -->
+      <section id="overview" class="container-page pt-32 sm:pt-48">
+        <div class="mx-auto max-w-2xl text-center">
+          <h2 class="text-3xl font-semibold tracking-tight sm:text-4xl">Quacklytics in under a minute</h2>
+        </div>
+        <div class="reveal mx-auto mt-12 max-w-5xl overflow-hidden rounded-2xl border border-line-strong bg-panel shadow-2xl">
+          <video
+            class="block aspect-video w-full"
+            controls
+            playsinline
+            preload="none"
+            poster={`${video}.jpg`}
+          >
+            <source src={`${video}.mp4`} type="video/mp4" />
+            <a href={`${video}.mp4`}>Download the overview video</a>
+          </video>
+        </div>
+      </section>
+
+      <!-- AI agents -->
+      <section id="agents" class="container-page pt-32 sm:pt-44">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="eyebrow">AI agents</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.1]">
+            Ask the questions your dashboard can't answer
+          </h2>
+          <p class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-pretty text-muted">
+            Connect your AI agent and ask in plain words.
+          </p>
+        </div>
+
+        <div class="mt-16 grid items-center gap-12 lg:grid-cols-[7fr_5fr] lg:gap-14">
+          <div class="reveal overflow-hidden rounded-xl border border-line-strong bg-[#0e0e10] font-mono text-[13px] leading-6 shadow-[0_30px_80px_-20px_rgb(0_0_0/0.8)]">
+            <div class="flex h-9 items-center gap-2 border-b border-line bg-panel-2 px-3.5">
+              <span class="size-2.5 rounded-full bg-white/15"></span>
+              <span class="size-2.5 rounded-full bg-white/15"></span>
+              <span class="size-2.5 rounded-full bg-white/15"></span>
+              <span class="mx-auto text-[11px] text-subtle">Your AI agent</span>
+              <span class="w-[46px]"></span>
+            </div>
+            <div class="space-y-4 overflow-x-auto p-5 text-zinc-300 sm:p-6">
+              <p><span class="text-duck">&gt;</span> Which websites sent us the most sign-ups last month?</p>
+              <p class="text-zinc-500"><span class="text-emerald-400">●</span> Reading every event from Quacklytics</p>
+              <table class="w-full max-w-sm">
+                <thead>
+                  <tr class="border-b border-line text-left text-zinc-500">
+                    <th class="py-1 font-normal">came from</th>
+                    <th class="py-1 text-right font-normal">sign-ups</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    referrers.map(([referrer, signups]) => (
+                      <tr>
+                        <td class="py-0.5 text-sky">{referrer}</td>
+                        <td class="py-0.5 text-right">{signups}</td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+              <p class="font-sans text-sm leading-relaxed">
+                <span class="font-mono text-emerald-400">●</span> October had 19 sign-ups. Most came straight to your
+                site or from Google.
+              </p>
+              <div class="border-t border-line pt-4">
+                <p><span class="text-duck">&gt;</span> And where do people drop off before they pay?</p>
+              </div>
+              <div class="max-w-md space-y-1.5">
+                {
+                  funnelSteps.map(([name, value]) => (
+                    <div class="flex items-center gap-3">
+                      <span class="w-40 shrink-0 text-zinc-500">{name}</span>
+                      <span class="h-2.5 flex-1 overflow-hidden rounded bg-white/5">
+                        <span class="block h-full rounded bg-sky" style={`width: ${Math.max(2, (value / 1409) * 100)}%`} />
+                      </span>
+                      <span class="w-12 text-right">{value.toLocaleString("en-US")}</span>
+                    </div>
+                  ))
+                }
+              </div>
+              <p class="font-sans text-sm leading-relaxed">
+                <span class="font-mono text-emerald-400">●</span> 85% leave between the pricing page and signing up.
+                That's the step to work on.
+              </p>
+            </div>
+          </div>
+
+          <ul class="space-y-8">
+            {
+              agentPoints.map((point) => (
+                <li class="flex gap-4">
+                  <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-duck/10 text-duck">
+                    <Icon name={point.icon} class="size-[18px]" />
+                  </span>
+                  <div>
+                    <h3 class="font-semibold">{point.title}</h3>
+                    <p class="mt-1.5 text-sm leading-relaxed text-muted">{point.text}</p>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="mt-16 rounded-2xl border border-line bg-panel/60 p-6 sm:p-8">
+          <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
+            <div class="lg:w-64">
+              <h3 class="font-semibold">Connected in a minute</h3>
+              <p class="mt-1 text-sm text-muted">Works with Claude Code, Codex and other agents that support MCP.</p>
+            </div>
+            <ol class="grid flex-1 gap-4 sm:grid-cols-3">
+              {
+                [
+                  "Add the MCP endpoint to your AI agent",
+                  "Sign in and approve it",
+                  "Ask your first question",
+                ].map((text, index) => (
+                  <li class="flex items-center gap-3 rounded-xl border border-line bg-ink/60 px-4 py-3 text-sm">
+                    <span class="grid size-6 shrink-0 place-items-center rounded-full bg-white/10 font-mono text-xs text-zinc-300">
+                      {index + 1}
+                    </span>
+                    {text}
+                  </li>
+                ))
+              }
+            </ol>
+            <a href="/guides/agents/" class="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-duck hover:underline">
+              Setup guide <Icon name="arrowRight" class="size-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section id="features" class="container-page pt-32 sm:pt-44">
+        <div class="max-w-2xl">
+          <p class="eyebrow">Also included</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            Dashboards for the questions you ask every day
+          </h2>
+        </div>
+
+        <div class="mt-20 grid items-center gap-12 lg:grid-cols-[5fr_7fr] lg:gap-16">
+          <div>
+            <h3 class="text-2xl font-semibold tracking-tight">Web analytics without setup</h3>
+            <p class="mt-4 leading-relaxed text-muted">
+              Every new project starts with a web analytics dashboard: visitors, pageviews, sessions, a world map, top
+              pages, referrers, custom events, devices, browsers and operating systems. Add the browser client to your
+              site and it fills up.
+            </p>
+            <ul class="mt-6 space-y-3 text-sm text-zinc-300">
+              <li class="flex gap-3">
+                <Icon name="check" class="mt-0.5 size-4 shrink-0 text-duck" />Pageviews, including single-page app navigation
+              </li>
+              <li class="flex gap-3">
+                <Icon name="check" class="mt-0.5 size-4 shrink-0 text-duck" />Optional autocapture for link and button clicks
+              </li>
+              <li class="flex gap-3">
+                <Icon name="check" class="mt-0.5 size-4 shrink-0 text-duck" />Anonymous until the visitor consents, then
+                linked to them
+              </li>
+            </ul>
+          </div>
+          <div class="reveal relative pb-24 sm:pb-32">
+            <div class:list={[card, "w-[78%]"]}>
+              <Image src={cardMap} alt="Visitors by country on a world map" widths={[640, 1280]} sizes="(min-width: 1024px) 520px, 80vw" class="block h-auto w-full" />
+            </div>
+            <div class:list={[card, "absolute right-0 bottom-0 w-[58%]"]}>
+              <Image src={cardReferrers} alt="Top referrers" widths={[480, 960]} sizes="(min-width: 1024px) 380px, 60vw" class="block h-auto w-full" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-32 grid items-center gap-12 lg:grid-cols-[7fr_5fr] lg:gap-16">
+          <div class="reveal order-last lg:order-first">
+            <BrowserFrame src={funnel} alt="Funnel insight editor showing conversion from pricing page to paid subscription" />
+          </div>
+          <div>
+            <h3 class="text-2xl font-semibold tracking-tight">Product analytics for your own events</h3>
+            <p class="mt-4 leading-relaxed text-muted">
+              Send the events that matter to your product, such as sign-ups, invites or purchases, and build insights
+              in a visual editor: trends, values, funnels, retention cohorts, user paths and breakdowns. Arrange them on
+              dashboards.
+            </p>
+            <p class="mt-4 leading-relaxed text-muted">
+              When a visitor logs in, call <code class="font-mono text-[0.9em] text-zinc-200">identify</code> and their
+              earlier anonymous visits are attributed to them.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-32 grid items-center gap-12 lg:grid-cols-[5fr_7fr] lg:gap-16">
+          <div>
+            <h3 class="text-2xl font-semibold tracking-tight">SQL when the editor isn't enough</h3>
+            <p class="mt-4 leading-relaxed text-muted">
+              All events sit in a single <code class="font-mono text-[0.9em] text-zinc-200">events</code> view. Query
+              it with full DuckDB SQL right in the app, save queries for later and pass in arguments. The results come
+              from the same data the dashboards use.
+            </p>
+          </div>
+          <div class="reveal">
+            <BrowserFrame src={sql} alt="SQL editor with a DuckDB query counting visitors by country" />
+          </div>
+        </div>
+
+      </section>
+
+      <!-- How it works -->
+      <section id="how-it-works" class="relative mt-32 border-y border-line bg-panel/40 py-28 sm:mt-44">
+        <div class="container-page">
+          <div class="mx-auto max-w-2xl text-center">
+            <p class="eyebrow">How it works</p>
+            <h2 class="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+              Your data lives in files you own
+            </h2>
+            <p class="mt-4 text-pretty text-muted">
+              Dashboards and AI agents read your files directly. There's no analytics database in between, so the
+              server stays small.
+            </p>
+          </div>
+          <div class="reveal mt-14">
+            <HowItWorks />
+          </div>
+          <p class="mt-10 text-center text-sm">
+            <a href="/start-here/introduction/#how-it-works" class="inline-flex items-center gap-1.5 font-medium text-duck hover:underline">
+              The details in the docs <Icon name="arrowRight" class="size-4" />
+            </a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Benefits -->
+      <section class="container-page pt-28 sm:pt-36">
+        <div class="max-w-2xl">
+          <p class="eyebrow">What this means for you</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            Built to be cheap to run and easy to leave
+          </h2>
+        </div>
+        <div class="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+          {
+            benefits.map((benefit) => (
+              <div class="bg-ink p-7 transition hover:bg-panel">
+                <Icon name={benefit.icon} class="size-5 text-duck" />
+                <h3 class="mt-5 font-semibold">{benefit.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted">{benefit.text}</p>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- Trade-offs -->
+      <section class="container-page pt-28 sm:pt-36">
+        <div class="grid gap-10 rounded-2xl border border-line bg-panel/60 p-8 sm:p-12 lg:grid-cols-[2fr_3fr] lg:gap-16">
+          <div>
+            <p class="eyebrow">Good to know</p>
+            <h2 class="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Trade-offs</h2>
+            <p class="mt-4 leading-relaxed text-muted">
+              Running queries in the browser has costs too. Check that they fit before you rely on it.
+            </p>
+            <a
+              href="/reference/considerations/"
+              class="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-duck hover:underline"
+            >
+              Considerations and limits <Icon name="arrowRight" class="size-4" />
+            </a>
+          </div>
+          <ul class="space-y-5">
+            {
+              tradeoffs.map((item) => (
+                <li class="flex gap-3 text-sm leading-relaxed text-zinc-300">
+                  <Icon name="info" class="mt-0.5 size-4 shrink-0 text-subtle" />
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </section>
+
+      <!-- Get started -->
+      <section id="get-started" class="container-page pt-28 pb-32 sm:pt-36">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="eyebrow">Get started</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Running locally in a few minutes</h2>
+          <p class="mt-4 text-muted">All you need is Docker. The bundled setup includes a local S3 bucket.</p>
+        </div>
+        <ol class="mx-auto mt-14 max-w-4xl divide-y divide-line rounded-2xl border border-line bg-panel">
+          {
+            steps.map((step, index) => (
+              <li class="grid gap-5 p-6 sm:p-8 md:grid-cols-[2fr_3fr] md:gap-10">
+                <div>
+                  <p class="font-mono text-sm text-duck">0{index + 1}</p>
+                  <h3 class="mt-2 font-semibold">{step.title}</h3>
+                  <p class="mt-2 text-sm leading-relaxed text-muted">{step.text}</p>
+                </div>
+                {step.code && <CodeBlock code={step.code} class="self-center" />}
+                {step.shots && (
+                  <div class="flex flex-col gap-4 sm:flex-row md:col-span-2">
+                    {step.shots.map((shot, number) => (
+                      <figure style={`flex: ${(shot.src.width / shot.src.height).toFixed(3)} 1 0`}>
+                        <a
+                          href={shot.src.src}
+                          target="_blank"
+                          rel="noopener"
+                          class="block overflow-hidden rounded-lg border border-line-strong shadow-lg transition hover:border-white/30"
+                        >
+                          <Image
+                            src={shot.src}
+                            alt={shot.caption}
+                            widths={[400, 800]}
+                            sizes="(min-width: 640px) 280px, 100vw"
+                            class="block h-auto w-full"
+                          />
+                        </a>
+                        <figcaption class="mt-2.5 flex items-center gap-2 text-xs text-muted">
+                          <span class="grid size-4.5 place-items-center rounded-full bg-white/10 font-mono text-[10px] text-zinc-300">
+                            {number + 1}
+                          </span>
+                          {shot.caption}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))
+          }
+        </ol>
+        <div class="mt-10 flex flex-wrap justify-center gap-3">
+          <a
+            href="/start-here/introduction/"
+            class="inline-flex items-center gap-2 rounded-lg bg-fg px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-white"
+          >
+            <Icon name="book" class="size-4" /> Read the docs
+          </a>
+          <a
+            href="/start-here/production/"
+            class="inline-flex items-center gap-2 rounded-lg border border-line-strong px-5 py-2.5 text-sm font-medium transition hover:bg-white/5"
+          >
+            Deploy to production <Icon name="arrowRight" class="size-4" />
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-line">
+      <div class="container-page flex flex-col gap-6 py-10 text-sm text-subtle sm:flex-row sm:items-center">
+        <div class="flex items-center gap-2.5">
+          <Image src={birb} alt="" class="size-6" />
+          <span>Quacklytics · Built by Felix Mennen</span>
+        </div>
+        <nav class="flex flex-wrap gap-x-6 gap-y-2 sm:ml-auto">
+          <a href="/start-here/introduction/" class="hover:text-fg">Docs</a>
+          <a href={github} class="hover:text-fg">GitHub</a>
+          <a href="/imprint" class="hover:text-fg">Imprint</a>
+          <a href="/data-privacy" class="hover:text-fg">Data privacy</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

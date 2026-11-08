@@ -30,6 +30,7 @@ If an S3 variable is missing or invalid, the web UI still loads, but every `/api
 | `TRUSTED_PROXIES` | _none_ | Comma-separated IPs/CIDRs of your reverse proxies, or the presets `loopback` and `private`. |
 | `DATA_DIR` | `/data` in Docker; `apps/web/data` from source | Directory for SQLite databases and the auth secret. Must be empty or an existing Quacklytics data directory. |
 | `AUTH_SECRET` | Generated into `DATA_DIR/auth-secret` | Stable authentication secret. Changing it signs everyone out. |
+| `SETUP_TOKEN` | Random on every start | Token of the one-time setup link that creates the admin account. Set it only to provision the account automatically, by sending it in the `X-Quacklytics-Setup-Token` header of `POST /api/auth/sign-up/email`. Ignored once the account exists. |
 | `GEOIP` | `on` | Set to `off` to stop adding `$country` to events and downloading the GeoIP database. |
 | `GEOIP_DB_PATH` | _none_ | Country database in MaxMind DB format (for example DB-IP or MaxMind GeoLite2) to use instead of downloading one. It is read at startup and never updated. |
 | `INGEST_REQUESTS_PER_MINUTE` | `600` | Ingestion requests allowed per project per minute |

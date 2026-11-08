@@ -17,7 +17,7 @@ export function workerOrigin() {
 /** Runs a production server with its own data directory and environment. */
 export async function withServer<T>(
   env: Record<string, string>,
-  run: (origin: string, directory: string) => Promise<T>,
+  run: (origin: string, directory: string, log: () => string) => Promise<T>,
 ) {
   const directory = mkdtempSync(join(tmpdir(), "quacklytics-server-"));
   const origin = workerOrigin();
@@ -54,7 +54,7 @@ export async function withServer<T>(
         { timeout: 20000, message: log },
       )
       .toBe(200);
-    return await run(origin, directory);
+    return await run(origin, directory, () => log);
   } finally {
     if (server.exitCode === null && server.signalCode === null) {
       const exited = once(server, "exit");

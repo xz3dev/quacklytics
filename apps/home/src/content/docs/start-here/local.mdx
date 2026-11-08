@@ -23,10 +23,17 @@ The included Compose file starts Quacklytics together with [Garage](https://gara
     docker compose up --build
     ```
 
-2. **Register the administrator.** Open [`http://localhost:3000`](http://localhost:3000) and create the first account.
+2. **Register the administrator.** On startup the server logs a one-time setup link:
 
-    <Aside type="caution" title="Only one account">
-        Registration closes after the first account. Whoever registers first becomes the administrator.
+    ```text
+    No admin account exists yet. Create it with this one-time setup link:
+      http://localhost:3000/register?token=…
+    ```
+
+    Open it and create the first account. Without the link, the app only asks you to check the logs, so nobody else who can reach the server can claim it first.
+
+    <Aside type="note" title="Only one account">
+        Registration closes after the first account, and the link stops working. Each restart prints a new link until the account exists.
     </Aside>
 
 3. **Create a project.** Then open its **Ingestion** page to copy an ingestion key and add your site's origin under **Allowed origins**.
@@ -55,7 +62,7 @@ bun run storage:up   # starts Garage on http://127.0.0.1:3900
 bun run dev
 ```
 
-Open [`http://127.0.0.1:3000`](http://127.0.0.1:3000). Stop the storage again with `bun run storage:down`.
+Open [`http://127.0.0.1:3000`](http://127.0.0.1:3000). The terminal then prints the one-time setup link for the admin account. Stop the storage again with `bun run storage:down`.
 
 </TabItem>
 <TabItem label="Demo data">

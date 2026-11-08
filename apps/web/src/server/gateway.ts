@@ -189,7 +189,11 @@ export function createGateway({
     }
     pending.clear();
   }
-  return { gateway, shutdownBackend };
+  /** Starts the backend before its first request, e.g. to log the setup link. */
+  function startBackend() {
+    getWorker();
+  }
+  return { gateway, startBackend, shutdownBackend };
 }
 /**
  * Paths the backend answers: the API, and the OAuth discovery documents that
@@ -197,7 +201,7 @@ export function createGateway({
  */
 export const isBackendPath = (path: string) =>
   path.startsWith("/api/") || path.startsWith("/.well-known/oauth-");
-export const { gateway, shutdownBackend } = createGateway({
+export const { gateway, startBackend, shutdownBackend } = createGateway({
   createWorker: () =>
     new Worker(
       resolve(

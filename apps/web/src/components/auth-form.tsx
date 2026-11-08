@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "@/lib/navigation";
+import { Navigate, useNavigate } from "@/lib/navigation";
 import { useAuth } from "@/services/auth";
 import { signedAuthorization } from "@/services/oauth";
 import { useServerSetup } from "@/services/server-setup";
@@ -9,13 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Brand, BrandBackdrop, BrandMark } from "@/components/brand";
 
-export function AuthForm({ register = false }: { register?: boolean }) {
+export function AuthForm({
+  register = false,
+  setupToken,
+}: {
+  register?: boolean;
+  /** Token from the one-time setup link; registration requires it. */
+  setupToken?: string | undefined;
+}) {
   const setup = useServerSetup();
   // Only a single admin account can be registered; afterwards the
   // registration page is no longer useful.
   if (register && setup.data?.adminRegistered)
     return <Navigate to="/login" replace />;
-  const offerSetup = !register && setup.data?.adminRegistered === false;
+  const awaitingSetup = setup.data?.adminRegistered === false;
 
   return (
     <div className="relative isolate flex min-h-dvh flex-col bg-background">
@@ -38,17 +45,16 @@ export function AuthForm({ register = false }: { register?: boolean }) {
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-6 shadow-xs">
-            <CredentialsForm register={register} />
+            {register && !setupToken ? (
+              <SetupLinkHint />
+            ) : (
+              <CredentialsForm register={register} setupToken={setupToken} />
+            )}
           </div>
-          {offerSetup && (
+          {!register && awaitingSetup && (
             <p className="mt-6 text-center text-sm text-muted-foreground">
-              First time here?{" "}
-              <Link
-                to="/register"
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                Set up an admin account
-              </Link>
+              First time here? Check the server logs for the one-time setup link
+              to create the admin account.
             </p>
           )}
         </div>
@@ -60,7 +66,26 @@ export function AuthForm({ register = false }: { register?: boolean }) {
   );
 }
 
-function CredentialsForm({ register }: { register: boolean }) {
+function SetupLinkHint() {
+  return (
+    <div role="status" className="space-y-2 text-sm">
+      <p className="font-medium">Open the one-time setup link</p>
+      <p className="text-muted-foreground">
+        To keep others from claiming this instance, the admin account can only
+        be created through a setup link. Check the server logs for the URL with
+        the one-time setup link, then open it here.
+      </p>
+    </div>
+  );
+}
+
+function CredentialsForm({
+  register,
+  setupToken,
+}: {
+  register: boolean;
+  setupToken: string | undefined;
+}) {
   const navigate = useNavigate();
   const auth = useAuth();
   const [error, setError] = useState("");
@@ -74,7 +99,7 @@ function CredentialsForm({ register }: { register: boolean }) {
       }
       try {
         const next = await (register
-          ? auth.register(value.email, value.password)
+          ? auth.register(value.email, value.password, setupToken ?? "")
           : auth.login(value.email, value.password));
         // Signing in during an agent's authorization continues it instead.
         if (next) window.location.assign(next);

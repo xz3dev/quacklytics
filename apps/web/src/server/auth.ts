@@ -5,13 +5,13 @@ import { ImmediateSqliteDialect } from "./db/auth-dialect";
 import { mcpOAuthPlugins, mcpResourceFor } from "./mcp/oauth";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { setupTokenHeader } from "@quacklytics/contracts";
+import { adminRegistered, appOrigin, isSetupToken } from "./setup-token";
 const secretFile = join(dataRoot, "auth-secret");
 if (!existsSync(secretFile))
   writeFileSync(secretFile, crypto.randomUUID() + crypto.randomUUID(), {
     mode: 0o600,
   });
-const appOrigin = new URL(process.env.APP_ORIGIN ?? "http://127.0.0.1:3000")
-  .origin;
 /** The MCP endpoint's OAuth resource identifier; undefined when agents cannot sign in. */
 export const mcpResource = mcpResourceFor(appOrigin);
 if (!mcpResource)
@@ -28,10 +28,15 @@ const options = {
   databaseHooks: {
     user: {
       create: {
-        before: async () => {
-          if (appDb.query("SELECT id FROM user LIMIT 1").get())
+        before: async (_user, context) => {
+          if (adminRegistered())
             throw new APIError("FORBIDDEN", {
               message: "Registration is closed",
+            });
+          if (!isSetupToken(context?.headers?.get(setupTokenHeader)))
+            throw new APIError("FORBIDDEN", {
+              message:
+                "This setup link is invalid or expired. Check the server logs for the current one-time setup link.",
             });
         },
       },

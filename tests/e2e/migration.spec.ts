@@ -1,4 +1,5 @@
 import { test, expect, type Cookie } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 let authenticatedCookies: Cookie[] = [];
 import { z } from "zod";
 const credentials = {
@@ -121,7 +122,10 @@ async function signIn(page: import("@playwright/test").Page) {
       ? "/api/auth/sign-in/email"
       : "/api/auth/sign-up/email",
     {
-      headers: { Origin: new URL(setupResponse.url()).origin },
+      headers: {
+        Origin: new URL(setupResponse.url()).origin,
+        ...setupTokenHeaders,
+      },
       data: { ...credentials, name: "Migration" },
     },
   );
@@ -428,6 +432,7 @@ test("ingestion origin policy, preflight, key revocation and unauthorized reads"
   expect(
     (
       await request.post("/api/auth/sign-up/email", {
+        headers: setupTokenHeaders,
         data: { ...credentials, email: "second@example.com", name: "Second" },
       })
     ).ok(),

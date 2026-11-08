@@ -11,6 +11,7 @@ import type {
   OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { setupTokenHeaders } from "../support/auth";
 import { execFile, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { once } from "node:events";
@@ -248,6 +249,7 @@ test("an agent signs in with OAuth and reads every event exactly once and the sa
     expect(
       (
         await api.post("/api/auth/sign-up/email", {
+          headers: setupTokenHeaders,
           data: {
             email: "mcp@example.com",
             password: "Mcp-test-password-123",
@@ -866,6 +868,7 @@ test("agent access stays off, without breaking the app, when the origin is plain
       expect(
         (
           await api.post("/api/auth/sign-up/email", {
+            headers: setupTokenHeaders,
             data: {
               email: "plain@example.com",
               password: "Plain-http-password-42",

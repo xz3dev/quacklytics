@@ -1,4 +1,5 @@
 import { test, expect, request } from "@playwright/test";
+import { setupTokenHeaders } from "../support/auth";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -88,6 +89,7 @@ test("daily monthly snapshots combine with compressed SQLite data across midnigh
     expect(
       (
         await api.post("/api/auth/sign-up/email", {
+          headers: setupTokenHeaders,
           data: {
             email: "hybrid@example.com",
             password: "Hybrid-password-123",

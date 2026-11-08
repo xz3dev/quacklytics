@@ -16,6 +16,7 @@ const server = spawn("bun", ["server.ts"], {
     PORT: "4180",
     APP_ORIGIN: origin,
     DATA_DIR: dataDir,
+    SETUP_TOKEN: "benchmark-setup-token",
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -32,7 +33,13 @@ async function api(path: string, data?: unknown, key?: string) {
     method: data === undefined ? "GET" : "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(key ? { "X-API-KEY": key } : { Cookie: cookie, Origin: origin }),
+      ...(key
+        ? { "X-API-KEY": key }
+        : {
+            Cookie: cookie,
+            Origin: origin,
+            "X-Quacklytics-Setup-Token": "benchmark-setup-token",
+          }),
     },
     ...(data === undefined ? {} : { body: JSON.stringify(data) }),
   });

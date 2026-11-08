@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --color-ink: #0b0b0c;
+  --color-panel: #131315;
+  --color-panel-2: #18181b;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.14);
+  --color-fg: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-subtle: #71717a;
+  --color-duck: #ffd84d;
+  --color-sky: #4f8cff;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+  body {
+    @apply bg-ink font-sans text-fg antialiased;
+    /* The consent banner script styles itself with Starlight's variables. */
+    --sl-color-white: var(--color-fg);
+    --sl-color-black: var(--color-ink);
+    --sl-color-bg-nav: var(--color-panel-2);
+    --sl-color-gray-4: #52525b;
+    --sl-color-gray-5: #3f3f46;
+    --sl-color-text-accent: var(--color-duck);
+    --sl-shadow-lg: 0 20px 50px rgb(0 0 0 / 0.5);
+    --sl-text-sm: 0.875rem;
+    --__sl-font: var(--font-sans);
+  }
+  ::selection {
+    background: rgb(255 216 77 / 0.3);
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+}
+
+@utility eyebrow {
+  @apply font-mono text-xs font-medium tracking-wider text-duck uppercase;
+}
+
+/* Faint dot grid fading out from the top, like the app's sign-in pages. */
+@utility dot-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: reveal both ease-out;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+}
