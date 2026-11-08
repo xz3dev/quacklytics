@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { appDb } from "../db/database";
@@ -6,10 +7,11 @@ import { requireProject } from "../domain/projects";
 import { listProjectRecords } from "../repositories/projects";
 import { getInsight, listInsights } from "../domain/insights";
 import { listDashboards } from "../domain/dashboards";
-import { mcpTokenUser } from "../domain/mcp-tokens";
 import { readSchema } from "../domain/schema";
 import { requestDataset } from "../exports/client";
+import { auth, mcpResource } from "../auth";
 import { instructions, queryGuide } from "./guide";
+import { MCP_SCOPES } from "./oauth";
 
 // Compact JSON: agents pay for indentation in tokens.
 const text = (value: unknown) => ({
@@ -25,7 +27,7 @@ const projectInput = {
   project: z.string().describe("Project id from list_projects"),
 };
 
-// Tokens belong to a user; the single administrator sees every project.
+// Agents act for the signed-in user; the single administrator sees every project.
 function createServer() {
   const server = new McpServer(
     { name: "quacklytics", title: "Quacklytics", version: "1.0.0" },
@@ -157,22 +159,49 @@ function createServer() {
   return server;
 }
 
-const unauthorized = (message: string) =>
+// A JSON-RPC error body, as MCP clients expect from the endpoint.
+const rpcError = (status: number, message: string, headers?: HeadersInit) =>
   Response.json(
-    { error: message },
-    {
-      status: 401,
-      headers: { "WWW-Authenticate": 'Bearer realm="quacklytics"' },
-    },
+    { jsonrpc: "2.0", error: { code: -32000, message }, id: null },
+    { status, ...(headers ? { headers } : {}) },
   );
+
+/**
+ * Admits requests that carry an active access token for this server. Failures
+ * become RFC 9728 challenges whose resource_metadata points agents to sign-in.
+ */
+async function authorize(request: Request, resource: string) {
+  try {
+    await auth.api.authorizeMcpRequest({
+      body: {
+        authorization: request.headers.get("authorization"),
+        dpop: request.headers.get("dpop"),
+        method: request.method,
+      },
+    });
+    return undefined;
+  } catch (error) {
+    const challenge = createResourceServerChallenge(error, resource, {
+      challengeScopes: MCP_SCOPES,
+    });
+    if (!challenge) throw error;
+    return rpcError(
+      challenge.statusCode,
+      challenge.message || "The access token is invalid or has expired",
+      challenge.headers,
+    );
+  }
+}
 
 /** Stateless Streamable HTTP: every POST carries complete JSON-RPC messages. */
 export async function handleMcp(request: Request): Promise<Response> {
-  const token = /^Bearer\s+(\S+)$/i.exec(
-    request.headers.get("authorization") ?? "",
-  )?.[1];
-  if (!token) return unauthorized("MCP access token required");
-  if (!mcpTokenUser(token)) return unauthorized("Invalid MCP access token");
+  if (!mcpResource)
+    return rpcError(
+      503,
+      "Agent access needs APP_ORIGIN to use HTTPS, or a loopback host",
+    );
+  const denied = await authorize(request, mcpResource);
+  if (denied) return denied;
   // The gateway buffers responses, so no server-initiated stream is offered.
   if (request.method !== "POST")
     return Response.json(

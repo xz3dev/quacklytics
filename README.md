@@ -73,13 +73,15 @@ Add your site's origin (or `*`) to the project's allowed origins. See [the clien
 
 ## AI agents (MCP)
 
-Quacklytics exposes a read-only [MCP](https://modelcontextprotocol.io) server at `/api/mcp`. Create an access token on the **Projects** page under **Agent access (MCP)**, then, for example:
+Quacklytics exposes a read-only [MCP](https://modelcontextprotocol.io) server at `/api/mcp`. Agents sign in with OAuth: add the endpoint, and the agent opens Quacklytics in your browser so you can sign in and approve it. For example:
 
 ```sh
-claude mcp add --transport http quacklytics https://analytics.example.com/api/mcp --header "Authorization: Bearer qmcp_…"
+claude mcp add --transport http quacklytics https://analytics.example.com/api/mcp
 ```
 
-A token belongs to the user who created it and reads every project; the agent picks one with `list_projects` and passes its id as `project` to the other tools. The agent runs its own DuckDB queries. `get_dataset` returns setup SQL that reads the monthly Parquet files plus one Parquet file with every event not yet in them through signed URLs. Both come from the same snapshot, so together they cover each event exactly once. A snapshot is reused for up to 10 minutes. Other tools return the schema, saved insights, dashboards and a DuckDB query guide. Tokens can be revealed again by the user who created them; ingestion keys never grant read access.
+Then run `/mcp` in Claude Code and choose **Authenticate**. The **Projects** page lists approved agents under **Agent access (MCP)**, where **Disconnect** revokes one immediately. Agent sign-in needs `APP_ORIGIN` to use HTTPS (or a loopback address for local use); the authorization server is [Better Auth's OAuth provider](https://www.better-auth.com/docs/plugins/oauth-provider) with dynamic client registration.
+
+An approved agent reads every project of the user who approved it; it picks one with `list_projects` and passes its id as `project` to the other tools. The agent runs its own DuckDB queries. `get_dataset` returns setup SQL that reads the monthly Parquet files plus one Parquet file with every event not yet in them through signed URLs. Both come from the same snapshot, so together they cover each event exactly once. A snapshot is reused for up to 10 minutes. Other tools return the schema, saved insights, dashboards and a DuckDB query guide. Ingestion keys never grant read access.
 
 ## Deploying
 
@@ -91,7 +93,7 @@ Version 0.4.0 starts a new database schema baseline and requires a fresh `DATA_D
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_ORIGIN` | `http://127.0.0.1:3000` | Exact public origin of the app, used for authentication |
+| `APP_ORIGIN` | `http://127.0.0.1:3000` | Exact public origin of the app, used for authentication. AI agents can only sign in when it uses HTTPS or a loopback host |
 | `DATA_DIR` | `./data` relative to `apps/web` | Durable SQLite and auth directory |
 | `S3_ENDPOINT` | Required | S3-compatible endpoint used by the server |
 | `S3_PUBLIC_ENDPOINT` | `S3_ENDPOINT` | Browser-reachable endpoint used when signing URLs |

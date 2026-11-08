@@ -10,8 +10,10 @@ export const Route = createFileRoute("/app/$projectid/insights")({
 });
 
 function InsightsPage() {
+  // The router merges the raw query into validated search, so ?favorites=false
+  // arrives as the string "false"; only the validated boolean counts.
   const { favorites } = Route.useSearch();
-  return favorites ? (
+  return favorites === true ? (
     <InsightsList
       title="Favorite Insights"
       filter={(insight) => insight.favorite}

@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "@/lib/navigation";
 import { useAuth } from "@/services/auth";
+import { signedAuthorization } from "@/services/oauth";
 import { useServerSetup } from "@/services/server-setup";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,9 @@ export function AuthForm({ register = false }: { register?: boolean }) {
             <p className="mt-1.5 text-sm text-muted-foreground">
               {register
                 ? "Create the admin account for this instance."
-                : "Sign in to your Quacklytics instance."}
+                : signedAuthorization()
+                  ? "Sign in to review an agent's request for access."
+                  : "Sign in to your Quacklytics instance."}
             </p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-6 shadow-xs">
@@ -70,10 +73,12 @@ function CredentialsForm({ register }: { register: boolean }) {
         return;
       }
       try {
-        await (register
+        const next = await (register
           ? auth.register(value.email, value.password)
           : auth.login(value.email, value.password));
-        await navigate("/projects");
+        // Signing in during an agent's authorization continues it instead.
+        if (next) window.location.assign(next);
+        else await navigate("/projects");
       } catch (error) {
         setError(
           error instanceof Error ? error.message : "Authentication failed",

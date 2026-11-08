@@ -239,14 +239,20 @@ export const apiKey = z.object({
   project: z.string(),
   key: z.string(),
 });
-// Read access for agents. Lists carry the prefix; creating or revealing one
-// token returns its secret.
-export const mcpToken = z.object({
-  id: z.number(),
-  prefix: z.string(),
-  createdAt: z.number(),
+// AI agents (MCP clients) the user approved through OAuth. Names are chosen by
+// the agents themselves; redirect targets show where they receive sign-ins.
+export const connectedAgent = z.object({
+  clientId: z.string(),
+  name: z.string().nullable(),
+  redirectTargets: z.array(z.string()),
+  scopes: z.array(z.string()),
+  connectedAt: z.number(),
 });
-export const revealedMcpToken = mcpToken.extend({ token: z.string() });
+// endpoint is null when the instance cannot offer agent sign-in (no HTTPS).
+export const agentAccess = z.object({
+  endpoint: z.string().nullable(),
+  agents: z.array(connectedAgent),
+});
 export const user = z.object({
   id: z.string(),
   email: z.string(),

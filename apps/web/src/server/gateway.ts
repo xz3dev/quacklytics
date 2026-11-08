@@ -191,6 +191,12 @@ export function createGateway({
   }
   return { gateway, shutdownBackend };
 }
+/**
+ * Paths the backend answers: the API, and the OAuth discovery documents that
+ * MCP agents look up at well-known locations on the origin.
+ */
+export const isBackendPath = (path: string) =>
+  path.startsWith("/api/") || path.startsWith("/.well-known/oauth-");
 export const { gateway, shutdownBackend } = createGateway({
   createWorker: () =>
     new Worker(

@@ -16,7 +16,7 @@ Quacklytics is configured entirely through environment variables. No config file
 | `S3_BUCKET` | Name of the **private** bucket for Parquet files |
 | `S3_ACCESS_KEY_ID` | Access key. Only the server uses it. |
 | `S3_SECRET_ACCESS_KEY` | Secret key. Only the server uses it. |
-| `APP_ORIGIN` | Exact public origin (scheme + host + port), for example `https://analytics.example.com`. Defaults to `http://127.0.0.1:3000`, so every other setup must set it, or sign-in fails. |
+| `APP_ORIGIN` | Exact public origin (scheme + host + port), for example `https://analytics.example.com`. Defaults to `http://127.0.0.1:3000`, so every other setup must set it, or sign-in fails. [AI agents](/guides/agents/) can only sign in when it uses HTTPS or a loopback host such as `localhost`. |
 
 :::caution[Missing S3 settings]
 If an S3 variable is missing or invalid, the web UI still loads, but every `/api` request returns `503` and the error is logged. In Docker, the container also turns unhealthy. Use the bundled Garage setup (`docker compose up` or `bun run storage:up`) for local development.

@@ -9,37 +9,46 @@ Every Quacklytics instance serves a read-only [Model Context Protocol](https://m
 
 ## Connect an agent
 
+Agents sign in with OAuth, the way the MCP specification describes. You add the endpoint to your agent, it opens Quacklytics in your browser, and you sign in and approve it. There is no token to copy.
+
 <Steps>
 
-1. Open the **Projects** page and, under **Agent access (MCP)** below the project list, select **Create access token**.
-2. The new token opens revealed, with setup instructions for Claude Code and Codex. You can reveal it again later with the eye button.
-3. Add the server to your agent. For Claude Code:
+1. Add the server to your agent. The **Projects** page shows these commands with your endpoint under **Agent access (MCP)**.
+
+    For Claude Code, run the following, then run `/mcp` in Claude Code, select `quacklytics` and choose **Authenticate**:
 
     ```sh
-    claude mcp add --transport http quacklytics https://analytics.example.com/api/mcp \
-      --header "Authorization: Bearer qmcp_…"
+    claude mcp add --transport http quacklytics https://analytics.example.com/api/mcp
     ```
 
-    For Codex, add it to `~/.codex/config.toml`:
+    For Codex:
 
-    ```toml
-    [mcp_servers.quacklytics]
-    url = "https://analytics.example.com/api/mcp"
-    http_headers = { Authorization = "Bearer qmcp_…" }
+    ```sh
+    codex mcp add quacklytics --url https://analytics.example.com/api/mcp
+    codex mcp login quacklytics
     ```
 
-    Other clients need the same two things: the endpoint URL with the Streamable HTTP transport, and an `Authorization: Bearer` header.
+    Other clients need Streamable HTTP and OAuth support. They find everything else themselves: the endpoint's `401` response points to `/.well-known/oauth-protected-resource/api/mcp`, which names Quacklytics as the authorization server, and the agent registers itself there.
+
+2. Your browser opens Quacklytics. Sign in if you aren't already.
+3. Check the request and select **Allow access**. The agent receives its access and is ready to use.
 
 </Steps>
 
-A token belongs to the user who created it and reads every project, so one connection covers all of them. Revoking it on the same page rejects its next request. Dataset URLs the agent already received stay valid until they expire, at most an hour later, and data it already downloaded stays with the agent.
+The approval page shows the name the agent gave itself and where its access goes, for example an app on this computer. Allow only agents you just started connecting yourself: anyone can make an agent ask for access, and the name is its own choice.
+
+An approved agent reads every project of the user who approved it. Its access tokens last an hour and it renews them on its own, so it stays connected while you use it. Under **Connected agents** on the **Projects** page, **Disconnect** rejects the agent's next request and makes it ask for approval again. Dataset URLs the agent already received stay valid until they expire, at most an hour later, and data it already downloaded stays with the agent.
 
 <Aside>
-    Before 0.6.0, tokens were created per project on the ingestion page. Upgrading deletes them, so create a new token and update your agent's configuration.
+    Agents sign in only when `APP_ORIGIN` uses HTTPS, or a loopback address such as `http://localhost:3000` for local use. On other origins agent access is off and the **Projects** page says so; the rest of the app works as usual.
+</Aside>
+
+<Aside>
+    Agents that were set up with a Quacklytics access token (`Authorization: Bearer qmcp_…`) stop working after upgrading, because the tokens are deleted. Remove the header from the agent's configuration and connect it again.
 </Aside>
 
 <Aside type="caution">
-    Ingestion keys are public, since they are embedded in your website, so they never grant read access. Treat MCP tokens like passwords.
+    Ingestion keys are public, since they are embedded in your website, so they never grant read access.
 </Aside>
 
 ## Tools
@@ -48,7 +57,7 @@ Every tool except `get_query_guide` takes a `project` argument: a project id fro
 
 | Tool | Returns |
 | --- | --- |
-| `list_projects` | Ids and names of the projects the token can read |
+| `list_projects` | Ids and names of the projects the agent can read |
 | `get_dataset` | `setupSql` that defines the DuckDB view `events` over signed Parquet URLs covering every event |
 | `get_schema` | Event types with their property names and types |
 | `list_insights`, `get_insight` | Saved insights and their full definitions |

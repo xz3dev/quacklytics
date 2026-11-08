@@ -1,6 +1,6 @@
 import { resolve, sep } from "node:path";
 import { z } from "zod";
-import { gateway, shutdownBackend } from "./src/server/gateway";
+import { gateway, isBackendPath, shutdownBackend } from "./src/server/gateway";
 const modulePath = resolve("dist/server/server.js");
 const rawModule: unknown = await import(modulePath);
 const module = z
@@ -20,7 +20,7 @@ const server = Bun.serve({
   idleTimeout: 120,
   fetch: async (request, runtime) => {
     const path = new URL(request.url).pathname;
-    if (path.startsWith("/api/"))
+    if (isBackendPath(path))
       return gateway(request, runtime.requestIP(request)?.address);
     const filePath = resolve(publicRoot, "." + decodeURIComponent(path));
     if (filePath.startsWith(publicRoot + sep)) {
